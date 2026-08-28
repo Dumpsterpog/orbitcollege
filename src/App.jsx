@@ -2,10 +2,13 @@ import { useState, useMemo, useCallback, useEffect } from "react";
 import { Capacitor } from "@capacitor/core";
 import { App as CapacitorApp } from "@capacitor/app";
 import { FONT_IMPORT } from "./data/constants.js";
-import { communityTrendScore, slugify } from "./utils/helpers.js";
+import { communityTrendScore, slugify, timeAgo } from "./utils/helpers.js";
+import { useViewportHeight } from "./utils/useViewportHeight.js";
+import { useTheme } from "./utils/useTheme.js";
 import { supabase } from "./lib/supabaseClient.js";
 import { TopBar } from "./components/TopBar.jsx";
 import { BottomNav } from "./components/BottomNav.jsx";
+import { Sidebar } from "./components/Sidebar.jsx";
 import { GuestBanner, Toast, Logo } from "./components/Common.jsx";
 import { SearchOverlay } from "./components/SearchOverlay.jsx";
 import { HomeScreen } from "./components/Home.jsx";
@@ -40,7 +43,25 @@ function mapCommunityRow(row) {
     official: row.official,
     handle: row.handle,
     avatarUrl: row.avatar_url,
+    postsAdminOnly: row.posts_admin_only,
     lastActive,
+  };
+}
+// One row per post, across every community (not just joined ones) — powers
+// Home's Instagram-style "Latest posts" feed. Uses the same profiles!author_id
+// relationship hint as Community.jsx's mapPostRow (see the comment there —
+// plain profiles(name) returns an ambiguous-relationship HTTP 300 on this
+// table specifically).
+function mapFeedPostRow(row) {
+  return {
+    id: row.id,
+    communityId: row.community_id,
+    who: row.profiles?.name || "Someone",
+    text: row.text,
+    time: timeAgo(row.created_at),
+    hasImage: row.has_image,
+    imageUrl: row.image_url,
+    sparks: row.spark_count,
   };
 }
 function mapEventRow(row) {
@@ -53,6 +74,7 @@ function mapEventRow(row) {
     when: row.event_when,
     where: row.event_where,
     capacity: row.capacity,
+    imageUrl: row.image_url,
     linkedCommunityId: row.linked_community_id,
   };
 }
@@ -93,6 +115,8 @@ function saveIdSet(key, set) {
 }
 
 export default function App() {
+  useViewportHeight(); // keyboard-float fix — see utils/useViewportHeight.js
+  const { theme, toggleTheme } = useTheme(); // dark/light — see utils/useTheme.js
   const [loadingSession, setLoadingSession] = useState(true);
   const [stage, setStage] = useState("onboarding");
   const [authUser, setAuthUser] = useState(null); // { id, email } from Supabase, or null
@@ -103,11 +127,16 @@ export default function App() {
   const [events, setEvents] = useState([]);
   const [joinedIds, setJoinedIds] = useState([]);
   const [registeredEventIds, setRegisteredEventIds] = useState([]);
+  // Home dashboard: Instagram-style "Latest posts" feed — every community's
+  // posts, newest first (not just joined ones) — see the feedPosts effect
+  // below. feedSparkIds tracks which of those posts the signed-in user has
+  // already sparked, same one-row-per-user-per-post pattern as Community.jsx.
+  const [feedPosts, setFeedPosts] = useState([]);
+  const [feedSparkIds, setFeedSparkIds] = useState([]);
 
   // Still mock/local for this first build — see App architecture notes.
   const [sparkedIds, setSparkedIds] = useState([]);
   const [activeTab, setActiveTab] = useState("home");
-  const [filterCat, setFilterCat] = useState(null);
   const [selectedCommunity, setSelectedCommunity] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [notifOpen, setNotifOpen] = useState(false);
@@ -157,6 +186,56 @@ export default function App() {
     })();
   }, []);
 
+  // Home dashboard's "Latest posts" feed — every community's posts, newest
+  // first, across the whole app (not just joined ones), Instagram-style.
+  // RLS on community_posts is "to authenticated using (true)" (see
+  // schema_content.sql), so this only ever returns rows for a signed-in
+  // user, same as the rest of the app's guest-gating.
+  // Also subscribed to Realtime below — a post from any community (or a
+  // spark landing on one) shows up in the feed live, no manual refresh.
+  useEffect(() => {
+    if (!authUser) { setFeedPosts([]); setFeedSparkIds([]); return; }
+    (async () => {
+      const { data, error } = await supabase
+        .from("community_posts")
+        .select("id, community_id, text, has_image, image_url, spark_count, created_at, profiles!author_id(name)")
+        .order("created_at", { ascending: false })
+        .limit(40);
+      if (!error && data) setFeedPosts(data.map(mapFeedPostRow));
+      const { data: myRows } = await supabase
+        .from("community_post_sparks")
+        .select("post_id")
+        .eq("user_id", authUser.id);
+      if (myRows) setFeedSparkIds(myRows.map((r) => r.post_id));
+    })();
+
+    // App-wide (no community_id filter, unlike Community.jsx's scoped
+    // channel) — a new/edited/deleted post anywhere updates Home's feed
+    // live. INSERT/UPDATE payloads carry raw columns only (no joined
+    // profiles.name), so those two re-fetch just that one row with the
+    // same relationship hint the initial query uses.
+    const channel = supabase
+      .channel("home-feed-realtime")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "community_posts" }, async (payload) => {
+        const { data } = await supabase
+          .from("community_posts")
+          .select("id, community_id, text, has_image, image_url, spark_count, created_at, profiles!author_id(name)")
+          .eq("id", payload.new.id)
+          .single();
+        if (!data) return;
+        const mapped = mapFeedPostRow(data);
+        setFeedPosts((ps) => (ps.some((p) => p.id === mapped.id) ? ps : [mapped, ...ps].slice(0, 60)));
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "community_posts" }, (payload) => {
+        setFeedPosts((ps) => ps.map((p) => (p.id === payload.new.id ? { ...p, sparks: payload.new.spark_count, text: payload.new.text } : p)));
+      })
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "community_posts" }, (payload) => {
+        setFeedPosts((ps) => ps.filter((p) => p.id !== payload.old.id));
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [authUser]);
+
   // Realtime: member counts / new communities update live for everyone in
   // the app without a manual refresh (e.g. someone else joining a community
   // you're looking at right now).
@@ -176,6 +255,27 @@ export default function App() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  // Realtime: Events tab updates live too (new event posted, one edited or
+  // removed) — same pattern as the communities channel above. Safe to
+  // broadcast in full (unlike tea_posts below): events has no anonymity
+  // requirement and its "readable by anyone" RLS already exposes every
+  // column to begin with.
+  useEffect(() => {
+    const channel = supabase
+      .channel("events-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "events" }, (payload) => {
+        setEvents((es) => {
+          if (payload.eventType === "DELETE") return es.filter((e) => e.id !== payload.old.id);
+          const mapped = mapEventRow(payload.new);
+          return es.some((e) => e.id === mapped.id)
+            ? es.map((e) => (e.id === mapped.id ? mapped : e))
+            : [...es, mapped];
+        });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   // Session bootstrap — returning users with a valid Supabase session skip
   // onboarding entirely, matching "no repeated re-verification."
   useEffect(() => {
@@ -183,9 +283,9 @@ export default function App() {
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (mounted && session) {
-        const { data: profile } = await supabase.from("profiles").select("name, interests").eq("id", session.user.id).single();
+        const { data: profile } = await supabase.from("profiles").select("name, interests, bio").eq("id", session.user.id).single();
         setAuthUser({ id: session.user.id, email: session.user.email });
-        setUser({ name: profile?.name || "", verified: true, interests: profile?.interests || [] });
+        setUser({ name: profile?.name || "", verified: true, interests: profile?.interests || [], bio: profile?.bio || "" });
         setStage("app");
         fetchMyJoins(session.user.id);
         fetchMyRegistrations(session.user.id);
@@ -263,13 +363,36 @@ export default function App() {
     setSparkedIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
   };
 
-  const handleCreate = async ({ name, category, desc }) => {
+  // Sparking a post from Home's feed — real, persisted to community_post_sparks,
+  // same table/pattern Community.jsx's Posts tab already uses (see its
+  // toggleSpark). Optimistic update with rollback on failure, same as every
+  // other write in this app.
+  const handleSparkPost = async (postId) => {
+    if (!user.verified || !authUser) { handleBlocked(); return; }
+    const wasSparked = feedSparkIds.includes(postId);
+    setFeedSparkIds((ids) => (wasSparked ? ids.filter((x) => x !== postId) : [...ids, postId]));
+    setFeedPosts((posts) => posts.map((p) => (p.id === postId ? { ...p, sparks: p.sparks + (wasSparked ? -1 : 1) } : p)));
+    const { error } = wasSparked
+      ? await supabase.from("community_post_sparks").delete().eq("post_id", postId).eq("user_id", authUser.id)
+      : await supabase.from("community_post_sparks").insert({ post_id: postId, user_id: authUser.id });
+    if (error) {
+      setFeedSparkIds((ids) => (wasSparked ? [...ids, postId] : ids.filter((x) => x !== postId)));
+      setFeedPosts((posts) => posts.map((p) => (p.id === postId ? { ...p, sparks: p.sparks + (wasSparked ? 1 : -1) } : p)));
+    }
+  };
+
+  const handleCreate = async ({ name, category, desc, tags }) => {
     if (!authUser) { handleBlocked(); return; }
     const handle = `${slugify(name)}-${Math.random().toString(36).slice(2, 8)}`;
+    // tags now comes from the creator's own multi-select (CreateCommunity
+    // step 3), not just [category] — this is the real signal a future
+    // personalization/recommendation pass needs. Falls back to [category]
+    // if somehow empty so a row is never written with no tags at all.
+    const finalTags = tags && tags.length ? tags : [category];
     const { data, error } = await supabase
       .from("communities")
       .insert({
-        name, category, tags: [category], description: desc || "No description yet.",
+        name, category, tags: finalTags, description: desc || "No description yet.",
         member_count: 0, creator_id: authUser.id, creator_label: "You", official: false, handle,
       })
       .select()
@@ -293,8 +416,23 @@ export default function App() {
     if (updates.tags !== undefined) dbUpdates.tags = updates.tags;
     if (updates.desc !== undefined) dbUpdates.description = updates.desc;
     if (updates.avatarUrl !== undefined) dbUpdates.avatar_url = updates.avatarUrl;
+    if (updates.postsAdminOnly !== undefined) dbUpdates.posts_admin_only = updates.postsAdminOnly;
     const { error } = await supabase.from("communities").update(dbUpdates).eq("id", id);
     showToast(error ? "Update failed" : "Updated");
+  };
+
+  // "Edit profile" used to only update local React state (setUser) — it
+  // looked like it saved, but nothing ever reached the database: the name
+  // change was invisible to every other user/community, and reset back to
+  // whatever profiles.name actually held on the next reload. Bio was worse
+  // — there wasn't even a bio column, so it was never anything more than
+  // component state. Both now write to profiles for real.
+  const handleUpdateProfile = async (name, bio) => {
+    const trimmedName = name.trim();
+    if (!trimmedName || !authUser) return;
+    setUser((u) => ({ ...u, name: trimmedName, bio }));
+    const { error } = await supabase.from("profiles").update({ name: trimmedName, bio }).eq("id", authUser.id);
+    showToast(error ? "Couldn't save profile — try again" : "Profile updated");
   };
 
   const handleDeleteCommunity = async (id) => {
@@ -367,17 +505,24 @@ export default function App() {
   }, [authUser]);
 
   useEffect(() => {
-    if (teaOpen) fetchTea();
+    if (!teaOpen) return;
+    fetchTea();
+    // Polls instead of Realtime (see the comment on fetchTea above) — still
+    // "auto refresh," just on a short interval rather than a live push, so
+    // new tea/confessions and updated vote counts show up without the user
+    // manually reopening the screen.
+    const id = setInterval(fetchTea, 5000);
+    return () => clearInterval(id);
   }, [teaOpen, fetchTea]);
 
-  const loadTeaComments = async (postId) => {
+  const loadTeaComments = useCallback(async (postId) => {
     const { data } = await supabase
       .from("tea_comments")
       .select("id, text, created_at")
       .eq("post_id", postId)
       .order("created_at", { ascending: true });
     setTeaPosts((ts) => ts.map((t) => (t.id === postId ? { ...t, comments: (data || []).map(mapTeaCommentRow) } : t)));
-  };
+  }, []);
 
   const handlePostTea = async (text, category = "tea") => {
     if (!authUser) { handleBlocked(); return; }
@@ -498,7 +643,22 @@ export default function App() {
     setStage("onboarding");
   };
 
-  const shellClass = "w-full h-dvh max-w-none sm:max-w-sm sm:h-[calc(100dvh-2rem)] mx-auto bg-zinc-950 sm:my-4 sm:rounded-3xl sm:border sm:border-zinc-800 sm:shadow-2xl sm:shadow-black/50 overflow-hidden relative flex flex-col animate-fade-in";
+  // Base height reads the JS-tracked --app-height custom property (see
+  // useViewportHeight) instead of a raw dvh unit, so the shell actually
+  // shrinks to match the visible screen once a keyboard opens instead of
+  // staying sized for the pre-keyboard viewport. Falls back to 100dvh when
+  // the property isn't set yet (first paint) or visualViewport is
+  // unsupported. The sm: desktop-frame override is untouched — physical
+  // keyboards don't trigger this bug, so it stays on plain dvh.
+  // Auth-flow shell (loading spinner, onboarding) stays the phone-frame card
+  // on every screen size, including desktop — a centered auth card is the
+  // normal pattern there, not a full-width layout.
+  const shellClass = "w-full h-[var(--app-height,100dvh)] max-w-none sm:max-w-sm sm:h-[calc(100dvh-2rem)] mx-auto bg-white dark:bg-zinc-950 sm:my-4 sm:rounded-3xl sm:border sm:border-zinc-200 dark:sm:border-zinc-800 sm:shadow-2xl sm:shadow-zinc-400/30 dark:sm:shadow-black/50 overflow-hidden relative flex flex-col animate-fade-in";
+  // Signed-in app shell: same phone-frame card up through the sm/md range,
+  // but from lg (1024px+) up it drops the frame entirely and becomes a real
+  // full-width desktop layout — Sidebar on the left, content pane on the
+  // right — instead of a mobile card floating in empty space.
+  const shellClassApp = `${shellClass} lg:max-w-none lg:my-0 lg:h-[var(--app-height,100dvh)] lg:rounded-none lg:border-0 lg:shadow-none lg:flex-row lg:items-stretch`;
 
   if (loadingSession) {
     return (
@@ -540,17 +700,26 @@ export default function App() {
     setTeaOpen(false);
     setActiveTab(tab);
   };
+  // Shared with both TopBar/HomeScreen (mobile) and Sidebar (desktop, lg+) so
+  // the two nav surfaces trigger the exact same behavior instead of drifting.
+  const openTea = () => { if (!user.verified) { handleBlocked(); return; } setTeaOpen(true); };
+  const openSearch = () => setSearchOpen(true);
+  const openCreate = () => { if (!user.verified) { handleBlocked(); return; } setShowCreate(true); };
 
   return (
-    <div className={shellClass} style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className={shellClassApp} style={{ fontFamily: "'Inter', sans-serif" }}>
       <style>{FONT_IMPORT}</style>
+      <Sidebar active={activeTab} setActive={goToTab} onTeaClick={openTea} onSearchClick={openSearch} onCreateClick={openCreate} verified={user.verified} />
+      <div className="flex-1 flex flex-col overflow-hidden lg:h-full min-w-0">
       {!showingSubPage && (
         <TopBar notifOpen={notifOpen} setNotifOpen={setNotifOpen}
-          onTeaClick={() => { if (!user.verified) { handleBlocked(); return; } setTeaOpen(true); }}
-          onSearchClick={() => setSearchOpen(true)}
-          onMessagesClick={() => showToast("DMs — coming soon")} />
+          onTeaClick={openTea}
+          onSearchClick={openSearch}
+          onMessagesClick={() => showToast("DMs — coming soon")}
+          onLogoClick={() => goToTab("home")} />
       )}
       {!showingSubPage && !user.verified && <GuestBanner onVerify={goToInitialPage} />}
+      <div className="flex-1 overflow-hidden flex flex-col lg:max-w-5xl lg:mx-auto lg:w-full">
       {selectedCommunity ? (
         <CommunityDetail
           key={selectedCommunity.id}
@@ -582,9 +751,10 @@ export default function App() {
       ) : activeTab === "home" ? (
         <HomeScreen
           communities={communities} joinedIds={joinedIds}
-          onOpen={setSelectedCommunity} filterCat={filterCat} setFilterCat={setFilterCat}
-          sparkedIds={sparkedIds} onSpark={handleSpark} interests={user.interests}
-          onCreateClick={() => { if (!user.verified) { handleBlocked(); return; } setShowCreate(true); }}
+          onOpen={setSelectedCommunity} interests={user.interests}
+          feedPosts={feedPosts} feedSparkIds={feedSparkIds} onSparkPost={handleSparkPost}
+          onAdClick={() => showToast("Ads — demo content for this presentation, not a live ad network")}
+          onCreateClick={openCreate}
         />
       ) : activeTab === "explore" ? (
         <ExploreScreen subTab={exploreTab} setSubTab={setExploreTab} clubs={clubs} communities={communities} onOpen={setSelectedCommunity} />
@@ -596,16 +766,22 @@ export default function App() {
       ) : activeTab === "profile" ? (
         <ProfileScreen
           user={user} joinedCommunities={joinedCommunities}
-          onEditName={(n) => setUser((u) => ({ ...u, name: n }))}
+          onSaveProfile={handleUpdateProfile}
           onVerifyGuest={goToInitialPage}
           onLogout={goToInitialPage}
+          onComingSoon={() => showToast("Coming soon")}
+          theme={theme} onToggleTheme={toggleTheme}
         />
       ) : null}
-      <BottomNav active={activeTab} setActive={goToTab} />
+      </div>
+      <div className="lg:hidden">
+        <BottomNav active={activeTab} setActive={goToTab} />
+      </div>
       {reportTarget && (
         <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} onSubmit={handleReportSubmit} />
       )}
       <Toast message={toastMsg} />
+      </div>
     </div>
   );
 }

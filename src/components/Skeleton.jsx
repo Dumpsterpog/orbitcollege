@@ -17,7 +17,7 @@ export function SkeletonCircle({ size = 40, className = "" }) {
 
 export function SkeletonCard() {
   return (
-    <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-3.5 flex gap-3">
+    <div className="bg-zinc-50 dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-3.5 flex gap-3">
       <div className="skeleton-shimmer animate-shimmer w-12 h-12 rounded-2xl shrink-0" />
       <div className="flex-1 min-w-0 space-y-2 py-0.5">
         <SkeletonLine className="h-3.5 w-3/4" />

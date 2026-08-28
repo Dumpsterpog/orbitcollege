@@ -20,6 +20,19 @@ export function communityTrendScore(c) {
   return c.members * 0.4 + baseSparks(c) * 2 - c.lastActive * 0.6;
 }
 
+// Shared relative-time formatter — was duplicated privately in Community.jsx
+// (post/message timestamps); the dashboard's "recent in your communities"
+// section needs the same formatting, so it now lives here once.
+export function timeAgo(iso) {
+  const ms = Date.now() - new Date(iso).getTime();
+  const min = Math.floor(ms / 60000);
+  if (min < 1) return "now";
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  return `${Math.floor(hr / 24)}d ago`;
+}
+
 // Turns a display name into a URL-safe slug — shared by handleFor() below
 // and by App.jsx when it needs to generate a @handle client-side before a
 // community row (and its DB-assigned id) exists yet.

@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Orbit — Every Club, One Platform</title>
+<meta name="description" content="Orbit merges every student community, official club, campus event, and anonymous confession feed into one platform — built first for Manipal University Jaipur.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 1024 1024%22><rect width=%221024%22 height=%221024%22 rx=%22220%22 fill=%22%2309090b%22/><g transform=%22translate(512 512) scale(28) translate(-12 -12)%22 fill=%22none%22 stroke=%22%23D4AF37%22 stroke-width=%222.4%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><circle cx=%2212%22 cy=%2212%22 r=%223%22/><circle cx=%2219%22 cy=%225%22 r=%222%22/><circle cx=%225%22 cy=%2219%22 r=%222%22/><path d=%22M10.4 21.9a10 10 0 0 0 9.941-15.416%22/><path d=%22M13.5 2.1a10 10 0 0 0-9.841 15.416%22/></g></svg>">
+<style>
+  :root{
+    --bg:#0a0a0b; --bg2:#121214; --card:#151517; --border:#242426;
+    --text:#f5f5f4; --text2:#a1a1aa; --text3:#71717a; --gold:#D4AF37;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--bg); color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1080px;margin:0 auto;padding:0 24px;}
+  a{color:inherit;}
+
+  /* nav */
+  nav{position:sticky;top:0;z-index:50;background:rgba(10,10,11,0.85);backdrop-filter:blur(10px);border-bottom:1px solid var(--border);}
+  nav .wrap{display:flex;align-items:center;justify-content:space-between;height:64px;}
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:17px;letter-spacing:-0.02em;}
+  .brand svg{display:block;}
+  .navlinks{display:flex;gap:28px;font-size:14px;color:var(--text2);}
+  .navlinks a{text-decoration:none;transition:color .15s;}
+  .navlinks a:hover{color:var(--text);}
+  .badge{border:1px solid var(--gold);color:var(--gold);font-size:11px;font-weight:600;letter-spacing:.04em;padding:4px 10px;border-radius:999px;text-transform:uppercase;}
+
+  /* hero */
+  .hero{padding:88px 0 64px;text-align:center;position:relative;overflow:hidden;}
+  .hero::before{
+    content:"";position:absolute;top:-200px;left:50%;transform:translateX(-50%);
+    width:900px;height:500px;background:radial-gradient(ellipse at center, rgba(212,175,55,0.12), transparent 70%);
+    pointer-events:none;
+  }
+  .hero .pill{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--border);background:var(--card);padding:6px 14px;border-radius:999px;font-size:12px;color:var(--text2);margin-bottom:28px;}
+  .hero .pill b{color:var(--gold);font-weight:600;}
+  .hero h1{font-size:56px;font-weight:800;letter-spacing:-0.03em;line-height:1.08;position:relative;}
+  .hero h1 .accent{color:var(--gold);}
+  .hero p.sub{max-width:560px;margin:22px auto 0;color:var(--text2);font-size:17px;position:relative;}
+  .hero .ctas{display:flex;gap:12px;justify-content:center;margin-top:34px;flex-wrap:wrap;position:relative;}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:10px;font-size:14px;font-weight:600;text-decoration:none;transition:opacity .15s,transform .15s;}
+  .btn:hover{transform:translateY(-1px);}
+  .btn-primary{background:var(--text);color:#0a0a0b;}
+  .btn-outline{border:1px solid var(--border);color:var(--text);}
+  .meta-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:30px;position:relative;}
+  .meta{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 16px;font-size:12px;text-align:left;}
+  .meta .k{color:var(--text3);font-size:9px;text-transform:uppercase;letter-spacing:.06em;}
+  .meta .v{color:var(--text);font-weight:600;margin-top:2px;}
+
+  /* screenshots */
+  .shots{padding:20px 0 80px;}
+  .shots-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+  .phone{aspect-ratio:9/18;background:#0d0d0e;border:1px solid var(--border);border-radius:28px;position:relative;overflow:hidden;display:flex;flex-direction:column;}
+  .phone img{width:100%;height:100%;object-fit:cover;display:block;}
+  .ph-cap{text-align:center;font-size:11px;color:var(--text3);margin-top:10px;}
+  .ph-cap b{color:var(--text2);}
+
+  /* mockup UI inside phone frames — illustrative, not a live capture */
+  .m-bar{height:22px;display:flex;align-items:center;justify-content:space-between;padding:0 14px;font-size:9px;color:var(--text3);}
+  .m-title{padding:10px 14px 6px;font-size:13px;font-weight:700;color:var(--text);}
+  .m-sub{padding:0 14px 8px;font-size:9px;color:var(--text3);}
+  .m-pills{display:flex;gap:5px;padding:0 14px 10px;overflow:hidden;}
+  .m-pill{font-size:8px;padding:4px 9px;border-radius:999px;background:#1c1c1f;color:var(--text2);white-space:nowrap;border:1px solid var(--border);}
+  .m-pill.on{background:var(--text);color:#0a0a0b;border-color:var(--text);}
+  .m-sec{padding:0 14px;font-size:9px;font-weight:700;color:var(--text2);margin:8px 0 6px;}
+  .m-card{background:#151517;border:1px solid var(--border);border-radius:10px;padding:8px;margin:0 14px 8px;display:flex;gap:8px;align-items:center;}
+  .m-av{width:22px;height:22px;border-radius:7px;background:#232326;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:9px;color:var(--gold);font-weight:700;}
+  .m-av.round{border-radius:50%;}
+  .m-t{font-size:9px;color:var(--text);font-weight:600;}
+  .m-d{font-size:8px;color:var(--text3);margin-top:1px;}
+  .m-tabs{display:flex;gap:4px;padding:0 14px 8px;}
+  .m-tab{font-size:8px;padding:5px 10px;border-radius:7px;color:var(--text3);}
+  .m-tab.on{background:#1c1c1f;color:var(--text);font-weight:600;}
+  .m-post{background:#151517;border:1px solid var(--border);border-radius:10px;margin:0 14px 8px;padding:9px;}
+  .m-post .m-t{margin-bottom:4px;}
+  .m-post p{font-size:8.5px;color:var(--text2);line-height:1.5;}
+  .m-tea-tag{display:inline-block;font-size:7px;background:#1c1c1f;color:var(--gold);padding:2px 6px;border-radius:999px;margin-bottom:6px;border:1px solid var(--border);}
+  .m-votes{display:flex;gap:6px;margin-top:8px;}
+  .m-vote{font-size:7.5px;padding:4px 9px;border-radius:999px;border:1px solid var(--border);color:var(--text2);}
+  .m-ad{margin:6px 14px 0;border:1px dashed var(--border);border-radius:10px;padding:8px;text-align:center;font-size:7.5px;color:var(--text3);}
+
+  /* section shared */
+  section{padding:72px 0;border-top:1px solid var(--border);}
+  .eyebrow{color:var(--gold);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px;}
+  h2{font-size:32px;font-weight:800;letter-spacing:-0.02em;margin-bottom:14px;}
+  section > .wrap > p.lede{color:var(--text2);max-width:560px;font-size:15px;margin-bottom:40px;}
+
+  /* features */
+  .features{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;}
+  .fcard{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;}
+  .fcard .ic{width:38px;height:38px;border-radius:10px;background:#1c1c1f;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:14px;color:var(--gold);}
+  .fcard h3{font-size:15px;font-weight:700;margin-bottom:6px;}
+  .fcard p{font-size:13px;color:var(--text2);}
+
+  /* stack */
+  .stack-row{display:flex;flex-wrap:wrap;gap:10px;}
+  .chip{background:var(--card);border:1px solid var(--border);padding:8px 16px;border-radius:8px;font-size:13px;color:var(--text2);}
+
+  /* status */
+  .status-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  .stat{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;}
+  .stat .n{font-size:26px;font-weight:800;color:var(--gold);}
+  .stat .l{font-size:13px;color:var(--text2);margin-top:4px;}
+
+  /* team */
+  .team-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  .tcard{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:22px;text-align:center;}
+  .tcard .av{width:52px;height:52px;border-radius:50%;background:#1c1c1f;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;font-weight:700;color:var(--gold);}
+  .tcard .nm{font-weight:700;font-size:14px;}
+  .tcard .rl{font-size:12px;color:var(--text2);margin-top:2px;}
+
+  /* source note */
+  .note{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:12px;padding:20px 24px;font-size:14px;color:var(--text2);}
+  .note b{color:var(--text);}
+
+  footer{padding:36px 0;border-top:1px solid var(--border);text-align:center;color:var(--text3);font-size:13px;}
+
+  @media (max-width:800px){
+    .hero h1{font-size:36px;}
+    .shots-grid{grid-template-columns:1fr;}
+    .features{grid-template-columns:1fr 1fr;}
+    .status-grid,.team-grid{grid-template-columns:1fr;}
+    .navlinks{display:none;}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <div class="brand">
+      <svg width="28" height="28" viewBox="0 0 1024 1024"><rect width="1024" height="1024" rx="220" fill="#f5f5f4"/><g transform="translate(512 512) scale(28) translate(-12 -12)" fill="none" stroke="#0a0a0b" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><circle cx="19" cy="5" r="2"/><circle cx="5" cy="19" r="2"/><path d="M10.4 21.9a10 10 0 0 0 9.941-15.416"/><path d="M13.5 2.1a10 10 0 0 0-9.841 15.416"/></g></svg>
+      Orbit
+    </div>
+    <div class="navlinks">
+      <a href="#screens">Product</a>
+      <a href="#stack">Tech</a>
+      <a href="#team">Team</a>
+      <a href="#source">Source</a>
+    </div>
+    <span class="badge">IIC 3.0 · Open Innovation</span>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="wrap">
+    <div class="pill">Built for <b>Manipal University Jaipur</b> · in closed beta now</div>
+    <h1>Every club.<br>Every community.<br><span class="accent">One platform.</span></h1>
+    <p class="sub">Orbit merges student-run communities, official college clubs, campus events, and an anonymous confession feed — so campus life doesn't live across six different apps.</p>
+    <div class="ctas">
+      <a class="btn btn-primary" href="#screens">See the product</a>
+      <a class="btn btn-outline" href="#source">About the source code</a>
+    </div>
+    <div class="meta-row">
+      <div class="meta"><div class="k">Theme</div><div class="v">Open Innovation</div></div>
+      <div class="meta"><div class="k">Idea Title</div><div class="v">Orbit — Every Club, One Platform</div></div>
+      <div class="meta"><div class="k">Team Name</div><div class="v">Orbit</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="shots" id="screens">
+  <div class="wrap">
+    <div class="eyebrow">Product</div>
+    <h2>Inside the app</h2>
+    <p class="lede">Layout previews built from the real UI structure and copy — not live screenshots. Send 3 real screenshots (Home, a Community page, Locali-Tea) and these get swapped for the real thing.</p>
+    <div class="shots-grid">
+
+      <div>
+        <div class="phone">
+          <div class="m-bar"><span>9:41</span><span>●●●</span></div>
+          <div class="m-title">Home</div>
+          <div class="m-pills">
+            <span class="m-pill on">All</span>
+            <span class="m-pill">Study</span>
+            <span class="m-pill">Coding &amp; Projects</span>
+            <span class="m-pill">Sports</span>
+          </div>
+          <div class="m-sec">🔥 Top communities right now</div>
+          <div class="m-card"><div class="m-av">O</div><div><div class="m-t">Orbit</div><div class="m-d">Official · campus-wide</div></div></div>
+          <div class="m-sec">Recent in your communities</div>
+          <div class="m-card"><div class="m-av round">O</div><div><div class="m-t">Orbit</div><div class="m-d">Welcome to Orbit 👋</div></div></div>
+          <div class="m-ad">Ad space — reserved, nothing runs here yet</div>
+        </div>
+        <div class="ph-cap"><b>Home</b> — top communities, recent posts, interest matches</div>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="m-bar"><span>9:41</span><span>●●●</span></div>
+          <div class="m-card" style="margin-top:8px;"><div class="m-av">O</div><div><div class="m-t">Orbit</div><div class="m-d">Official club</div></div></div>
+          <div class="m-tabs">
+            <span class="m-tab on">Posts</span>
+            <span class="m-tab">Chat</span>
+            <span class="m-tab">Members</span>
+          </div>
+          <div class="m-post"><div class="m-t">Orbit</div><p>Welcome to Orbit — introduce yourself and say what you're into 👋</p></div>
+          <div class="m-post"><div class="m-t">Orbit</div><p>Pinned: how to create your own community from the + button.</p></div>
+        </div>
+        <div class="ph-cap"><b>Community</b> — posts, chat, members, all live via Supabase</div>
+      </div>
+
+      <div>
+        <div class="phone">
+          <div class="m-bar"><span>9:41</span><span>●●●</span></div>
+          <div class="m-title">Locali-Tea</div>
+          <div class="m-tabs">
+            <span class="m-tab on">Tea</span>
+            <span class="m-tab">Confessions</span>
+          </div>
+          <div class="m-post">
+            <span class="m-tea-tag">Anonymous · expires in 41h</span>
+            <p>Anyone else's hostel WiFi been down all week? 📶</p>
+            <div class="m-votes"><span class="m-vote">✓ True</span><span class="m-vote">✕ Cap</span></div>
+          </div>
+        </div>
+        <div class="ph-cap"><b>Locali-Tea</b> — anonymous, self-expiring after 48h</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow">What it does</div>
+    <h2>Four things, one app</h2>
+    <p class="lede">Each is a real, working feature in the current beta — not a mockup.</p>
+    <div class="features">
+      <div class="fcard">
+        <div class="ic">C</div>
+        <h3>Communities &amp; Clubs</h3>
+        <p>Create, join, post, and chat inside student-run communities or official college clubs — one shared structure for both.</p>
+      </div>
+      <div class="fcard">
+        <div class="ic">E</div>
+        <h3>Events</h3>
+        <p>A live feed of what's happening on campus, in one place instead of scattered across posters and group chats.</p>
+      </div>
+      <div class="fcard">
+        <div class="ic">T</div>
+        <h3>Locali-Tea</h3>
+        <p>An anonymous, 48-hour confession feed for honest campus conversation — anonymity enforced server-side, not just in the UI.</p>
+      </div>
+      <div class="fcard">
+        <div class="ic">M</div>
+        <h3>Interest matching</h3>
+        <p>Communities and posts are surfaced based on the interests you actually tag — not a generic trending list.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="stack">
+  <div class="wrap">
+    <div class="eyebrow">Under the hood</div>
+    <h2>Tech stack</h2>
+    <div class="stack-row">
+      <span class="chip">React 18</span>
+      <span class="chip">Vite 5</span>
+      <span class="chip">Tailwind CSS</span>
+      <span class="chip">Supabase (Postgres · Auth · Realtime)</span>
+      <span class="chip">Capacitor (Android)</span>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Where it stands</div>
+    <h2>Status</h2>
+    <div class="status-grid">
+      <div class="stat"><div class="n">Beta</div><div class="l">Live with real students at MUJ</div></div>
+      <div class="stat"><div class="n">Supabase</div><div class="l">Real backend — auth, database, realtime, not mocked</div></div>
+      <div class="stat"><div class="n">Android</div><div class="l">Packaged via Capacitor, installable APK</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="team">
+  <div class="wrap">
+    <div class="eyebrow">Team Orbit</div>
+    <h2>Who's building this</h2>
+    <div class="team-grid">
+      <div class="tcard"><div class="av">AP</div><div class="nm">Aryan Pandey</div><div class="rl">Team Lead</div></div>
+      <div class="tcard"><div class="av">SS</div><div class="nm">Suraj Sharma</div><div class="rl">Team Member</div></div>
+      <div class="tcard"><div class="av">VB</div><div class="nm">Vickey Beniwal</div><div class="rl">Team Member</div></div>
+    </div>
+  </div>
+</section>
+
+<section id="source">
+  <div class="wrap">
+    <div class="eyebrow">Source code</div>
+    <h2>A note on the repository</h2>
+    <div class="note">
+      <b>This page is intentionally the public face of Orbit, not the codebase.</b> Orbit is being developed toward a commercial launch, so the full source — database schema, security policies, and complete implementation — is kept in a private repository. This page exists to give judges and reviewers a working link without exposing the product's internals ahead of launch. Happy to walk through the actual code live if that's useful for evaluation.
+    </div>
+  </div>
+</section>
+
+<footer>
+  Orbit — built for MUJ, submitted for IIC 3.0 (Open Innovation track).
+</footer>
+
+</body>
+</html>
