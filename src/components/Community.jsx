@@ -113,7 +113,7 @@ export function CommunitySettings({ c, onSave, onDelete, onClose }) {
           <button
             disabled={!name.trim() || savingAvatar}
             onClick={save}
-            className="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white disabled:text-zinc-500 text-sm font-semibold mb-3 flex items-center justify-center gap-1.5"
+            className="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white dark:text-zinc-900 disabled:text-zinc-500 text-sm font-semibold mb-3 flex items-center justify-center gap-1.5"
           >
             {savingAvatar && <Loader2 size={14} className="animate-spin" />}
             {savingAvatar ? "Saving..." : "Save changes"}
@@ -127,7 +127,7 @@ export function CommunitySettings({ c, onSave, onDelete, onClose }) {
               <p className="text-xs text-zinc-600 dark:text-zinc-400 mb-2.5">This deletes the community for everyone. This can't be undone.</p>
               <div className="flex gap-2">
                 <button onClick={() => setConfirmDelete(false)} className="flex-1 py-2 rounded-lg bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-700 dark:text-zinc-300 text-xs font-medium">Cancel</button>
-                <button onClick={onDelete} className="flex-1 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-50 text-white text-xs font-semibold">Yes, delete</button>
+                <button onClick={onDelete} className="flex-1 py-2 rounded-lg bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 text-xs font-semibold">Yes, delete</button>
               </div>
             </div>
           )}
@@ -557,7 +557,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
             </div>
             <button
               onClick={() => { if (!verified) { onBlocked(); return; } onJoinToggle(c.id); }}
-              className={`mb-1 px-5 py-2.5 rounded-xl text-sm font-semibold shrink-0 ${joined ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700" : "bg-zinc-900 dark:bg-zinc-50 text-white"}`}
+              className={`mb-1 px-5 py-2.5 rounded-xl text-sm font-semibold shrink-0 ${joined ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 border border-zinc-300 dark:border-zinc-700" : "bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900"}`}
             >
               {joined ? "Joined ✓" : "Join"}
             </button>
@@ -701,7 +701,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                 />
                 <button
                   onClick={sendChat}
-                  className="w-9 h-9 rounded-full bg-zinc-900 dark:bg-zinc-50 text-white flex items-center justify-center shrink-0"
+                  className="w-9 h-9 rounded-full bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 flex items-center justify-center shrink-0"
                 >
                   <Send size={15} />
                 </button>
@@ -744,7 +744,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                 />
                 <div className="flex items-center justify-between mt-1.5">
                   <p className="text-[10px] text-zinc-400 dark:text-zinc-600">Just want to say something? Use Chat instead.</p>
-                  <button disabled={!postImageFile || postingImage} onClick={handlePost} className="px-4 py-1.5 rounded-lg bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white disabled:text-zinc-500 text-xs font-semibold flex items-center gap-1.5 shrink-0">
+                  <button disabled={!postImageFile || postingImage} onClick={handlePost} className="px-4 py-1.5 rounded-lg bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white dark:text-zinc-900 disabled:text-zinc-500 text-xs font-semibold flex items-center gap-1.5 shrink-0">
                     {postingImage && <Loader2 size={12} className="animate-spin" />}
                     {postingImage ? "Posting..." : "Post"}
                   </button>

@@ -65,7 +65,7 @@ export function CreateCommunity({ onCreate, onClose, verified, onBlocked, onVeri
                   </div>
                 </div>
                 <div className="shrink-0 pt-4">
-                  <button type="submit" disabled={!category} className="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white disabled:text-zinc-500 text-sm font-semibold">Continue</button>
+                  <button type="submit" disabled={!category} className="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white dark:text-zinc-900 disabled:text-zinc-500 text-sm font-semibold">Continue</button>
                 </div>
               </form>
             )}
@@ -90,7 +90,7 @@ export function CreateCommunity({ onCreate, onClose, verified, onBlocked, onVeri
                   <textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Short description (optional)" rows={3} maxLength={800} className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-zinc-900 dark:focus:border-zinc-50" />
                 </div>
                 <div className="shrink-0 pt-4">
-                  <button type="submit" disabled={!name.trim()} className="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white disabled:text-zinc-500 text-sm font-semibold">Continue</button>
+                  <button type="submit" disabled={!name.trim()} className="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white dark:text-zinc-900 disabled:text-zinc-500 text-sm font-semibold">Continue</button>
                 </div>
               </form>
             )}
@@ -125,7 +125,7 @@ export function CreateCommunity({ onCreate, onClose, verified, onBlocked, onVeri
                   </div>
                 </div>
                 <div className="shrink-0 pt-4">
-                  <button type="submit" disabled={!interests.length} className="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white disabled:text-zinc-500 text-sm font-semibold">Continue</button>
+                  <button type="submit" disabled={!interests.length} className="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white dark:text-zinc-900 disabled:text-zinc-500 text-sm font-semibold">Continue</button>
                 </div>
               </form>
             )}
@@ -145,7 +145,7 @@ export function CreateCommunity({ onCreate, onClose, verified, onBlocked, onVeri
                   </div>
                 </div>
                 <div className="shrink-0 pt-4">
-                  <button type="submit" className="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-50 text-white text-sm font-semibold">Create community</button>
+                  <button type="submit" className="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 text-sm font-semibold">Create community</button>
                 </div>
               </form>
             )}

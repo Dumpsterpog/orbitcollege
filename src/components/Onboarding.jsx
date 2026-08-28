@@ -149,7 +149,7 @@ export function Onboarding({ onDone, onGuest }) {
             <button
               type="submit"
               disabled={loading || (otpSent ? otp.length < OTP_LENGTH : !emailLooksValid)}
-              className="w-full py-3 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white disabled:text-zinc-500 text-sm font-semibold shadow-lg shadow-zinc-900/10 dark:shadow-black/30 disabled:shadow-none active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 animate-fade-in-up stagger-4"
+              className="w-full py-3 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white dark:text-zinc-900 disabled:text-zinc-500 text-sm font-semibold shadow-lg shadow-zinc-900/10 dark:shadow-black/30 disabled:shadow-none active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 animate-fade-in-up stagger-4"
             >
               {loading ? "Please wait…" : otpSent ? "Verify" : <>Send OTP <ArrowRight size={15} /></>}
             </button>
@@ -193,7 +193,7 @@ export function Onboarding({ onDone, onGuest }) {
             </div>
           </div>
           <div className="shrink-0 pt-4">
-            <button type="submit" disabled={!name.trim() || loading} className="w-full py-3 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white disabled:text-zinc-500 text-sm font-semibold shadow-lg shadow-zinc-900/10 dark:shadow-black/30 disabled:shadow-none active:scale-[0.98] transition-all">
+            <button type="submit" disabled={!name.trim() || loading} className="w-full py-3 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white dark:text-zinc-900 disabled:text-zinc-500 text-sm font-semibold shadow-lg shadow-zinc-900/10 dark:shadow-black/30 disabled:shadow-none active:scale-[0.98] transition-all">
               {loading ? "Please wait…" : "Enter Orbit"}
             </button>
           </div>

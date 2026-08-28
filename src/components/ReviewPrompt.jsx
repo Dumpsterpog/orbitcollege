@@ -50,7 +50,7 @@ export function ReviewPrompt({ onSubmit, onSkip }) {
           <button
             onClick={submit}
             disabled={submitting}
-            className="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white text-sm font-semibold mb-2.5"
+            className="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white dark:text-zinc-900 text-sm font-semibold mb-2.5"
           >
             {submitting ? "Sending…" : "Send review"}
           </button>

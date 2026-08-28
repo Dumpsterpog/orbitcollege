@@ -157,7 +157,7 @@ function TeaDetail({ t, onBack, onValidate, myVote, onReact, myReaction, onComme
           />
           <button
             onClick={() => { if (draft.trim()) { onComment(t.id, draft.trim()); setDraft(""); } }}
-            className="w-9 h-9 rounded-full bg-zinc-900 dark:bg-zinc-50 text-white flex items-center justify-center shrink-0"
+            className="w-9 h-9 rounded-full bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 flex items-center justify-center shrink-0"
           >
             <Send size={15} />
           </button>
