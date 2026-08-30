@@ -1,11 +1,11 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
-import { Capacitor } from "@capacitor/core";
-import { App as CapacitorApp } from "@capacitor/app";
 import { FONT_IMPORT } from "./data/constants.js";
 import { communityTrendScore, slugify, timeAgo } from "./utils/helpers.js";
 import { useViewportHeight } from "./utils/useViewportHeight.js";
 import { useTheme } from "./utils/useTheme.js";
 import { supabase } from "./lib/supabaseClient.js";
+import { onAuthChange, completeRedirectSignIn, fetchProfile, signOut as fbSignOut } from "./lib/authService.js";
+import { auth } from "./lib/firebase.js";
 import { TopBar } from "./components/TopBar.jsx";
 import { BottomNav } from "./components/BottomNav.jsx";
 import { Sidebar } from "./components/Sidebar.jsx";
@@ -20,8 +20,6 @@ import { LocaliTeaScreen } from "./components/LocaliTea.jsx";
 import { ProfileScreen } from "./components/Profile.jsx";
 import { Onboarding } from "./components/Onboarding.jsx";
 import { ReportModal } from "./components/ReportModal.jsx";
-// ReviewPrompt.jsx is kept in the repo (not deleted) but intentionally not
-// wired up — the exit review prompt was removed per product decision.
 
 // ---- Supabase row -> app-shape mappers -------------------------------
 // The app's components were built against the original mock shape
@@ -114,13 +112,20 @@ function saveIdSet(key, set) {
   try { localStorage.setItem(key, JSON.stringify([...set])); } catch { /* ignore */ }
 }
 
+// Dev landing switch: with VITE_SKIP_AUTH=true the app boots straight into the
+// full-width Home dashboard as a guest, skipping the phone-frame OTP card.
+// Unset it (or set false) and the normal onboarding flow comes back untouched.
+const SKIP_AUTH = import.meta.env.VITE_SKIP_AUTH === "true";
+
 export default function App() {
   useViewportHeight(); // keyboard-float fix — see utils/useViewportHeight.js
   const { theme, toggleTheme } = useTheme(); // dark/light — see utils/useTheme.js
   const [loadingSession, setLoadingSession] = useState(true);
-  const [stage, setStage] = useState("onboarding");
+  const [stage, setStage] = useState(SKIP_AUTH ? "app" : "onboarding");
   const [authUser, setAuthUser] = useState(null); // { id, email } from Supabase, or null
-  const [user, setUser] = useState({ name: "", verified: false, interests: [] });
+  const [user, setUser] = useState(
+    SKIP_AUTH ? { name: "Guest", verified: false, interests: [] }
+              : { name: "", verified: false, interests: [] });
 
   // Live data (Supabase) — core flow: auth, communities/clubs, join/leave, events.
   const [dbCommunities, setDbCommunities] = useState([]);
@@ -276,47 +281,42 @@ export default function App() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  // Session bootstrap — returning users with a valid Supabase session skip
+  // Session bootstrap — returning users with a live Firebase session skip
   // onboarding entirely, matching "no repeated re-verification."
+  //
+  // onAuthChange replaces the old getSession() + onAuthStateChange pair:
+  // Firebase resolves persisted sessions asynchronously and reports the
+  // result through this one listener, so the first callback (user or null) is
+  // also what tells us the session check has finished.
   useEffect(() => {
     let mounted = true;
-    (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (mounted && session) {
-        const { data: profile } = await supabase.from("profiles").select("name, interests, bio").eq("id", session.user.id).single();
-        setAuthUser({ id: session.user.id, email: session.user.email });
-        setUser({ name: profile?.name || "", verified: true, interests: profile?.interests || [], bio: profile?.bio || "" });
+    // Picks up a sign-in that came back via the redirect fallback; resolves
+    // null on an ordinary load. Fires before the listener settles.
+    completeRedirectSignIn();
+
+    const unsub = onAuthChange(async (fbUser) => {
+      if (!mounted) return;
+      if (fbUser) {
+        const profile = await fetchProfile(fbUser.uid);
+        if (!mounted) return;
+        setAuthUser({ id: fbUser.uid, email: fbUser.email });
+        setUser({
+          name: profile?.name || fbUser.displayName || "",
+          verified: true,
+          interests: profile?.interests || [],
+          bio: profile?.bio || "",
+        });
         setStage("app");
-        fetchMyJoins(session.user.id);
-        fetchMyRegistrations(session.user.id);
+        fetchMyJoins(fbUser.uid);
+        fetchMyRegistrations(fbUser.uid);
+      } else {
+        setAuthUser(null);
       }
-      if (mounted) setLoadingSession(false);
-    })();
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthUser(session ? { id: session.user.id, email: session.user.email } : null);
+      setLoadingSession(false);
     });
-    return () => { mounted = false; sub.subscription.unsubscribe(); };
+    return () => { mounted = false; unsub(); };
   }, [fetchMyJoins, fetchMyRegistrations]);
 
-  // Android hardware back button: close whatever overlay is open first (same
-  // as tapping its own back/close button), and exit once nothing is open.
-  // No-op on web/dev, only runs inside the APK. (No exit review prompt —
-  // deliberately removed per product call; ReviewPrompt.jsx + app_reviews
-  // stay in the repo if this gets re-added later.)
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform()) return;
-    const listenerPromise = CapacitorApp.addListener("backButton", () => {
-      if (stage !== "app") { CapacitorApp.exitApp(); return; }
-      if (selectedCommunity) { setSelectedCommunity(null); return; }
-      if (showCreate) { setShowCreate(false); return; }
-      if (searchOpen) { setSearchOpen(false); return; }
-      if (teaOpen) { setTeaOpen(false); return; }
-      if (reportTarget) { setReportTarget(null); return; }
-      if (notifOpen) { setNotifOpen(false); return; }
-      CapacitorApp.exitApp();
-    });
-    return () => { listenerPromise.then((l) => l.remove()); };
-  }, [stage, selectedCommunity, showCreate, searchOpen, teaOpen, reportTarget, notifOpen]);
 
   // All communities and clubs share the same shape, so most screens work
   // across both — Explore is the only place that splits them by sub-tab.
@@ -635,7 +635,7 @@ export default function App() {
 
   // Verify / log in / log out all route back to the initial onboarding page.
   const goToInitialPage = async () => {
-    await supabase.auth.signOut();
+    await fbSignOut();
     setAuthUser(null);
     setUser({ name: "", verified: false, interests: [] });
     setJoinedIds([]);
@@ -677,12 +677,16 @@ export default function App() {
         <style>{FONT_IMPORT}</style>
         <Onboarding
           onDone={async (name, interests) => {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-              setAuthUser({ id: session.user.id, email: session.user.email });
+            // onAuthChange above has usually already set authUser/user by the
+            // time this runs; this applies the name and interests the user just
+            // picked, which the listener's profile read may have missed by a
+            // beat, and moves the stage on regardless.
+            const fbUser = auth?.currentUser;
+            if (fbUser) {
+              setAuthUser({ id: fbUser.uid, email: fbUser.email });
               setUser({ name, verified: true, interests });
-              fetchMyJoins(session.user.id);
-              fetchMyRegistrations(session.user.id);
+              fetchMyJoins(fbUser.uid);
+              fetchMyRegistrations(fbUser.uid);
             }
             setStage("app");
           }}
@@ -709,7 +713,7 @@ export default function App() {
   return (
     <div className={shellClassApp} style={{ fontFamily: "'Inter', sans-serif" }}>
       <style>{FONT_IMPORT}</style>
-      <Sidebar active={activeTab} setActive={goToTab} onTeaClick={openTea} onSearchClick={openSearch} onCreateClick={openCreate} verified={user.verified} />
+      <Sidebar active={activeTab} setActive={goToTab} onTeaClick={openTea} onSearchClick={openSearch} onCreateClick={openCreate} verified={user.verified} theme={theme} onToggleTheme={toggleTheme} />
       <div className="flex-1 flex flex-col overflow-hidden lg:h-full min-w-0">
       {!showingSubPage && (
         <TopBar notifOpen={notifOpen} setNotifOpen={setNotifOpen}
@@ -718,7 +722,16 @@ export default function App() {
           onMessagesClick={() => showToast("DMs — coming soon")}
           onLogoClick={() => goToTab("home")} />
       )}
-      {!showingSubPage && !user.verified && <GuestBanner onVerify={goToInitialPage} />}
+      {/* Capped to the same width as the content pane below it. Left full-bleed
+          this stretched "Browsing as guest" to the far left edge and "Verify
+          now" to the far right on a wide monitor, with the actual content
+          centered between them — the call to action ended up furthest from the
+          thing it refers to. */}
+      {!showingSubPage && !user.verified && (
+        <div className="shrink-0 lg:max-w-5xl lg:mx-auto lg:w-full">
+          <GuestBanner onVerify={goToInitialPage} />
+        </div>
+      )}
       <div className="flex-1 overflow-hidden flex flex-col lg:max-w-5xl lg:mx-auto lg:w-full">
       {selectedCommunity ? (
         <CommunityDetail

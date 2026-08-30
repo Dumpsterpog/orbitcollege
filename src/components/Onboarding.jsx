@@ -1,29 +1,35 @@
 import { useState } from "react";
-import { Check, ChevronLeft, ArrowRight, Mail } from "lucide-react";
+import { Check, ChevronLeft } from "lucide-react";
 import { CATEGORIES, COLOR_MAP, ONBOARDING_STEPS } from "../data/constants.js";
 import { Logo, AuroraBackground } from "./Common.jsx";
-import { supabase } from "../lib/supabaseClient.js";
+import { signInWithGoogle, saveProfile, fetchProfile } from "../lib/authService.js";
+import { auth } from "../lib/firebase.js";
 
-// This beta build accepts any email (personal/private included) — the
-// earlier @muj.manipal.edu-only domain lock (both this client check and the
-// enforce_muj_email_domain_trigger in the database) was intentionally
-// removed for the first 200-person test round, since campus-mail deliverability
-// couldn't be fixed in time. See supabase/drop_domain_lock.sql.
-const emailValid = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.trim());
+// Google is the only sign-in method. The email + 8-digit-OTP flow this screen
+// used to run went away with Supabase: Firebase Auth has no email-code
+// equivalent (only magic links), and phone OTP would need the Blaze plan, so
+// "log in" and "register" collapse into this one button — a uid Firebase has
+// never seen before simply gets a profile document written on first sight.
+//
+// The two-step shape is kept: Google supplies a name and avatar, but not what
+// someone is *into*, so the interests step still has a job to do.
 
-// Supabase's email-OTP flow sends a numeric code via {{ .Token }} (configured
-// in the Supabase Dashboard's "Confirm signup" + "Magic Link" email templates
-// — see README/Supabase setup notes). This project's Supabase instance
-// generates an 8-digit code (confirmed against a real received email) —
-// not the 6-digit length Supabase defaults to in some setups, so this is
-// NOT hardcoded from docs, it's set to match what this project actually sends.
-const OTP_LENGTH = 8;
+// lucide-react ships no brand marks, so Google's four-color G is inlined
+// here. Google's branding guidelines require the official mark on a
+// "Sign in with Google" control rather than a generic icon.
+function GoogleMark({ size = 18 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true" className="shrink-0">
+      <path fill="#FFC107" d="M43.611 20.083H42V20H24v8h11.303c-1.649 4.657-6.08 8-11.303 8-6.627 0-12-5.373-12-12s5.373-12 12-12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 12.955 4 4 12.955 4 24s8.955 20 20 20 20-8.955 20-20c0-1.341-.138-2.65-.389-3.917z"/>
+      <path fill="#FF3D00" d="m6.306 14.691 6.571 4.819C14.655 15.108 18.961 12 24 12c3.059 0 5.842 1.154 7.961 3.039l5.657-5.657C34.046 6.053 29.268 4 24 4 16.318 4 9.656 8.337 6.306 14.691z"/>
+      <path fill="#4CAF50" d="M24 44c5.166 0 9.86-1.977 13.409-5.192l-6.19-5.238A11.91 11.91 0 0 1 24 36c-5.202 0-9.619-3.317-11.283-7.946l-6.522 5.025C9.505 39.556 16.227 44 24 44z"/>
+      <path fill="#1976D2" d="M43.611 20.083H42V20H24v8h11.303a12.04 12.04 0 0 1-4.087 5.571l.003-.002 6.19 5.238C36.971 39.205 44 34 44 24c0-1.341-.138-2.65-.389-3.917z"/>
+    </svg>
+  );
+}
 
 export function Onboarding({ onDone, onGuest }) {
   const [step, setStep] = useState("contact");
-  const [email, setEmail] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
   const [name, setName] = useState("");
   const [interests, setInterests] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -33,41 +39,45 @@ export function Onboarding({ onDone, onGuest }) {
     setInterests((cur) => cur.includes(catName) ? cur.filter((x) => x !== catName) : [...cur, catName]);
   };
   const stepIndex = ONBOARDING_STEPS.indexOf(step);
-  const emailLooksValid = emailValid(email);
-  const trimmedEmail = email.trim();
 
-  const sendOtp = async () => {
+  const handleGoogle = async () => {
     setLoading(true);
     setErrorMsg("");
-    const { error } = await supabase.auth.signInWithOtp({
-      email: trimmedEmail,
-      options: { shouldCreateUser: true },
-    });
-    setLoading(false);
-    if (error) {
-      setErrorMsg(error.message || "Couldn't send the code. Try again.");
-      return;
-    }
-    setOtpSent(true);
-  };
+    try {
+      const user = await signInWithGoogle();
+      // null means the popup was dismissed, or we handed off to a full-page
+      // redirect — either way there's nothing to advance to from here.
+      if (!user) { setLoading(false); return; }
 
-  const verifyOtp = async () => {
-    setLoading(true);
-    setErrorMsg("");
-    const { error } = await supabase.auth.verifyOtp({ email: trimmedEmail, token: otp, type: "email" });
-    setLoading(false);
-    if (error) {
-      setErrorMsg(error.message || "That code didn't work. Check it and try again.");
-      return;
+      // A returning user already has a name and interests saved; don't make
+      // them re-enter what they set last time, just go straight in.
+      const existing = await fetchProfile(user.uid);
+      if (existing?.name && existing.interests?.length) {
+        setLoading(false);
+        onDone(existing.name, existing.interests);
+        return;
+      }
+      setName(existing?.name || user.displayName || "");
+      setInterests(existing?.interests || []);
+      setLoading(false);
+      setStep("profile");
+    } catch (err) {
+      setLoading(false);
+      setErrorMsg(err?.message || "Couldn't sign in with Google. Try again.");
     }
-    setStep("profile");
   };
 
   const finishProfile = async (finalName, finalInterests) => {
     setLoading(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      await supabase.from("profiles").update({ name: finalName, interests: finalInterests }).eq("id", session.user.id);
+    const uid = auth.currentUser?.uid;
+    if (uid) {
+      try {
+        await saveProfile(uid, { name: finalName, interests: finalInterests });
+      } catch (err) {
+        setLoading(false);
+        setErrorMsg(err?.message || "Couldn't save your profile. Try again.");
+        return;
+      }
     }
     setLoading(false);
     onDone(finalName, finalInterests);
@@ -89,74 +99,35 @@ export function Onboarding({ onDone, onGuest }) {
           <span key={s} className={`h-1 rounded-full transition-all duration-300 ${i === stepIndex ? "w-7 bg-zinc-900 dark:bg-zinc-50 shadow-[0_0_8px_rgba(96,165,250,0.6)]" : i < stepIndex ? "w-4 bg-zinc-900/40 dark:bg-zinc-50/40" : "w-4 bg-zinc-100 dark:bg-zinc-800"}`} />
         ))}
       </div>
-      {/* Each step is a <form> so pressing Enter in its input submits the
-          same way tapping the primary button would — no extra click needed.
-          The primary button lives in a shrink-0 footer below a scrollable
-          content area, so it always stays on screen instead of getting
-          pushed down by long content (e.g. the interests grid). */}
+
       {step === "contact" && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (loading) return;
-            if (!otpSent) { if (emailLooksValid) sendOtp(); }
-            else if (otp.length >= OTP_LENGTH) verifyOtp();
-          }}
-          className="flex-1 flex flex-col min-h-0"
-        >
+        <div className="flex-1 flex flex-col min-h-0">
           <div className="flex-1 overflow-y-auto no-scrollbar">
-            <p className="font-semibold text-zinc-900 dark:text-zinc-100 mb-8 text-2xl leading-tight animate-fade-in-up stagger-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+            <p className="font-semibold text-zinc-900 dark:text-zinc-100 mb-2 text-2xl leading-tight animate-fade-in-up stagger-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
               Let's get you in
             </p>
-            <div className={`flex items-center gap-2 bg-zinc-50/80 dark:bg-zinc-900/80 border rounded-xl px-3.5 py-3 transition-colors animate-fade-in-up stagger-3 ${otpSent ? "border-zinc-200 dark:border-zinc-800 opacity-60" : "border-zinc-200 dark:border-zinc-800 focus-within:border-zinc-900 dark:focus-within:border-zinc-50 focus-within:ring-1 focus-within:ring-zinc-900/20 dark:focus-within:ring-zinc-50/30"}`}>
-              <Mail size={16} className="text-zinc-500 shrink-0" />
-              <input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@email.com"
-                type="email"
-                inputMode="email"
-                autoCapitalize="none"
-                autoCorrect="off"
-                disabled={otpSent}
-                className="flex-1 min-w-0 bg-transparent text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 text-sm outline-none disabled:cursor-not-allowed"
-              />
-              {otpSent && (
-                <button type="button" onClick={() => { setOtpSent(false); setOtp(""); setErrorMsg(""); }} className="text-xs text-zinc-900 dark:text-zinc-50 font-medium shrink-0">Change</button>
-              )}
-            </div>
-            {otpSent && (
-              <div className="mt-4 animate-fade-in-up">
-                <p className="text-sm text-zinc-500 mb-3">Enter the {OTP_LENGTH}-digit code sent to <span className="text-zinc-700 dark:text-zinc-300">{trimmedEmail}</span>.</p>
-                <input
-                  value={otp}
-                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, OTP_LENGTH))}
-                  placeholder={"0".repeat(OTP_LENGTH)}
-                  inputMode="numeric"
-                  autoFocus
-                  className="w-full bg-zinc-50/80 dark:bg-zinc-900/80 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-xl px-3.5 py-4 text-sm tracking-[0.5em] text-center text-2xl outline-none focus:border-zinc-900 dark:focus:border-zinc-50 focus:ring-1 focus:ring-zinc-900/20 dark:focus:ring-zinc-50/30 mono transition-colors"
-                />
-                <button type="button" onClick={sendOtp} disabled={loading} className="text-xs text-zinc-500 text-center mt-3 w-full disabled:opacity-50">
-                  Didn't get a code? <span className="text-zinc-900 dark:text-zinc-50 font-medium">Resend OTP</span>
-                </button>
-              </div>
-            )}
+            <p className="text-sm text-zinc-500 mb-8 animate-fade-in-up stagger-3">
+              Sign in with Google — first time in creates your account, no separate sign-up.
+            </p>
             {errorMsg && (
               <p className="text-xs text-zinc-700 dark:text-zinc-300 mt-3 animate-fade-in-up">{errorMsg}</p>
             )}
           </div>
           <div className="shrink-0 pt-4">
             <button
-              type="submit"
-              disabled={loading || (otpSent ? otp.length < OTP_LENGTH : !emailLooksValid)}
-              className="w-full py-3 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white dark:text-zinc-900 disabled:text-zinc-500 text-sm font-semibold shadow-lg shadow-zinc-900/10 dark:shadow-black/30 disabled:shadow-none active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 animate-fade-in-up stagger-4"
+              type="button"
+              onClick={handleGoogle}
+              disabled={loading}
+              className="w-full py-3 rounded-xl bg-white dark:bg-zinc-50 border border-zinc-200 dark:border-transparent disabled:opacity-60 text-zinc-800 dark:text-zinc-900 text-sm font-semibold shadow-lg shadow-zinc-900/10 dark:shadow-black/30 active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 animate-fade-in-up stagger-4"
             >
-              {loading ? "Please wait…" : otpSent ? "Verify" : <>Send OTP <ArrowRight size={15} /></>}
+              <GoogleMark />
+              {loading ? "Please wait…" : "Continue with Google"}
             </button>
             <button type="button" onClick={onGuest} className="w-full text-xs text-zinc-500 underline underline-offset-2 mt-4 animate-fade-in-up stagger-6">Browse first, verify later</button>
           </div>
-        </form>
+        </div>
       )}
+
       {step === "profile" && (
         <form
           onSubmit={(e) => { e.preventDefault(); if (name.trim() && !loading) finishProfile(name.trim(), interests); }}
@@ -191,6 +162,9 @@ export function Onboarding({ onDone, onGuest }) {
                 );
               })}
             </div>
+            {errorMsg && (
+              <p className="text-xs text-zinc-700 dark:text-zinc-300 mt-3 animate-fade-in-up">{errorMsg}</p>
+            )}
           </div>
           <div className="shrink-0 pt-4">
             <button type="submit" disabled={!name.trim() || loading} className="w-full py-3 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white dark:text-zinc-900 disabled:text-zinc-500 text-sm font-semibold shadow-lg shadow-zinc-900/10 dark:shadow-black/30 disabled:shadow-none active:scale-[0.98] transition-all">
