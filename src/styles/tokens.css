@@ -1,0 +1,80 @@
+/* Orbit design tokens — Linear/Vercel-style dense dashboard.
+ *
+ * Every colour in the rebuilt UI resolves through one of these semantic
+ * names, never a raw Tailwind shade. The previous UI wrote pairs like
+ * `text-zinc-600 dark:text-zinc-400` at every call site, which meant the
+ * light and dark palettes drifted independently and a tweak had to be made
+ * twice. Here dark is a variable swap and components stay theme-agnostic.
+ *
+ * Scale is deliberately tight: surfaces sit close together in luminance and
+ * separation comes from hairline borders rather than shadow, which is what
+ * makes a dense product UI stay legible at 13px.
+ */
+
+:root {
+  /* Surfaces, lightest to most raised */
+  --bg: 255 255 255;
+  --bg-subtle: 250 250 250;
+  --bg-elevated: 255 255 255;
+  --bg-inset: 244 244 245;
+
+  /* Hairlines. -strong is for a border that must read as a real edge
+     (active field, selected card), not just a division. */
+  --border: 228 228 231;
+  --border-strong: 212 212 216;
+
+  /* Text, in descending emphasis. -muted is the floor for readable body
+     copy; anything lower is decorative only. */
+  --text: 24 24 27;
+  --text-secondary: 82 82 91;
+  --text-muted: 113 113 122;
+  --text-faint: 161 161 170;
+
+  /* Single accent. Orbit's brand gold reads beautifully on near-black but
+     fails contrast as text on white, so light mode uses a deepened variant
+     of the same hue rather than a different colour. */
+  --accent: 146 106 6;
+  --accent-hover: 122 88 5;
+  --accent-fg: 255 255 255;
+  --accent-subtle: 250 243 224;
+
+  /* Inverted solid — primary buttons, active nav. Monochrome by design;
+     the accent is reserved for brand moments, not every CTA. */
+  --solid: 24 24 27;
+  --solid-hover: 39 39 42;
+  --solid-fg: 250 250 250;
+
+  --danger: 190 42 42;
+  --danger-subtle: 254 242 242;
+
+  --radius: 8px;
+  --radius-sm: 6px;
+  --radius-lg: 12px;
+}
+
+.dark {
+  --bg: 9 9 11;
+  --bg-subtle: 12 12 14;
+  --bg-elevated: 24 24 27;
+  --bg-inset: 24 24 27;
+
+  --border: 39 39 42;
+  --border-strong: 63 63 70;
+
+  --text: 250 250 250;
+  --text-secondary: 161 161 170;
+  --text-muted: 113 113 122;
+  --text-faint: 82 82 91;
+
+  --accent: 212 175 55;
+  --accent-hover: 224 191 84;
+  --accent-fg: 24 24 27;
+  --accent-subtle: 42 35 14;
+
+  --solid: 250 250 250;
+  --solid-hover: 228 228 231;
+  --solid-fg: 24 24 27;
+
+  --danger: 248 113 113;
+  --danger-subtle: 42 16 16;
+}

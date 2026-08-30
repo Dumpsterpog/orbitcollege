@@ -1,142 +1,241 @@
 import { useState } from "react";
-import {
-  BadgeCheck, Settings, LogOut, LogIn, ShieldCheck, Grid3x3, Users2, Camera, Sun, Moon,
-} from "lucide-react";
-import { CATEGORIES, COLOR_MAP } from "../data/constants.js";
-import { useClickOutside } from "../utils/hooks.js";
-import { Avatar } from "./Common.jsx";
+import { BadgeCheck, ShieldCheck, Users2, Grid3x3, Settings as SettingsIcon, Camera, Plus } from "lucide-react";
+import { CATEGORIES } from "../data/constants.js";
+import { Avatar, Button, Card, Input, Textarea, Field, Badge, SectionLabel, Separator, cx } from "./ui/Primitives.jsx";
 import { EmptyState } from "./EmptyState.jsx";
+import { PageHeader, Screen } from "./ui/Layout.jsx";
 
-export function ProfileScreen({ user, joinedCommunities, onSaveProfile, onVerifyGuest, onLogout, onComingSoon, theme, onToggleTheme }) {
+// Profile, rebuilt as a dense two-column desktop page.
+//
+// The old version was an Instagram-style mobile profile — big centred avatar,
+// a three-up stat row, a full-bleed tab strip and a 3-col image grid — which
+// on a wide screen left an enormous empty right half. Identity now sits in a
+// fixed-width left rail with the tabbed content beside it, and it degrades to
+// a single stacked column below lg.
+//
+// The settings dropdown that used to live behind the gear here is gone:
+// theme, account and sign-out moved to the real Settings screen, so there is
+// exactly one place to change a setting instead of two that disagreed.
+
+function Stat({ value, label }) {
+  return (
+    <div className="flex-1 min-w-0">
+      <p className="text-lg font-semibold text-content tabular-nums leading-none">{value}</p>
+      <p className="text-2xs text-content-muted mt-1">{label}</p>
+    </div>
+  );
+}
+
+export function ProfileScreen({
+  user, joinedCommunities, onSaveProfile, onVerifyGuest, onOpenSettings, onOpenCommunity, onComingSoon,
+}) {
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(user.name);
   const [draftBio, setDraftBio] = useState(user.bio || "");
-  const [gridTab, setGridTab] = useState("posts");
-  const [menuOpen, setMenuOpen] = useState(false);
+  const [tab, setTab] = useState("communities");
+
   const createdCommunities = joinedCommunities.filter((c) => c.creator === "You");
   const interests = user.interests || [];
   const bio = user.bio || "";
-  const settingsMenuRef = useClickOutside(menuOpen, () => setMenuOpen(false));
-  const saveProfile = () => { onSaveProfile(draftName, draftBio); setEditing(false); };
+
+  const save = () => {
+    if (!draftName.trim()) return;
+    onSaveProfile(draftName.trim(), draftBio.trim());
+    setEditing(false);
+  };
+  const startEdit = () => { setDraftName(user.name); setDraftBio(bio); setEditing(true); };
+
+  const TABS = [
+    { key: "communities", label: "Communities", icon: Users2, count: joinedCommunities.length },
+    { key: "posts", label: "Posts", icon: Grid3x3 },
+  ];
+
   return (
-    <div className="relative flex-1 overflow-y-auto no-scrollbar pb-6">
-      <div className="relative z-10">
-      <div className="flex items-center justify-between px-5 pt-5">
-        <div className="flex items-center gap-1.5">
-          <p className="font-bold text-zinc-900 dark:text-zinc-50 text-base">{user.name}</p>
-          {user.verified && <BadgeCheck size={15} className="text-zinc-900 dark:text-zinc-50" />}
-        </div>
-        <div ref={settingsMenuRef} className="relative">
-          <button onClick={() => setMenuOpen((v) => !v)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-zinc-50 dark:hover:bg-zinc-900">
-            <Settings size={19} className="text-zinc-700 dark:text-zinc-300" />
-          </button>
-          {menuOpen && (
-            <div className="absolute right-0 top-10 w-44 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-xl shadow-zinc-400/30 dark:shadow-black/50 z-40 overflow-hidden">
-              <button onClick={() => { onToggleTheme(); }} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800">
-                {theme === "dark" ? <Sun size={15} className="text-zinc-500" /> : <Moon size={15} className="text-zinc-500" />}
-                {theme === "dark" ? "Light mode" : "Dark mode"}
-              </button>
-              <button onClick={() => { setMenuOpen(false); onComingSoon(); }} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"><Settings size={15} className="text-zinc-500" />App preferences</button>
-              {user.verified ? (
-                <button onClick={() => { setMenuOpen(false); onLogout(); }} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800"><LogOut size={15} />Log out</button>
-              ) : (
-                <button onClick={() => { setMenuOpen(false); onLogout(); }} className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-sm text-zinc-900 dark:text-zinc-50 hover:bg-zinc-100 dark:hover:bg-zinc-800"><LogIn size={15} />Log in</button>
-              )}
+    <Screen>
+      <PageHeader
+        title="Profile"
+        actions={
+          <Button variant="ghost" size="sm" icon={SettingsIcon} onClick={onOpenSettings}>
+            Settings
+          </Button>
+        }
+      />
+
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="max-w-5xl mx-auto w-full px-5 lg:px-8 py-6 flex flex-col lg:flex-row gap-6 lg:gap-8 items-start">
+          {/* Identity rail */}
+          <div className="w-full lg:w-72 shrink-0 lg:sticky lg:top-0 space-y-4">
+            <div className="flex items-start gap-3.5">
+              <Avatar name={user.name} size={56} />
+              <div className="min-w-0 flex-1 pt-0.5">
+                <div className="flex items-center gap-1.5">
+                  <h2 className="text-lg font-semibold text-content truncate">{user.name}</h2>
+                  {user.verified && <BadgeCheck size={15} className="text-accent shrink-0" />}
+                </div>
+                <p className="text-xs text-content-muted mt-0.5">
+                  {user.verified ? "Verified member" : "Guest"}
+                </p>
+              </div>
             </div>
-          )}
-        </div>
-      </div>
-      <div className="flex items-center gap-6 px-5 pt-6">
-        <Avatar label={user.name[0]} size={76} ring={user.verified} />
-        <div className="flex-1 grid grid-cols-3 gap-1 text-center">
-          <div>
-            <p className="text-base font-bold text-zinc-900 dark:text-zinc-50 mono">{joinedCommunities.length}</p>
-            <p className="text-[11px] text-zinc-500 mt-0.5">Joined</p>
-          </div>
-          <div>
-            <p className="text-base font-bold text-zinc-900 dark:text-zinc-50 mono">{createdCommunities.length}</p>
-            <p className="text-[11px] text-zinc-500 mt-0.5">Created</p>
-          </div>
-          <div>
-            <p className="text-base font-bold text-zinc-900 dark:text-zinc-50 mono">{interests.length}</p>
-            <p className="text-[11px] text-zinc-500 mt-0.5">Interests</p>
-          </div>
-        </div>
-      </div>
-      <div className="px-5 pt-3.5">
-        {editing ? (
-          <div className="space-y-2 mb-3">
-            <input
-              value={draftName} onChange={(e) => setDraftName(e.target.value)}
-              onKeyDown={(e) => { if (e.key === "Enter") saveProfile(); }}
-              placeholder="Your name"
-              className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-900 dark:focus:border-zinc-50"
-            />
-            <textarea value={draftBio} onChange={(e) => setDraftBio(e.target.value)} placeholder="Short bio — what are you looking for nearby?" rows={2} className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 rounded-lg px-3 py-2 text-sm outline-none focus:border-zinc-900 dark:focus:border-zinc-50" />
-            <button onClick={saveProfile} className="text-xs text-zinc-900 dark:text-zinc-50 font-medium">Save</button>
-          </div>
-        ) : (
-          <>
+
             {!user.verified && (
-              <button onClick={onVerifyGuest} className="flex items-center gap-1 text-xs text-zinc-700 dark:text-zinc-300 font-medium mb-2.5"><ShieldCheck size={13} />Not verified — tap to verify</button>
+              <Card className="p-3">
+                <div className="flex items-start gap-2">
+                  <ShieldCheck size={14} className="text-accent mt-0.5 shrink-0" />
+                  <div className="min-w-0">
+                    <p className="text-xs text-content-secondary leading-relaxed">
+                      You're browsing as a guest. Sign in to join communities, post and chat.
+                    </p>
+                    <Button variant="secondary" size="sm" onClick={onVerifyGuest} className="mt-2.5">
+                      Sign in
+                    </Button>
+                  </div>
+                </div>
+              </Card>
             )}
-            {bio && <p className="text-sm text-zinc-700 dark:text-zinc-300 leading-snug mb-3">{bio}</p>}
-            {interests.length > 0 && (
-              <div className="mb-3">
-                <p className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wide mb-1.5">Your vibe</p>
-                <div className="flex gap-1.5 flex-wrap">
-                  {interests.map((name) => {
-                    const cat = CATEGORIES.find((x) => x.name === name);
-                    const cm = COLOR_MAP[cat.color];
+
+            <Card className="p-3.5 flex gap-2">
+              <Stat value={joinedCommunities.length} label="Joined" />
+              <Separator className="w-px h-auto self-stretch" />
+              <Stat value={createdCommunities.length} label="Created" />
+              <Separator className="w-px h-auto self-stretch" />
+              <Stat value={interests.length} label="Interests" />
+            </Card>
+
+            {editing ? (
+              <Card className="p-3.5 space-y-3">
+                <Field label="Display name" htmlFor="pf-name">
+                  <Input
+                    id="pf-name" value={draftName} maxLength={60}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter") save(); }}
+                    autoFocus
+                  />
+                </Field>
+                <Field label="Bio" htmlFor="pf-bio" hint={`${draftBio.length}/160`}>
+                  <Textarea
+                    id="pf-bio" value={draftBio} rows={3} maxLength={160}
+                    onChange={(e) => setDraftBio(e.target.value)}
+                    placeholder="What are you into?"
+                  />
+                </Field>
+                <div className="flex gap-2">
+                  <Button variant="primary" size="sm" onClick={save} disabled={!draftName.trim()}>Save</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
+                </div>
+              </Card>
+            ) : (
+              <>
+                {bio
+                  ? <p className="text-sm text-content-secondary leading-relaxed">{bio}</p>
+                  : <p className="text-sm text-content-faint italic">No bio yet.</p>}
+
+                {interests.length > 0 && (
+                  <div className="space-y-2">
+                    <SectionLabel>Interests</SectionLabel>
+                    <div className="flex flex-wrap gap-1.5">
+                      {interests.map((name) => {
+                        const cat = CATEGORIES.find((x) => x.name === name);
+                        const Icon = cat?.icon;
+                        return (
+                          <Badge key={name}>
+                            {Icon && <Icon size={10} />}{name}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                <Button variant="secondary" size="md" onClick={startEdit} className="w-full">
+                  Edit profile
+                </Button>
+              </>
+            )}
+          </div>
+
+          {/* Content pane */}
+          <div className="flex-1 min-w-0 w-full">
+            <div className="flex items-center gap-0.5 border-b border-line mb-4">
+              {TABS.map((t) => {
+                const active = tab === t.key;
+                return (
+                  <button
+                    key={t.key}
+                    onClick={() => setTab(t.key)}
+                    className={cx(
+                      "inline-flex items-center gap-1.5 px-3 h-9 -mb-px border-b-2 text-xs font-medium transition-colors",
+                      active
+                        ? "border-content text-content"
+                        : "border-transparent text-content-muted hover:text-content"
+                    )}
+                  >
+                    <t.icon size={13} />
+                    {t.label}
+                    {typeof t.count === "number" && (
+                      <span className="text-content-faint tabular-nums">{t.count}</span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {tab === "communities" && (
+              joinedCommunities.length === 0 ? (
+                <EmptyState
+                  icon={Users2}
+                  title="No communities yet"
+                  subtitle="Join a club or community from Explore and it'll show up here."
+                />
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-2.5">
+                  {joinedCommunities.map((c) => {
+                    const cat = CATEGORIES.find((x) => x.name === c.category);
+                    const Icon = cat?.icon;
                     return (
-                      <span key={name} className={`${cm.tint} ${cm.text} text-[11px] px-2 py-1 rounded-full font-medium flex items-center gap-1`}>
-                        <cat.icon size={11} />{name}
-                      </span>
+                      <Card
+                        key={c.id}
+                        as="button"
+                        interactive
+                        onClick={() => onOpenCommunity?.(c)}
+                        className="p-3.5"
+                      >
+                        <div className="flex items-start gap-2.5">
+                          {Icon && (
+                            <span className="h-8 w-8 rounded shrink-0 grid place-items-center bg-surface-inset border border-line">
+                              <Icon size={14} className="text-content-secondary" />
+                            </span>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm font-medium text-content truncate">{c.name}</p>
+                            <p className="text-2xs text-content-muted mt-0.5 truncate">
+                              {c.category}
+                              {c.creator === "You" && " · you created this"}
+                            </p>
+                          </div>
+                        </div>
+                      </Card>
                     );
                   })}
                 </div>
-              </div>
+              )
             )}
-            <button onClick={() => { setDraftBio(bio); setEditing(true); }} className="w-full py-2 rounded-xl bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-800 dark:text-zinc-200 text-sm font-medium">Edit profile</button>
-          </>
-        )}
-      </div>
-      <div className="flex border-t border-zinc-100 dark:border-zinc-900 mt-5">
-        <button onClick={() => setGridTab("posts")} className={`flex-1 flex items-center justify-center gap-1.5 py-3 border-b-2 text-xs font-medium ${gridTab === "posts" ? "border-zinc-900 dark:border-zinc-50 text-zinc-900 dark:text-zinc-50" : "border-transparent text-zinc-400 dark:text-zinc-600"}`}>
-          <Grid3x3 size={15} />Posts
-        </button>
-        <button onClick={() => setGridTab("communities")} className={`flex-1 flex items-center justify-center gap-1.5 py-3 border-b-2 text-xs font-medium ${gridTab === "communities" ? "border-zinc-900 dark:border-zinc-50 text-zinc-900 dark:text-zinc-50" : "border-transparent text-zinc-400 dark:text-zinc-600"}`}>
-          <Users2 size={15} />Communities
-        </button>
-      </div>
-      {gridTab === "posts" && (
-        <div className="pt-2">
-          <EmptyState
-            icon={Camera}
-            title="Profile posts — coming soon"
-            subtitle="Posting photos to your own profile isn't live yet. Your posts inside communities (Posts tab) already work — this is a separate, personal profile grid, still being built."
-          />
-        </div>
-      )}
-      {gridTab === "communities" && (
-        joinedCommunities.length === 0 ? (
-          <p className="text-sm text-zinc-500 text-center py-10">You haven't joined any communities or clubs yet.</p>
-        ) : (
-          <div className="grid grid-cols-3 gap-0.5 mt-0.5">
-            {joinedCommunities.map((c) => {
-              const cat = CATEGORIES.find((x) => x.name === c.category);
-              const cm = COLOR_MAP[cat.color];
-              return (
-                <div key={c.id} className={`aspect-square p-2 flex flex-col justify-between bg-gradient-to-br ${cm.grad}`}>
-                  <cat.icon size={15} className="text-white/90" />
-                  <p className="text-[10px] font-semibold text-white leading-tight line-clamp-2">{c.name}</p>
-                </div>
-              );
-            })}
+
+            {tab === "posts" && (
+              <EmptyState
+                icon={Camera}
+                title="Profile posts aren't live yet"
+                subtitle="Posting to your own profile is still being built. Posts you make inside a community already work and appear on that community's Posts tab."
+                action={
+                  <Button variant="secondary" size="sm" icon={Plus} onClick={onComingSoon}>
+                    Notify me
+                  </Button>
+                }
+              />
+            )}
           </div>
-        )
-      )}
+        </div>
       </div>
-    </div>
+    </Screen>
   );
 }

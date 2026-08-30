@@ -18,6 +18,7 @@ import { CommunityDetail } from "./components/Community.jsx";
 import { CreateCommunity } from "./components/CreateCommunity.jsx";
 import { LocaliTeaScreen } from "./components/LocaliTea.jsx";
 import { ProfileScreen } from "./components/Profile.jsx";
+import { SettingsScreen } from "./components/Settings.jsx";
 import { Onboarding } from "./components/Onboarding.jsx";
 import { ReportModal } from "./components/ReportModal.jsx";
 
@@ -144,10 +145,29 @@ export default function App() {
   const [activeTab, setActiveTab] = useState("home");
   const [selectedCommunity, setSelectedCommunity] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
+  // Session-only: Settings marks these as unsaved rather than pretending
+  // a backend is storing them.
+  const [notifPrefs, setNotifPrefs] = useState({ events: true, posts: true, replies: true });
   const [notifOpen, setNotifOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+
+  // "/" opens search, the way the sidebar's kbd hint advertises. Ignored while
+  // the user is typing into a field or a contentEditable, otherwise the key
+  // would be unusable in every text input in the app.
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
+      const el = e.target;
+      const tag = el?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el?.isContentEditable) return;
+      e.preventDefault();
+      setSearchOpen(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
   const [teaOpen, setTeaOpen] = useState(false);
   const [teaPosts, setTeaPosts] = useState([]); // real, Supabase-backed — see fetchTea()
   const [myTeaVotes, setMyTeaVotes] = useState({}); // Tea tab: postId -> "true" | "cap"
@@ -650,10 +670,12 @@ export default function App() {
   // the property isn't set yet (first paint) or visualViewport is
   // unsupported. The sm: desktop-frame override is untouched — physical
   // keyboards don't trigger this bug, so it stays on plain dvh.
-  // Auth-flow shell (loading spinner, onboarding) stays the phone-frame card
-  // on every screen size, including desktop — a centered auth card is the
-  // normal pattern there, not a full-width layout.
+  // Auth-flow shell is now full-bleed at every width: the rebuilt Onboarding
+  // owns its own responsive two-pane layout (brand column + form), so wrapping
+  // it in the phone card would re-cage the thing that was just uncaged.
   const shellClass = "w-full h-[var(--app-height,100dvh)] max-w-none sm:max-w-sm sm:h-[calc(100dvh-2rem)] mx-auto bg-white dark:bg-zinc-950 sm:my-4 sm:rounded-3xl sm:border sm:border-zinc-200 dark:sm:border-zinc-800 sm:shadow-2xl sm:shadow-zinc-400/30 dark:sm:shadow-black/50 overflow-hidden relative flex flex-col animate-fade-in";
+  // Full-bleed, frameless — used by the loading and onboarding screens.
+  const shellClassAuth = "w-full h-[var(--app-height,100dvh)] bg-surface overflow-hidden relative flex flex-col animate-fade-in";
   // Signed-in app shell: same phone-frame card up through the sm/md range,
   // but from lg (1024px+) up it drops the frame entirely and becomes a real
   // full-width desktop layout — Sidebar on the left, content pane on the
@@ -662,10 +684,10 @@ export default function App() {
 
   if (loadingSession) {
     return (
-      <div className={shellClass} style={{ fontFamily: "'Inter', sans-serif" }}>
+      <div className={shellClassAuth} style={{ fontFamily: "'Inter', sans-serif" }}>
         <style>{FONT_IMPORT}</style>
         <div className="flex-1 flex items-center justify-center">
-          <Logo size="text-2xl" />
+          <Logo size={26} />
         </div>
       </div>
     );
@@ -673,7 +695,7 @@ export default function App() {
 
   if (stage === "onboarding") {
     return (
-      <div className={shellClass} style={{ fontFamily: "'Inter', sans-serif" }}>
+      <div className={shellClassAuth} style={{ fontFamily: "'Inter', sans-serif" }}>
         <style>{FONT_IMPORT}</style>
         <Onboarding
           onDone={async (name, interests) => {
@@ -713,7 +735,7 @@ export default function App() {
   return (
     <div className={shellClassApp} style={{ fontFamily: "'Inter', sans-serif" }}>
       <style>{FONT_IMPORT}</style>
-      <Sidebar active={activeTab} setActive={goToTab} onTeaClick={openTea} onSearchClick={openSearch} onCreateClick={openCreate} verified={user.verified} theme={theme} onToggleTheme={toggleTheme} />
+      <Sidebar active={activeTab} setActive={goToTab} onTeaClick={openTea} onSearchClick={openSearch} onCreateClick={openCreate} verified={user.verified} user={user} theme={theme} onToggleTheme={toggleTheme} />
       <div className="flex-1 flex flex-col overflow-hidden lg:h-full min-w-0">
       {!showingSubPage && (
         <TopBar notifOpen={notifOpen} setNotifOpen={setNotifOpen}
@@ -781,9 +803,19 @@ export default function App() {
           user={user} joinedCommunities={joinedCommunities}
           onSaveProfile={handleUpdateProfile}
           onVerifyGuest={goToInitialPage}
-          onLogout={goToInitialPage}
+          onOpenSettings={() => goToTab("settings")}
+          onOpenCommunity={setSelectedCommunity}
           onComingSoon={() => showToast("Coming soon")}
+        />
+      ) : activeTab === "settings" ? (
+        <SettingsScreen
+          user={{ ...user, email: authUser?.email }}
           theme={theme} onToggleTheme={toggleTheme}
+          onLogout={goToInitialPage}
+          onBack={() => goToTab("profile")}
+          onComingSoon={() => showToast("Coming soon")}
+          notifPrefs={notifPrefs}
+          onNotifChange={(key, val) => setNotifPrefs((p) => ({ ...p, [key]: val }))}
         />
       ) : null}
       </div>
