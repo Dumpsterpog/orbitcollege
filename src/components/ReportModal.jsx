@@ -1,24 +1,63 @@
 import { useState } from "react";
-import { X } from "lucide-react";
+import { Check } from "lucide-react";
 import { REPORT_REASONS } from "../data/constants.js";
+import { Button, Textarea, cx } from "./ui/Primitives.jsx";
+import { Modal } from "./ui/Layout.jsx";
 
 export function ReportModal({ target, onClose, onSubmit }) {
   const [reason, setReason] = useState(REPORT_REASONS[0]);
+  const [detail, setDetail] = useState("");
+
   return (
-    <div className="absolute inset-0 bg-black/60 z-[60] flex items-center justify-center px-6" onClick={onClose}>
-      <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl w-full max-w-sm p-5" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-3">
-          <p className="font-semibold text-zinc-900 dark:text-zinc-100">Report {target}</p>
-          <button onClick={onClose}><X size={18} className="text-zinc-500" /></button>
+    <Modal
+      title={`Report ${target}`}
+      onClose={onClose}
+      footer={
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" size="md" onClick={onClose}>Cancel</Button>
+          <Button variant="primary" size="md" onClick={() => onSubmit(reason, detail.trim())}>
+            Submit report
+          </Button>
         </div>
-        <p className="text-xs text-zinc-500 mb-2">Reason</p>
-        <div className="space-y-1.5 mb-4">
-          {REPORT_REASONS.map((r) => (
-            <button key={r} onClick={() => setReason(r)} className={`w-full text-left text-sm px-3 py-2 rounded-xl border ${reason === r ? "border-zinc-900 dark:border-zinc-50 bg-zinc-900/10 dark:bg-zinc-50/10 text-zinc-700 dark:text-zinc-300" : "border-zinc-200 dark:border-zinc-800 text-zinc-600 dark:text-zinc-400"}`}>{r}</button>
-          ))}
-        </div>
-        <button onClick={() => onSubmit(reason)} className="w-full py-2.5 rounded-xl bg-zinc-50 text-zinc-900 text-sm font-semibold">Submit report</button>
+      }
+    >
+      <p className="text-xs font-medium text-content-secondary mb-2">Reason</p>
+      <div className="space-y-1 mb-4">
+        {REPORT_REASONS.map((r) => {
+          const selected = reason === r;
+          return (
+            <button
+              key={r}
+              type="button"
+              onClick={() => setReason(r)}
+              aria-pressed={selected}
+              className={cx(
+                "w-full flex items-center gap-2 text-left text-sm px-2.5 py-2 rounded border transition-colors",
+                selected
+                  ? "border-line-strong bg-surface-inset text-content"
+                  : "border-line text-content-secondary hover:border-line-strong hover:text-content"
+              )}
+            >
+              <span className="flex-1 min-w-0">{r}</span>
+              {selected && <Check size={13} className="text-accent shrink-0" />}
+            </button>
+          );
+        })}
       </div>
-    </div>
+
+      <p className="text-xs font-medium text-content-secondary mb-2">
+        Anything else? <span className="text-content-faint font-normal">Optional</span>
+      </p>
+      <Textarea
+        rows={3}
+        value={detail}
+        maxLength={500}
+        onChange={(e) => setDetail(e.target.value)}
+        placeholder="Context that would help a moderator."
+      />
+      <p className="text-2xs text-content-faint mt-2.5 leading-relaxed">
+        Reports go to the Orbit moderators. We don't tell the person who reported them.
+      </p>
+    </Modal>
   );
 }

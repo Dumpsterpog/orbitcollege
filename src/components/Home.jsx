@@ -1,272 +1,158 @@
-import React, { useState, useMemo, useEffect } from "react";
-import { Plus, Users, Flame, TrendingUp, Image as ImageIcon, Megaphone } from "lucide-react";
-import { CATEGORIES, COLOR_MAP } from "../data/constants.js";
+import { useState, useMemo, useEffect } from "react";
+import { Plus, Flame, TrendingUp, Image as ImageIcon, Megaphone, Sparkles, Users } from "lucide-react";
+import { CATEGORIES } from "../data/constants.js";
 import { interestMatchCount, baseSparks, communityTrendScore } from "../utils/helpers.js";
-import { SkeletonFeed, SkeletonStory } from "./Skeleton.jsx";
+import { SkeletonFeed, SkeletonTile } from "./Skeleton.jsx";
 import { EmptyState } from "./EmptyState.jsx";
+import { Avatar, Button, Card, Badge, SectionLabel, cx } from "./ui/Primitives.jsx";
+import { Screen, PageHeader } from "./ui/Layout.jsx";
 
-// Stories only ever show communities/clubs the student has already joined —
-// this is a "what's active where I belong" strip, like Instagram stories
-// only showing people you follow, not a discovery surface.
-export function CommunityStories({ communities, joinedIds, onOpen, onCreateClick }) {
-  const ordered = useMemo(() => (
-    communities
-      .filter((c) => joinedIds.includes(c.id))
-      .sort((a, b) => a.lastActive - b.lastActive)
-      .slice(0, 12)
-  ), [communities, joinedIds]);
-  return (
-    <div className="pt-3.5 pb-1">
-      <div className="flex gap-3.5 overflow-x-auto px-4 pb-2 no-scrollbar">
-        <button onClick={onCreateClick} className="flex flex-col items-center gap-1.5 w-16 shrink-0">
-          <div className="w-12 h-12 rounded-full border-2 border-dashed border-zinc-300 dark:border-zinc-700 flex items-center justify-center">
-            <Plus size={18} className="text-zinc-500" />
-          </div>
-          <p className="text-[10px] text-zinc-600 dark:text-zinc-400 text-center leading-tight">Create</p>
-        </button>
-        {ordered.map((c) => {
-          const cat = CATEGORIES.find((x) => x.name === c.category);
-          const isLive = c.lastActive <= 10;
-          return (
-            <button key={c.id} onClick={() => onOpen(c)} className="flex flex-col items-center gap-1.5 w-16 shrink-0">
-              <div className={`rounded-full p-[2.5px] shrink-0 ${c.avatarUrl ? "bg-gradient-to-br from-zinc-300 dark:from-zinc-700 to-zinc-400 dark:to-zinc-600" : isLive ? "bg-gradient-to-br from-zinc-400 dark:from-zinc-600 to-zinc-400 dark:to-zinc-600" : "bg-gradient-to-br from-zinc-600 to-zinc-700"}`}>
-                <div className="bg-white dark:bg-zinc-950 rounded-full p-[2px]">
-                  {c.avatarUrl ? (
-                    <img src={c.avatarUrl} alt="" className="rounded-full w-12 h-12 object-cover" />
-                  ) : (
-                    <div className={`${COLOR_MAP[cat.color].tint} ${COLOR_MAP[cat.color].text} rounded-full w-12 h-12 flex items-center justify-center`}>
-                      <cat.icon size={19} />
-                    </div>
-                  )}
-                </div>
-              </div>
-              <p className="text-[10px] text-zinc-600 dark:text-zinc-400 text-center leading-tight line-clamp-2">{c.name.split(" — ")[0]}</p>
-            </button>
-          );
-        })}
-        {ordered.length === 0 && (
-          <p className="text-xs text-zinc-400 dark:text-zinc-600 self-center py-2">Join a community to see it here.</p>
-        )}
-      </div>
-    </div>
-  );
-}
+// Home, rebuilt as a two-column dashboard.
+//
+// The old Home was a single centred phone column: a stories rail, a trending
+// row, a matched row and then the feed, all stacked and capped at ~32rem. On
+// a wide screen that left most of the viewport empty while the secondary
+// content (trending, matched) pushed the actual feed below the fold.
+//
+// Now the feed owns a readable centre column and everything secondary moves
+// into a sticky right rail that only exists at xl. Below that it collapses
+// back to one column with the rail's content following the feed.
 
-export function CommunityCard({ c, joined, onOpen, sparked, onSpark, trendRank, index = 0 }) {
-  const cat = CATEGORIES.find((x) => x.name === c.category);
-  const cm = COLOR_MAP[cat.color];
-  const Icon = cat.icon;
-  const isLive = c.lastActive <= 10;
-  const sparks = baseSparks(c) + (sparked ? 1 : 0);
-  return (
-    <div
-      role="button"
-      tabIndex={0}
-      onClick={() => onOpen(c)}
-      onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(c); } }}
-      className={`animate-fade-in-up stagger-${Math.min((index % 8) + 1, 8)} w-full text-left bg-zinc-50 dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700 hover:shadow-lg hover:shadow-black/20 hover:-translate-y-0.5 active:scale-[0.99] transition-all duration-200 p-3.5 flex gap-3 cursor-pointer`}
-    >
-      <div className={`${cm.tint} ${cm.text} w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 relative ring-1 ring-white/5 overflow-hidden`}>
-        {c.avatarUrl ? <img src={c.avatarUrl} alt="" className="w-full h-full object-cover" /> : <Icon size={20} />}
-        {isLive && <span className="absolute -top-0.5 -right-0.5 w-3 h-3 rounded-full bg-zinc-900 dark:bg-zinc-50 ring-2 ring-white dark:ring-zinc-900 animate-pulse" />}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between gap-2">
-          <p className="font-semibold text-zinc-900 dark:text-zinc-50 text-sm truncate flex items-center gap-1">
-            {c.name}
-            {c.official && <BadgeCheckDot />}
-          </p>
-          {joined ? (
-            <span className="text-[10px] text-zinc-700 dark:text-zinc-300 font-medium shrink-0">Joined</span>
-          ) : trendRank ? (
-            <span className="flex items-center gap-0.5 text-[10px] text-zinc-700 dark:text-zinc-300 font-medium shrink-0"><TrendingUp size={10} />#{trendRank} Trending</span>
-          ) : null}
-        </div>
-        <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{c.desc}</p>
-        <div className="flex items-center justify-between mt-2">
-          <div className="flex items-center gap-2.5 text-[11px] text-zinc-500">
-            <span className="text-zinc-600 dark:text-zinc-400 font-medium">{c.category}</span>
-            <span className="flex items-center gap-1 mono"><Users size={11} />{c.members}</span>
-          </div>
-          <button
-            type="button"
-            onClick={(e) => { e.stopPropagation(); onSpark(c.id); }}
-            className={`flex items-center gap-1 text-[11px] font-medium px-1.5 py-1 rounded-full active:scale-90 transition-transform ${sparked ? "text-zinc-700 dark:text-zinc-300" : "text-zinc-500"}`}
-          >
-            <Flame size={13} fill={sparked ? "currentColor" : "none"} /><span className="mono">{sparks}</span>
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function BadgeCheckDot() {
-  return <span className="inline-block w-1.5 h-1.5 rounded-full bg-zinc-900 dark:bg-zinc-50 shrink-0" title="Official" />;
-}
-
-export function MatchCard({ c, onOpen }) {
-  const cat = CATEGORIES.find((x) => x.name === c.category);
-  const cm = COLOR_MAP[cat.color];
-  return (
-    <button onClick={() => onOpen(c)} className="w-40 shrink-0 text-left bg-zinc-50 dark:bg-zinc-900 rounded-2xl border border-zinc-900/30 dark:border-zinc-50/30 p-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className={`${cm.tint} ${cm.text} w-9 h-9 rounded-xl flex items-center justify-center`}>
-          <cat.icon size={16} />
-        </div>
-        <span className="text-[9px] text-zinc-900 dark:text-zinc-50 font-semibold flex items-center gap-0.5">✨ For you</span>
-      </div>
-      <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 leading-tight line-clamp-2 mb-1">{c.name}</p>
-      <p className="text-[10px] text-zinc-500">{c.members} members</p>
-    </button>
-  );
-}
-
-// Top communities right now, by the same trend score already used for the
-// "#N Trending" badge on feed cards — a compact "at a glance" strip, not
-// the full directory (that's Explore's job now, see §16 note in README).
-function TopCommunityCard({ c, rank, onOpen }) {
-  const cat = CATEGORIES.find((x) => x.name === c.category);
-  const cm = COLOR_MAP[cat.color];
-  return (
-    <button onClick={() => onOpen(c)} className="w-40 shrink-0 text-left bg-zinc-50 dark:bg-zinc-900 rounded-2xl border border-zinc-200 dark:border-zinc-800 p-3">
-      <div className="flex items-center justify-between mb-2">
-        <div className={`${cm.tint} ${cm.text} w-9 h-9 rounded-xl flex items-center justify-center overflow-hidden`}>
-          {c.avatarUrl ? <img src={c.avatarUrl} alt="" className="w-full h-full object-cover" /> : <cat.icon size={16} />}
-        </div>
-        <span className="flex items-center gap-0.5 text-[9px] text-zinc-700 dark:text-zinc-300 font-semibold"><TrendingUp size={10} />#{rank}</span>
-      </div>
-      <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 leading-tight line-clamp-2 mb-1">{c.name}</p>
-      <p className="text-[10px] text-zinc-500 flex items-center gap-1"><Users size={10} />{c.members} members</p>
-    </button>
-  );
-}
-
-function TopCommunitiesRow({ communities, onOpen }) {
-  const top = useMemo(() => (
-    [...communities].sort((a, b) => communityTrendScore(b) - communityTrendScore(a)).slice(0, 5)
-  ), [communities]);
-  if (top.length === 0) return null;
-  return (
-    <div className="pb-1 mb-1">
-      <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 px-4 mb-2 flex items-center gap-1.5"><TrendingUp size={13} />Top communities right now</p>
-      <div className="flex gap-2.5 overflow-x-auto px-4 pb-1 no-scrollbar">
-        {top.map((c, i) => <TopCommunityCard key={c.id} c={c} rank={i + 1} onOpen={onOpen} />)}
-      </div>
-    </div>
-  );
-}
-
-// ------------------------------------------------------------------
-// Latest posts feed — the dashboard's main content now (Instagram-style):
-// every community's posts, newest first, one column, image-first cards.
-// Browsing/searching communities themselves moved to Explore only; Home is
-// now purely "what's new", not a second copy of the directory.
-// ------------------------------------------------------------------
-function PostFeedCard({ post, community, sparked, onSpark, onOpen, index = 0 }) {
+function CommunityMark({ community, size = 26 }) {
   const cat = community ? CATEGORIES.find((x) => x.name === community.category) : null;
-  const cm = cat ? COLOR_MAP[cat.color] : null;
+  const Icon = cat?.icon;
+  if (community?.avatarUrl) {
+    return (
+      <img
+        src={community.avatarUrl}
+        alt=""
+        className="rounded shrink-0 object-cover border border-line"
+        style={{ width: size, height: size }}
+      />
+    );
+  }
   return (
-    <div className={`animate-fade-in-up stagger-${Math.min((index % 8) + 1, 8)} bg-white dark:bg-zinc-950 pb-3`}>
-      <button onClick={() => community && onOpen(community)} className="w-full flex items-center gap-2.5 px-4 py-2.5 text-left">
-        <div className={`${cm ? cm.tint : "bg-zinc-100 dark:bg-zinc-800"} ${cm ? cm.text : "text-zinc-500"} w-9 h-9 rounded-full flex items-center justify-center shrink-0 overflow-hidden`}>
-          {community?.avatarUrl ? <img src={community.avatarUrl} alt="" className="w-full h-full object-cover" /> : cat ? <cat.icon size={16} /> : null}
-        </div>
+    <span
+      className="rounded shrink-0 grid place-items-center bg-surface-inset border border-line text-content-secondary"
+      style={{ width: size, height: size }}
+    >
+      {Icon ? <Icon size={Math.round(size * 0.5)} /> : null}
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ Feed */
+
+function PostFeedCard({ post, community, sparked, onSpark, onOpen }) {
+  return (
+    <Card className="overflow-hidden">
+      <button
+        onClick={() => community && onOpen(community)}
+        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-surface-inset transition-colors"
+      >
+        <CommunityMark community={community} size={26} />
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">{community?.name || "Orbit"}</p>
-          <p className="text-[10px] text-zinc-500">{post.who} · {post.time}</p>
+          <p className="text-xs font-medium text-content truncate">{community?.name || "Orbit"}</p>
+          <p className="text-2xs text-content-muted truncate">{post.who} · {post.time}</p>
         </div>
       </button>
+
       {post.imageUrl && (
-        <button onClick={() => community && onOpen(community)} className="block w-full aspect-square bg-zinc-100 dark:bg-zinc-900 overflow-hidden">
+        <button
+          onClick={() => community && onOpen(community)}
+          className="block w-full aspect-[16/10] bg-surface-inset overflow-hidden border-y border-line"
+        >
           <img src={post.imageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
         </button>
       )}
-      <div className="px-4 pt-2.5 flex items-center gap-4">
+
+      {post.text && (
+        <p className="px-3.5 pt-3 text-sm text-content-secondary leading-relaxed">{post.text}</p>
+      )}
+
+      <div className="px-3.5 py-2.5 flex items-center gap-1">
         <button
           type="button"
           onClick={() => onSpark(post.id)}
-          className={`flex items-center gap-1.5 text-xs font-medium active:scale-90 transition-transform ${sparked ? "text-zinc-900 dark:text-zinc-50" : "text-zinc-500"}`}
+          aria-pressed={sparked}
+          className={cx(
+            "inline-flex items-center gap-1.5 h-7 px-2 rounded-sm text-xs font-medium transition-colors",
+            sparked ? "text-accent bg-accent-subtle" : "text-content-muted hover:text-content hover:bg-surface-inset"
+          )}
         >
-          <Flame size={18} fill={sparked ? "currentColor" : "none"} /><span className="mono">{post.sparks}</span>
+          <Flame size={14} fill={sparked ? "currentColor" : "none"} />
+          <span className="tabular-nums">{post.sparks}</span>
         </button>
       </div>
-      {post.text && (
-        <p className="px-4 pt-1.5 text-xs text-zinc-700 dark:text-zinc-300 leading-relaxed">
-          <span className="font-semibold text-zinc-900 dark:text-zinc-100">{community?.name}</span>{" "}{post.text}
-        </p>
-      )}
-    </div>
+    </Card>
   );
 }
 
-// Demo sponsored content — clearly labeled "Sponsored", not disguised as a
-// real post. There's no ad backend/SDK wired up yet (see README §15's note
-// on the old, honestly-empty ad slot); these three are static placeholders
-// so the feed's ad-every-3rd-post layout can actually be seen and demoed,
-// swap for a real ad network's response later without touching the layout.
+// Demo sponsored content — clearly labelled, not disguised as a real post.
+// No ad backend is wired; these are static placeholders so the every-third-
+// post slot can actually be seen, and can be swapped for a real network's
+// response without touching the layout.
 const DEMO_ADS = [
   {
     id: "demo-ad-cafe",
     kind: "Local business",
     title: "Campus Grind Café",
-    subtitle: "20% off for MUJ students this week — just show your Orbit profile at the counter.",
+    subtitle: "20% off for MUJ students this week — show your Orbit profile at the counter.",
     cta: "View offer",
-    image: "https://loremflickr.com/900/900/coffee,cafe?lock=2001",
+    image: "https://loremflickr.com/900/560/coffee,cafe?lock=2001",
   },
   {
     id: "demo-ad-fest",
     kind: "Campus event",
     title: "Zeal 2026 — MUJ Cultural Fest",
-    subtitle: "Registrations are open now. Headline night passes are going fast.",
+    subtitle: "Registrations are open. Headline night passes are going fast.",
     cta: "Learn more",
-    image: "https://loremflickr.com/900/900/concert,festival?lock=2002",
+    image: "https://loremflickr.com/900/560/concert,festival?lock=2002",
   },
   {
     id: "demo-ad-print",
     kind: "Local business",
     title: "PrintHub Jaipur",
-    subtitle: "Same-day assignment printing & spiral binding, 5 minutes from campus gate.",
+    subtitle: "Same-day assignment printing and spiral binding, 5 minutes from the campus gate.",
     cta: "Get directions",
-    image: "https://loremflickr.com/900/900/printer,stationery?lock=2003",
+    image: "https://loremflickr.com/900/560/printer,stationery?lock=2003",
   },
 ];
 
-function AdCard({ ad, onClick, index = 0 }) {
+function AdCard({ ad, onClick }) {
   return (
-    <div className={`animate-fade-in-up stagger-${Math.min((index % 8) + 1, 8)} bg-white dark:bg-zinc-950 pb-3`}>
-      <div className="flex items-center gap-2.5 px-4 py-2.5">
-        <div className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0">
-          <Megaphone size={15} className="text-zinc-500" />
-        </div>
+    <Card className="overflow-hidden">
+      <div className="flex items-center gap-2.5 px-3.5 py-2.5">
+        <span className="h-[26px] w-[26px] rounded shrink-0 grid place-items-center bg-surface-inset border border-line">
+          <Megaphone size={13} className="text-content-muted" />
+        </span>
         <div className="flex-1 min-w-0">
-          <p className="text-xs font-semibold text-zinc-900 dark:text-zinc-100 truncate">{ad.title}</p>
-          <p className="text-[10px] text-zinc-400 dark:text-zinc-600 uppercase tracking-wide">Sponsored · {ad.kind}</p>
+          <p className="text-xs font-medium text-content truncate">{ad.title}</p>
+          <p className="text-2xs text-content-faint truncate">Sponsored · {ad.kind}</p>
         </div>
+        <Badge tone="neutral">Ad</Badge>
       </div>
-      <button onClick={onClick} className="block w-full aspect-square bg-zinc-100 dark:bg-zinc-900 overflow-hidden">
+      <button onClick={onClick} className="block w-full aspect-[16/10] bg-surface-inset overflow-hidden border-y border-line">
         <img src={ad.image} alt="" className="w-full h-full object-cover" loading="lazy" />
       </button>
-      <div className="px-4 pt-2.5">
-        <p className="text-xs text-zinc-700 dark:text-zinc-300">{ad.subtitle}</p>
-        <button onClick={onClick} className="mt-2 text-xs font-semibold px-3 py-1.5 rounded-lg bg-zinc-900 text-white dark:bg-zinc-50 dark:text-zinc-900 active:scale-95 transition-transform">
-          {ad.cta}
-        </button>
+      <div className="px-3.5 py-3">
+        <p className="text-sm text-content-secondary leading-relaxed">{ad.subtitle}</p>
+        <Button variant="secondary" size="sm" onClick={onClick} className="mt-2.5">{ad.cta}</Button>
       </div>
-    </div>
+    </Card>
   );
 }
 
 function LatestPostsFeed({ feedPosts, communities, sparkIds, onSparkPost, onOpen, onAdClick }) {
   const items = useMemo(() => {
-    const withAds = [];
+    const out = [];
     feedPosts.forEach((post, i) => {
-      withAds.push({ type: "post", key: post.id, post });
+      out.push({ type: "post", key: post.id, post });
       if ((i + 1) % 3 === 0) {
-        withAds.push({ type: "ad", key: `ad-${i}`, ad: DEMO_ADS[Math.floor(i / 3) % DEMO_ADS.length] });
+        out.push({ type: "ad", key: `ad-${i}`, ad: DEMO_ADS[Math.floor(i / 3) % DEMO_ADS.length] });
       }
     });
-    return withAds;
+    return out;
   }, [feedPosts]);
 
   if (feedPosts.length === 0) {
@@ -274,13 +160,14 @@ function LatestPostsFeed({ feedPosts, communities, sparkIds, onSparkPost, onOpen
       <EmptyState
         icon={ImageIcon}
         title="No posts yet"
-        subtitle="Posts from every community will show up here, newest first, as they're made."
+        subtitle="Posts from every community land here, newest first, as they're made."
       />
     );
   }
+
   return (
-    <div className="lg:max-w-lg lg:mx-auto space-y-3">
-      {items.map((item, idx) =>
+    <div className="space-y-2.5">
+      {items.map((item) =>
         item.type === "post" ? (
           <PostFeedCard
             key={item.key}
@@ -289,74 +176,163 @@ function LatestPostsFeed({ feedPosts, communities, sparkIds, onSparkPost, onOpen
             sparked={sparkIds.includes(item.post.id)}
             onSpark={onSparkPost}
             onOpen={onOpen}
-            index={idx}
           />
         ) : (
-          <AdCard key={item.key} ad={item.ad} onClick={onAdClick} index={idx} />
+          <AdCard key={item.key} ad={item.ad} onClick={onAdClick} />
         )
       )}
     </div>
   );
 }
 
+/* ------------------------------------------------------------------ Rail */
+
+function RailRow({ community, onOpen, rank, meta }) {
+  return (
+    <button
+      onClick={() => onOpen(community)}
+      className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-sm text-left transition-colors hover:bg-surface-inset"
+    >
+      {typeof rank === "number" && (
+        <span className="w-3.5 text-2xs tabular-nums text-content-faint shrink-0">{rank}</span>
+      )}
+      <CommunityMark community={community} size={22} />
+      <span className="min-w-0 flex-1">
+        <span className="block text-xs font-medium text-content truncate leading-tight">
+          {community.name.split(" — ")[0]}
+        </span>
+        <span className="block text-2xs text-content-muted truncate leading-tight mt-0.5">{meta}</span>
+      </span>
+    </button>
+  );
+}
+
+function RailSection({ icon: Icon, title, children, action }) {
+  return (
+    <section className="space-y-1.5">
+      <div className="flex items-center gap-1.5 px-2">
+        {Icon && <Icon size={12} className="text-content-faint shrink-0" />}
+        <SectionLabel className="flex-1">{title}</SectionLabel>
+        {action}
+      </div>
+      <div className="space-y-0.5">{children}</div>
+    </section>
+  );
+}
+
+/* ---------------------------------------------------------------- Screen */
+
 export function HomeScreen({
   communities, joinedIds, onOpen, onCreateClick, interests,
   feedPosts, feedSparkIds, onSparkPost, onAdClick,
 }) {
-  // Brief skeleton pass on first mount only — makes the feed feel like it's
-  // fetching real data instead of popping in instantly.
+  // Brief skeleton pass on first mount so the feed reads as fetching rather
+  // than popping in fully formed.
   const [loading, setLoading] = useState(true);
   useEffect(() => {
-    const t = setTimeout(() => setLoading(false), 500);
+    const t = setTimeout(() => setLoading(false), 450);
     return () => clearTimeout(t);
   }, []);
+
+  const joined = useMemo(
+    () => communities.filter((c) => joinedIds.includes(c.id)).sort((a, b) => a.lastActive - b.lastActive),
+    [communities, joinedIds]
+  );
+
+  const trending = useMemo(
+    () => [...communities].sort((a, b) => communityTrendScore(b) - communityTrendScore(a)).slice(0, 5),
+    [communities]
+  );
+
   const matched = useMemo(() => {
     if (!interests || interests.length === 0) return [];
     return communities
       .filter((c) => !joinedIds.includes(c.id) && interestMatchCount(c, interests) > 0)
       .sort((a, b) => interestMatchCount(b, interests) - interestMatchCount(a, interests))
-      .slice(0, 6);
+      .slice(0, 4);
   }, [communities, interests, joinedIds]);
 
+  const rail = (
+    <div className="space-y-6">
+      <RailSection icon={TrendingUp} title="Trending">
+        {trending.map((c, i) => (
+          <RailRow key={c.id} community={c} onOpen={onOpen} rank={i + 1} meta={`${c.members} members`} />
+        ))}
+      </RailSection>
+
+      {matched.length > 0 && (
+        <RailSection icon={Sparkles} title="For you">
+          {matched.map((c) => (
+            <RailRow key={c.id} community={c} onOpen={onOpen} meta={c.category} />
+          ))}
+        </RailSection>
+      )}
+
+      <RailSection
+        icon={Users}
+        title="Your communities"
+        action={
+          <button onClick={onCreateClick} className="text-content-faint hover:text-content transition-colors" aria-label="Create community">
+            <Plus size={13} />
+          </button>
+        }
+      >
+        {joined.length === 0 ? (
+          <p className="px-2 text-2xs text-content-faint leading-relaxed">
+            Nothing joined yet. Find one in Explore.
+          </p>
+        ) : (
+          joined.slice(0, 8).map((c) => (
+            <RailRow
+              key={c.id}
+              community={c}
+              onOpen={onOpen}
+              meta={c.lastActive <= 10 ? "Active now" : `${c.members} members`}
+            />
+          ))
+        )}
+      </RailSection>
+    </div>
+  );
+
   return (
-    <div className="relative flex-1 overflow-y-auto no-scrollbar pb-4">
-      <div className="relative z-10">
-        {loading ? (
-          <div className="flex gap-3.5 overflow-x-auto px-4 py-3.5 no-scrollbar">
-            {Array.from({ length: 6 }).map((_, i) => <SkeletonStory key={i} />)}
-          </div>
-        ) : (
-          <CommunityStories communities={communities} joinedIds={joinedIds} onOpen={onOpen} onCreateClick={onCreateClick} />
-        )}
-        {!loading && (
-          <>
-            <TopCommunitiesRow communities={communities} onOpen={onOpen} />
-            {matched.length > 0 && (
-              <div className="pb-1 mb-1">
-                <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 px-4 mb-2 flex items-center gap-1.5">✨ Matched to your interests</p>
-                <div className="flex gap-2.5 overflow-x-auto px-4 pb-1 no-scrollbar">
-                  {matched.map((c) => <MatchCard key={c.id} c={c} onOpen={onOpen} />)}
-                </div>
-              </div>
+    <Screen>
+      <PageHeader
+        title="Home"
+        subtitle="Latest from every community"
+        actions={<Button variant="secondary" size="sm" icon={Plus} onClick={onCreateClick}>New</Button>}
+      />
+
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <div className="w-full max-w-5xl mx-auto px-5 lg:px-8 py-5 flex gap-8 items-start">
+          <div className="flex-1 min-w-0 max-w-2xl mx-auto xl:mx-0">
+            {loading ? (
+              <SkeletonFeed count={4} />
+            ) : (
+              <LatestPostsFeed
+                feedPosts={feedPosts || []}
+                communities={communities}
+                sparkIds={feedSparkIds || []}
+                onSparkPost={onSparkPost}
+                onOpen={onOpen}
+                onAdClick={onAdClick}
+              />
             )}
-          </>
-        )}
-        <div className="px-4 pt-2 pb-2 mt-1">
-          <p className="text-xs font-semibold text-zinc-700 dark:text-zinc-300 flex items-center gap-1.5">Latest posts</p>
+          </div>
+
+          <aside className="hidden xl:block w-60 shrink-0 sticky top-0">
+            {loading
+              ? <div className="space-y-2.5">{Array.from({ length: 3 }).map((_, i) => <SkeletonTile key={i} />)}</div>
+              : rail}
+          </aside>
         </div>
-        {loading ? (
-          <div className="px-4"><SkeletonFeed count={4} /></div>
-        ) : (
-          <LatestPostsFeed
-            feedPosts={feedPosts || []}
-            communities={communities}
-            sparkIds={feedSparkIds || []}
-            onSparkPost={onSparkPost}
-            onOpen={onOpen}
-            onAdClick={onAdClick}
-          />
+
+        {/* Below xl the rail has nowhere to sit, so it follows the feed
+            rather than being dropped entirely. */}
+        {!loading && (
+          <div className="xl:hidden max-w-2xl mx-auto px-5 lg:px-8 pb-6">{rail}</div>
         )}
       </div>
-    </div>
+    </Screen>
   );
 }

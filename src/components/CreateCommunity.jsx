@@ -1,157 +1,276 @@
 import { useState } from "react";
-import { ArrowLeft, ChevronLeft, ShieldCheck, Check } from "lucide-react";
-import { CATEGORIES, COLOR_MAP } from "../data/constants.js";
+import { ShieldCheck, Check, ChevronLeft, ArrowRight } from "lucide-react";
+import { CATEGORIES } from "../data/constants.js";
+import { Button, Input, Textarea, Field, Card, Badge, SectionLabel, cx } from "./ui/Primitives.jsx";
+import { Screen, PageHeader } from "./ui/Layout.jsx";
+import { EmptyState } from "./EmptyState.jsx";
+
+// Four-step create flow, rebuilt with a labelled step rail instead of four
+// anonymous progress bars — on the old version you could see how far along
+// you were but not what any step was, and steps you'd finished weren't
+// clickable to go back and change.
+//
+// `category` stays the single primary bucket that drives discovery; `tags`
+// is the creator's broader read on what the community touches, seeded from
+// the category so step 3 never opens empty.
+
+const STEPS = [
+  { n: 1, label: "Category" },
+  { n: 2, label: "Details" },
+  { n: 3, label: "Interests" },
+  { n: 4, label: "Confirm" },
+];
+
+function StepRail({ step, setStep, maxReached }) {
+  return (
+    <ol className="flex items-center gap-1 mb-6 shrink-0">
+      {STEPS.map((s, i) => {
+        const done = s.n < step;
+        const current = s.n === step;
+        const reachable = s.n <= maxReached;
+        return (
+          <li key={s.n} className="flex items-center gap-1 min-w-0">
+            <button
+              type="button"
+              disabled={!reachable}
+              onClick={() => reachable && setStep(s.n)}
+              className={cx(
+                "flex items-center gap-1.5 h-6 px-2 rounded-sm text-2xs font-medium transition-colors",
+                current && "bg-surface-inset text-content",
+                !current && done && "text-content-secondary hover:text-content hover:bg-surface-inset",
+                !current && !done && "text-content-faint",
+                !reachable && "cursor-default"
+              )}
+            >
+              <span
+                className={cx(
+                  "grid place-items-center h-4 w-4 rounded-full text-[9px] shrink-0 border",
+                  done ? "bg-solid text-solid-fg border-transparent"
+                       : current ? "border-content text-content"
+                                 : "border-line text-content-faint"
+                )}
+              >
+                {done ? <Check size={9} /> : s.n}
+              </span>
+              <span className="hidden sm:inline">{s.label}</span>
+            </button>
+            {i < STEPS.length - 1 && <span className="w-3 h-px bg-line shrink-0" />}
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function StepShell({ title, description, onBack, children, footer }) {
+  return (
+    <>
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        {onBack && (
+          <button
+            type="button"
+            onClick={onBack}
+            className="inline-flex items-center gap-1 text-xs text-content-muted hover:text-content mb-3 transition-colors"
+          >
+            <ChevronLeft size={13} />Back
+          </button>
+        )}
+        <h2 className="text-lg font-semibold text-content">{title}</h2>
+        {description && <p className="text-sm text-content-muted mt-1 mb-5 leading-relaxed">{description}</p>}
+        {children}
+      </div>
+      <div className="shrink-0 pt-4">{footer}</div>
+    </>
+  );
+}
 
 export function CreateCommunity({ onCreate, onClose, verified, onBlocked, onVerifyNow }) {
   const [step, setStep] = useState(1);
+  const [maxReached, setMaxReached] = useState(1);
   const [category, setCategory] = useState(null);
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
-  // Interests tags — separate from `category` (which stays the single
-  // primary bucket used for discovery grouping/icon). This is the creator's
-  // own read on which interests the community touches, collected up front
-  // so future personalization/recommendation logic has real signal to work
-  // with instead of only ever inferring one tag from the category.
   const [interests, setInterests] = useState([]);
-  const toggleInterest = (name) => {
-    setInterests((ints) => (ints.includes(name) ? ints.filter((x) => x !== name) : [...ints, name]));
-  };
+
+  const go = (n) => { setStep(n); setMaxReached((m) => Math.max(m, n)); };
+  const toggleInterest = (n) =>
+    setInterests((ints) => (ints.includes(n) ? ints.filter((x) => x !== n) : [...ints, n]));
+
+  if (!verified) {
+    return (
+      <Screen>
+        <PageHeader title="New community" onBack={onClose} />
+        <EmptyState
+          icon={ShieldCheck}
+          title="Sign in to create a community"
+          subtitle="Only signed-in members can start new communities on Orbit."
+          action={<Button variant="primary" size="md" onClick={onVerifyNow}>Sign in</Button>}
+        />
+      </Screen>
+    );
+  }
+
   return (
-    <div className="relative flex-1 bg-white dark:bg-zinc-950 flex flex-col min-h-0">
-      <div className="relative z-10 flex-1 flex flex-col min-h-0">
-      <div className="flex items-center gap-2.5 px-5 pt-4 pb-2 shrink-0">
-        <button onClick={onClose} className="w-8 h-8 -ml-1.5 flex items-center justify-center rounded-full hover:bg-zinc-50 dark:hover:bg-zinc-900"><ArrowLeft size={18} className="text-zinc-700 dark:text-zinc-300" /></button>
-        <p className="font-bold text-zinc-900 dark:text-zinc-50">New community</p>
-      </div>
-        {!verified ? (
-          <div className="flex-1 overflow-y-auto no-scrollbar flex flex-col items-center justify-center text-center px-8 py-10">
-            <ShieldCheck size={30} className="text-zinc-700 mb-3" />
-            <p className="font-semibold text-zinc-800 dark:text-zinc-200">Verify your account to create a community</p>
-            <p className="text-sm text-zinc-500 mt-1.5">Only verified members can start new communities on Orbit.</p>
-            <button onClick={onVerifyNow} className="mt-4 text-sm text-zinc-900 dark:text-zinc-50 font-medium">Verify now</button>
-          </div>
-        ) : (
-          <div className="flex-1 flex flex-col min-h-0 px-5 pt-5 pb-8">
-            <div className="flex items-center gap-2 mb-5 shrink-0">
-              {[1, 2, 3, 4].map((s) => (
-                <div key={s} className={`h-1.5 flex-1 rounded-full ${s <= step ? "bg-zinc-900 dark:bg-zinc-50" : "bg-zinc-100 dark:bg-zinc-800"}`} />
-              ))}
-            </div>
-            {/* Each step is a <form> so Enter in a text field submits like
-                tapping the primary button, and that button sits in a
-                shrink-0 footer below the scrollable content so it's always
-                visible even when the content above (e.g. the category
-                grid) is taller than the screen. */}
-            {step === 1 && (
-              <form
-                onSubmit={(e) => { e.preventDefault(); if (category) setStep(2); }}
-                className="flex-1 flex flex-col min-h-0"
-              >
-                <div className="flex-1 overflow-y-auto no-scrollbar">
-                  <p className="font-bold text-zinc-900 dark:text-zinc-50 text-lg mb-1">Pick a category</p>
-                  <p className="text-sm text-zinc-500 mb-4">Every community needs exactly one. This drives discovery.</p>
-                  <div className="grid grid-cols-2 gap-2.5">
-                    {CATEGORIES.map((cat) => {
-                      const cm = COLOR_MAP[cat.color];
-                      const Icon = cat.icon;
-                      const selected = category === cat.name;
-                      return (
-                        <button type="button" key={cat.name} onClick={() => setCategory(cat.name)} className={`rounded-2xl p-3.5 text-left border ${selected ? "border-zinc-900 dark:border-zinc-50 ring-1 ring-zinc-900/20 dark:ring-zinc-50/30 bg-zinc-900/5 dark:bg-zinc-50/5" : "border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900"}`}>
-                          <div className={`${cm.tint} ${cm.text} w-9 h-9 rounded-xl flex items-center justify-center mb-2`}><Icon size={18} /></div>
-                          <p className="text-sm font-medium text-zinc-800 dark:text-zinc-200 leading-snug">{cat.name}</p>
-                        </button>
-                      );
-                    })}
+    <Screen>
+      <PageHeader title="New community" onBack={onClose} />
+
+      <div className="flex-1 min-h-0 flex flex-col max-w-2xl w-full mx-auto px-5 lg:px-8 py-5">
+        <StepRail step={step} setStep={setStep} maxReached={maxReached} />
+
+        {step === 1 && (
+          <form onSubmit={(e) => { e.preventDefault(); if (category) go(2); }} className="flex-1 flex flex-col min-h-0">
+            <StepShell
+              title="Pick a category"
+              description="Every community has exactly one. This is what drives discovery."
+              footer={<Button type="submit" variant="primary" size="lg" disabled={!category} className="w-full">Continue <ArrowRight size={15} /></Button>}
+            >
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {CATEGORIES.map((cat) => {
+                  const Icon = cat.icon;
+                  const selected = category === cat.name;
+                  return (
+                    <button
+                      type="button"
+                      key={cat.name}
+                      onClick={() => setCategory(cat.name)}
+                      aria-pressed={selected}
+                      className={cx(
+                        "flex flex-col items-start gap-2 p-3 rounded-lg border text-left transition-colors",
+                        selected
+                          ? "border-line-strong bg-surface-inset"
+                          : "border-line hover:border-line-strong hover:bg-surface-inset"
+                      )}
+                    >
+                      <span className="h-7 w-7 rounded grid place-items-center bg-surface-inset border border-line">
+                        <Icon size={14} className={selected ? "text-accent" : "text-content-secondary"} />
+                      </span>
+                      <span className="text-xs font-medium text-content leading-tight">{cat.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </StepShell>
+          </form>
+        )}
+
+        {step === 2 && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!name.trim()) return;
+              setInterests((ints) => (ints.length ? ints : category ? [category] : []));
+              go(3);
+            }}
+            className="flex-1 flex flex-col min-h-0"
+          >
+            <StepShell
+              title="Name it"
+              description="Make it sound like something people would actually tap on."
+              onBack={() => setStep(1)}
+              footer={<Button type="submit" variant="primary" size="lg" disabled={!name.trim()} className="w-full">Continue <ArrowRight size={15} /></Button>}
+            >
+              <div className="space-y-4">
+                <Field label="Name" htmlFor="cc-name" hint={`${name.length}/80`}>
+                  <Input
+                    id="cc-name" value={name} maxLength={80} autoFocus
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Sunday Football League"
+                  />
+                </Field>
+                <Field label="Description" htmlFor="cc-desc" hint="Optional — what is this community for?">
+                  <Textarea
+                    id="cc-desc" value={desc} rows={4} maxLength={800}
+                    onChange={(e) => setDesc(e.target.value)}
+                    placeholder="Who it's for, when you meet, what happens here."
+                  />
+                </Field>
+              </div>
+            </StepShell>
+          </form>
+        )}
+
+        {step === 3 && (
+          <form onSubmit={(e) => { e.preventDefault(); go(4); }} className="flex-1 flex flex-col min-h-0">
+            <StepShell
+              title="Tag its interests"
+              description="Pick everything that applies — this is how the community gets matched to the right people. Be generous."
+              onBack={() => setStep(2)}
+              footer={<Button type="submit" variant="primary" size="lg" disabled={!interests.length} className="w-full">Continue <ArrowRight size={15} /></Button>}
+            >
+              <div className="grid grid-cols-2 gap-1.5">
+                {CATEGORIES.map((cat) => {
+                  const Icon = cat.icon;
+                  const selected = interests.includes(cat.name);
+                  const isPrimary = cat.name === category;
+                  return (
+                    <button
+                      type="button"
+                      key={cat.name}
+                      onClick={() => toggleInterest(cat.name)}
+                      aria-pressed={selected}
+                      className={cx(
+                        "flex items-center gap-2 h-9 px-2.5 rounded border text-left transition-colors",
+                        selected
+                          ? "border-line-strong bg-surface-inset text-content"
+                          : "border-line text-content-secondary hover:border-line-strong hover:text-content"
+                      )}
+                    >
+                      <Icon size={14} className={cx("shrink-0", selected ? "text-accent" : "text-content-faint")} />
+                      <span className="text-xs font-medium truncate flex-1">
+                        {cat.name}
+                        {isPrimary && <span className="text-content-faint"> · main</span>}
+                      </span>
+                      {selected && <Check size={12} className="text-accent shrink-0" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </StepShell>
+          </form>
+        )}
+
+        {step === 4 && (
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              onCreate({ name, category, desc, tags: interests.length ? interests : [category] });
+            }}
+            className="flex-1 flex flex-col min-h-0"
+          >
+            <StepShell
+              title="Confirm"
+              description="Your community gets a unique handle and QR code once it's created."
+              onBack={() => setStep(3)}
+              footer={<Button type="submit" variant="primary" size="lg" className="w-full">Create community</Button>}
+            >
+              <Card className="divide-y divide-line">
+                <div className="flex items-baseline gap-4 px-3.5 py-3">
+                  <span className="text-xs text-content-muted w-20 shrink-0">Name</span>
+                  <span className="text-sm text-content font-medium min-w-0 break-words">{name}</span>
+                </div>
+                <div className="flex items-baseline gap-4 px-3.5 py-3">
+                  <span className="text-xs text-content-muted w-20 shrink-0">Category</span>
+                  <span className="text-sm text-content font-medium">{category}</span>
+                </div>
+                {desc && (
+                  <div className="flex items-baseline gap-4 px-3.5 py-3">
+                    <span className="text-xs text-content-muted w-20 shrink-0">About</span>
+                    <span className="text-sm text-content-secondary min-w-0 leading-relaxed">{desc}</span>
                   </div>
+                )}
+                <div className="flex items-baseline gap-4 px-3.5 py-3">
+                  <span className="text-xs text-content-muted w-20 shrink-0">Interests</span>
+                  <span className="flex flex-wrap gap-1.5 min-w-0">
+                    {(interests.length ? interests : [category]).map((t) => (
+                      <Badge key={t} tone={t === category ? "accent" : "neutral"}>{t}</Badge>
+                    ))}
+                  </span>
                 </div>
-                <div className="shrink-0 pt-4">
-                  <button type="submit" disabled={!category} className="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white dark:text-zinc-900 disabled:text-zinc-500 text-sm font-semibold">Continue</button>
-                </div>
-              </form>
-            )}
-            {step === 2 && (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  if (!name.trim()) return;
-                  // Primary category is always part of the interest set, seeded
-                  // here (once, not on every re-render) so step 3 opens with it
-                  // already checked instead of an empty grid.
-                  setInterests((ints) => (ints.length ? ints : category ? [category] : []));
-                  setStep(3);
-                }}
-                className="flex-1 flex flex-col min-h-0"
-              >
-                <div className="flex-1 overflow-y-auto no-scrollbar">
-                  <button type="button" onClick={() => setStep(1)} className="text-xs text-zinc-500 flex items-center gap-1 mb-3"><ChevronLeft size={14} />Back</button>
-                  <p className="font-bold text-zinc-900 dark:text-zinc-50 text-lg mb-1">Name it</p>
-                  <p className="text-sm text-zinc-500 mb-4">Freeform — make it sound like something people would actually tap on.</p>
-                  <input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Sunday Football League" maxLength={80} className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 rounded-xl px-3.5 py-2.5 text-sm mb-3 outline-none focus:border-zinc-900 dark:focus:border-zinc-50" />
-                  <textarea value={desc} onChange={(e) => setDesc(e.target.value)} placeholder="Short description (optional)" rows={3} maxLength={800} className="w-full bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-600 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-zinc-900 dark:focus:border-zinc-50" />
-                </div>
-                <div className="shrink-0 pt-4">
-                  <button type="submit" disabled={!name.trim()} className="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white dark:text-zinc-900 disabled:text-zinc-500 text-sm font-semibold">Continue</button>
-                </div>
-              </form>
-            )}
-            {step === 3 && (
-              <form
-                onSubmit={(e) => { e.preventDefault(); setStep(4); }}
-                className="flex-1 flex flex-col min-h-0"
-              >
-                <div className="flex-1 overflow-y-auto no-scrollbar">
-                  <button type="button" onClick={() => setStep(2)} className="text-xs text-zinc-500 flex items-center gap-1 mb-3"><ChevronLeft size={14} />Back</button>
-                  <p className="font-bold text-zinc-900 dark:text-zinc-50 text-lg mb-1">Tag its interests</p>
-                  <p className="text-sm text-zinc-500 mb-4">Pick everything that applies — this is how we match your community to the right people and events, so be generous.</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    {CATEGORIES.map((cat) => {
-                      const cm = COLOR_MAP[cat.color];
-                      const Icon = cat.icon;
-                      const selected = interests.includes(cat.name);
-                      const isPrimary = cat.name === category;
-                      return (
-                        <button
-                          type="button"
-                          key={cat.name}
-                          onClick={() => toggleInterest(cat.name)}
-                          className={`flex items-center gap-2 rounded-xl px-3 py-2.5 text-left border transition-all active:scale-[0.97] ${selected ? "border-zinc-900 dark:border-zinc-50 ring-1 ring-zinc-900/20 dark:ring-zinc-50/30 bg-zinc-900/5 dark:bg-zinc-50/5" : "border-zinc-200 dark:border-zinc-800 bg-zinc-50/60 dark:bg-zinc-900/60 hover:border-zinc-300 dark:hover:border-zinc-700"}`}
-                        >
-                          <div className={`${cm.tint} ${cm.text} w-7 h-7 rounded-lg flex items-center justify-center shrink-0`}><Icon size={14} /></div>
-                          <p className="text-xs font-medium text-zinc-800 dark:text-zinc-200 leading-tight">{cat.name}{isPrimary ? " (main)" : ""}</p>
-                          {selected && <Check size={13} className="text-zinc-900 dark:text-zinc-50 ml-auto shrink-0" />}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-                <div className="shrink-0 pt-4">
-                  <button type="submit" disabled={!interests.length} className="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-50 disabled:bg-zinc-100 dark:disabled:bg-zinc-800 text-white dark:text-zinc-900 disabled:text-zinc-500 text-sm font-semibold">Continue</button>
-                </div>
-              </form>
-            )}
-            {step === 4 && (
-              <form
-                onSubmit={(e) => { e.preventDefault(); onCreate({ name, category, desc, tags: interests.length ? interests : [category] }); }}
-                className="flex-1 flex flex-col min-h-0"
-              >
-                <div className="flex-1 overflow-y-auto no-scrollbar">
-                  <button type="button" onClick={() => setStep(3)} className="text-xs text-zinc-500 flex items-center gap-1 mb-3"><ChevronLeft size={14} />Back</button>
-                  <p className="font-bold text-zinc-900 dark:text-zinc-50 text-lg mb-1">Confirm</p>
-                  <p className="text-sm text-zinc-500 mb-4">Your community gets a unique handle and QR code once created.</p>
-                  <div className="bg-zinc-50 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-4 space-y-2">
-                    <div className="flex justify-between text-sm"><span className="text-zinc-500">Category</span><span className="font-medium text-zinc-800 dark:text-zinc-200">{category}</span></div>
-                    <div className="flex justify-between text-sm"><span className="text-zinc-500">Name</span><span className="font-medium text-zinc-800 dark:text-zinc-200">{name}</span></div>
-                    <div className="flex justify-between text-sm gap-3"><span className="text-zinc-500 shrink-0">Interests</span><span className="font-medium text-zinc-800 dark:text-zinc-200 text-right">{(interests.length ? interests : [category]).join(", ")}</span></div>
-                  </div>
-                </div>
-                <div className="shrink-0 pt-4">
-                  <button type="submit" className="w-full py-2.5 rounded-xl bg-zinc-900 dark:bg-zinc-50 text-white dark:text-zinc-900 text-sm font-semibold">Create community</button>
-                </div>
-              </form>
-            )}
-          </div>
+              </Card>
+            </StepShell>
+          </form>
         )}
       </div>
-      </div>
+    </Screen>
   );
 }

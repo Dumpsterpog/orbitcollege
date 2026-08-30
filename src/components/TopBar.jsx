@@ -1,43 +1,55 @@
 import { Bell, Coffee, Search, MessageCircle, Clock } from "lucide-react";
 import { useClickOutside } from "../utils/hooks.js";
-import { Logo } from "./Common.jsx";
+import { Logo, IconButton, cx } from "./ui/Primitives.jsx";
 
-// Messages (DMs) and Notifications are both "Coming soon" for this launch —
-// no mock data pretending to be real. The bell still opens a small dropdown
-// (nicer than a toast that vanishes), it just says so plainly instead of
-// showing fabricated notification rows.
+// App bar. On desktop the sidebar already carries the logo, search and
+// Locali-Tea, so this collapses to just the two things it doesn't duplicate
+// (messages + notifications) and stops repeating the nav back at the user.
+// Below lg it carries the logo and the full icon row, since there's no rail.
+//
+// Messages and Notifications are both genuinely unbuilt. The bell opens a
+// panel that says so rather than rendering invented notification rows.
 export function TopBar({ notifOpen, setNotifOpen, onTeaClick, onSearchClick, onMessagesClick, onLogoClick }) {
   const notifRef = useClickOutside(notifOpen, () => setNotifOpen(false));
+
   return (
-    <div
-      ref={notifRef}
-      className="relative flex items-center justify-between lg:justify-end px-4 pb-3 lg:px-6 bg-white dark:bg-zinc-950"
-      style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+    <header
+      className="relative shrink-0 h-12 flex items-center justify-between lg:justify-end gap-1 px-4 lg:px-6 border-b border-line bg-surface"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
-      <button onClick={onLogoClick} className="lg:hidden active:opacity-70 transition-opacity"><Logo /></button>
-      <div className="flex items-center gap-1">
-        <button aria-label="Locali-Tea" onClick={onTeaClick} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900">
-          <Coffee size={20} className="text-yellow-500" />
-        </button>
-        <button aria-label="Search" onClick={onSearchClick} className="w-9 h-9 flex items-center justify-center rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900">
-          <Search size={20} className="text-zinc-600 dark:text-zinc-300" />
-        </button>
-        <button aria-label="Messages" onClick={onMessagesClick} className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900">
-          <MessageCircle size={20} className="text-zinc-600 dark:text-zinc-300" />
-        </button>
-        <button aria-label="Notifications" onClick={() => setNotifOpen(!notifOpen)} className="relative w-9 h-9 flex items-center justify-center rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900">
-          <Bell size={20} className="text-zinc-600 dark:text-zinc-300" />
-        </button>
-      </div>
-      {notifOpen && (
-        <div className="absolute right-4 top-14 w-64 bg-white dark:bg-zinc-900 rounded-2xl shadow-xl shadow-zinc-400/30 dark:shadow-black/50 border border-zinc-200 dark:border-zinc-800 z-40 overflow-hidden">
-          <div className="px-4 py-3 border-b border-zinc-200 dark:border-zinc-800 font-semibold text-zinc-900 dark:text-zinc-100 text-sm">Notifications</div>
-          <div className="px-4 py-6 flex flex-col items-center text-center gap-1.5">
-            <Clock size={18} className="text-zinc-400 dark:text-zinc-600" />
-            <p className="text-xs text-zinc-500">Coming soon</p>
+      <button onClick={onLogoClick} className="lg:hidden hover:opacity-80 transition-opacity">
+        <Logo size={19} />
+      </button>
+
+      <div ref={notifRef} className="flex items-center gap-0.5">
+        <span className="lg:hidden flex items-center gap-0.5">
+          <IconButton icon={Coffee} label="Locali-Tea" size="sm" onClick={onTeaClick} className="text-accent" />
+          <IconButton icon={Search} label="Search" size="sm" onClick={onSearchClick} />
+        </span>
+        <IconButton icon={MessageCircle} label="Messages" size="sm" onClick={onMessagesClick} />
+        <IconButton
+          icon={Bell}
+          label="Notifications"
+          size="sm"
+          onClick={() => setNotifOpen(!notifOpen)}
+          className={cx(notifOpen && "bg-surface-inset text-content")}
+        />
+
+        {notifOpen && (
+          <div className="absolute right-4 lg:right-6 top-11 w-64 bg-surface-elevated border border-line rounded-lg shadow-xl z-40 overflow-hidden animate-pop-in">
+            <div className="px-3.5 h-9 flex items-center border-b border-line">
+              <p className="text-xs font-semibold text-content">Notifications</p>
+            </div>
+            <div className="px-4 py-7 flex flex-col items-center text-center gap-2">
+              <Clock size={16} className="text-content-faint" />
+              <p className="text-xs text-content-muted">Nothing here yet</p>
+              <p className="text-2xs text-content-faint leading-relaxed">
+                Notifications aren't built yet — this won't fill up until they are.
+              </p>
+            </div>
           </div>
-        </div>
-      )}
-    </div>
+        )}
+      </div>
+    </header>
   );
 }

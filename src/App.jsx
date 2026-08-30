@@ -467,13 +467,17 @@ export default function App() {
   // silently vanished even though the UI said "submitted for review." Now a
   // real row in public.reports (supabase/schema_security_hardening.sql);
   // view submissions from the Supabase dashboard.
-  const handleReportSubmit = async (reason) => {
+  // `detail` is the optional free-text box the rebuilt ReportModal adds. It's
+  // appended to the reason rather than sent as its own column, since the
+  // reports table has no field for it — a schema change is backend work.
+  const handleReportSubmit = async (reason, detail) => {
     const target = reportTarget;
     setReportTarget(null);
     setSelectedCommunity(null);
     showToast("Report submitted for review");
     if (!authUser) return;
-    await supabase.from("reports").insert({ reporter_id: authUser.id, target: String(target), reason });
+    const body = detail ? `${reason} — ${detail}` : reason;
+    await supabase.from("reports").insert({ reporter_id: authUser.id, target: String(target), reason: body });
   };
 
   // Registering for an event is the access gate to its community — the
@@ -673,14 +677,18 @@ export default function App() {
   // Auth-flow shell is now full-bleed at every width: the rebuilt Onboarding
   // owns its own responsive two-pane layout (brand column + form), so wrapping
   // it in the phone card would re-cage the thing that was just uncaged.
-  const shellClass = "w-full h-[var(--app-height,100dvh)] max-w-none sm:max-w-sm sm:h-[calc(100dvh-2rem)] mx-auto bg-white dark:bg-zinc-950 sm:my-4 sm:rounded-3xl sm:border sm:border-zinc-200 dark:sm:border-zinc-800 sm:shadow-2xl sm:shadow-zinc-400/30 dark:sm:shadow-black/50 overflow-hidden relative flex flex-col animate-fade-in";
+  // Signed-in shell. Below lg it's a plain full-height column — the floating
+  // phone card with its rounded corners and drop shadow is gone, since this
+  // renders as a web app at every size rather than a simulated handset.
+  const shellClass = "w-full h-[var(--app-height,100dvh)] mx-auto bg-surface overflow-hidden relative flex flex-col animate-fade-in";
   // Full-bleed, frameless — used by the loading and onboarding screens.
   const shellClassAuth = "w-full h-[var(--app-height,100dvh)] bg-surface overflow-hidden relative flex flex-col animate-fade-in";
   // Signed-in app shell: same phone-frame card up through the sm/md range,
   // but from lg (1024px+) up it drops the frame entirely and becomes a real
   // full-width desktop layout — Sidebar on the left, content pane on the
   // right — instead of a mobile card floating in empty space.
-  const shellClassApp = `${shellClass} lg:max-w-none lg:my-0 lg:h-[var(--app-height,100dvh)] lg:rounded-none lg:border-0 lg:shadow-none lg:flex-row lg:items-stretch`;
+  // From lg it becomes the dashboard: sidebar rail beside a content pane.
+  const shellClassApp = `${shellClass} lg:flex-row lg:items-stretch`;
 
   if (loadingSession) {
     return (

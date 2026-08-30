@@ -1,5 +1,49 @@
-import { ChevronLeft } from "lucide-react";
+import { useEffect } from "react";
+import { ChevronLeft, X } from "lucide-react";
 import { IconButton, cx } from "./Primitives.jsx";
+
+// Centred dialog. `fixed`, not `absolute`: the old modals were positioned
+// against the phone-frame card, and with that frame gone an absolute overlay
+// would only cover its nearest positioned ancestor instead of the viewport.
+// Escape closes, and body scroll is locked while open.
+export function Modal({ title, onClose, children, footer, max = "max-w-sm" }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-[2px] flex items-center justify-center p-4 animate-fade-in"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        onClick={(e) => e.stopPropagation()}
+        className={cx(
+          "w-full bg-surface-elevated border border-line rounded-lg shadow-2xl overflow-hidden animate-pop-in",
+          max
+        )}
+      >
+        <div className="flex items-center gap-3 h-11 px-4 border-b border-line">
+          <h2 className="text-sm font-semibold text-content flex-1 min-w-0 truncate">{title}</h2>
+          <IconButton icon={X} label="Close" size="sm" onClick={onClose} className="-mr-1.5" />
+        </div>
+        <div className="p-4">{children}</div>
+        {footer && <div className="px-4 py-3 border-t border-line bg-surface-subtle">{footer}</div>}
+      </div>
+    </div>
+  );
+}
 
 // Page frame shared by every rebuilt screen.
 //
