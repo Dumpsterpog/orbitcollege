@@ -121,7 +121,7 @@ const SKIP_AUTH = import.meta.env.VITE_SKIP_AUTH === "true";
 
 export default function App() {
   useViewportHeight(); // keyboard-float fix — see utils/useViewportHeight.js
-  const { theme, toggleTheme } = useTheme(); // dark/light — see utils/useTheme.js
+  const { theme, mode: themeMode, toggleTheme, setThemeMode } = useTheme(); // dark/light — see utils/useTheme.js
   const [loadingSession, setLoadingSession] = useState(true);
   const [stage, setStage] = useState(SKIP_AUTH ? "app" : "onboarding");
   const [authUser, setAuthUser] = useState(null); // { id, email } from Supabase, or null
@@ -846,9 +846,11 @@ export default function App() {
       ) : activeTab === "settings" ? (
         <SettingsScreen
           user={{ ...user, email: authUser?.email }}
-          theme={theme} onToggleTheme={toggleTheme}
+          theme={theme} mode={themeMode}
+          onToggleTheme={toggleTheme} onSetTheme={setThemeMode}
           onLogout={goToInitialPage}
           onBack={() => goToTab("profile")}
+          onEditProfile={() => goToTab("profile")}
           onComingSoon={() => showToast("Coming soon")}
           notifPrefs={notifPrefs}
           onNotifChange={(key, val) => setNotifPrefs((p) => ({ ...p, [key]: val }))}
