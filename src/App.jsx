@@ -813,7 +813,16 @@ export default function App() {
       ) : activeTab === "events" ? (
         <EventsScreen
           events={events} interests={user.interests}
-          onComingSoon={() => showToast("Registration — coming soon")}
+          registeredEventIds={registeredEventIds}
+          onRegister={handleRegisterEvent}
+          onOpenEvent={(e) => {
+            // An event's linked community only exists once someone has
+            // registered, so opening one before that has nowhere to go.
+            const c = e.linkedCommunityId && dbCommunities.find((x) => x.id === e.linkedCommunityId);
+            if (c) setSelectedCommunity(c);
+            else showToast("This event's space opens once you register");
+          }}
+          onSubmitEvent={() => showToast("Submitting events isn't built yet")}
         />
       ) : activeTab === "profile" ? (
         <ProfileScreen
