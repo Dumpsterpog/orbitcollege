@@ -27,6 +27,7 @@ const GROUPS = [
       { key: "home", label: "Home", icon: "home", tint: "text-c-blue" },
       { key: "explore", label: "Explore", icon: "explore", tint: "text-c-violet" },
       { key: "search", label: "Search", icon: "search", tint: "text-c-teal", action: "search" },
+      { key: "saved", label: "Saved", icon: "bookmark", tint: "text-c-amber", action: "saved" },
     ],
   },
   {
@@ -34,6 +35,15 @@ const GROUPS = [
     items: [
       { key: "events", label: "Events", icon: "confirmation_number", tint: "text-c-orange" },
       { key: "tea", label: "Locali-Tea", icon: "local_cafe", tint: "text-c-pink", action: "tea" },
+      { key: "communities", label: "My communities", icon: "groups", tint: "text-c-green", action: "communities" },
+    ],
+  },
+  {
+    label: "You",
+    items: [
+      { key: "profile", label: "Profile", icon: "account_circle", tint: "text-c-blue" },
+      { key: "notifications", label: "Notifications", icon: "notifications", tint: "text-c-red", action: "notifications" },
+      { key: "settings", label: "Settings", icon: "settings", tint: "text-c-violet" },
     ],
   },
 ];
@@ -100,7 +110,7 @@ function GroupLabel({ children }) {
 
 export function Sidebar({
   active, setActive, onTeaClick, onSearchClick, onCreateClick,
-  verified, user, theme, onToggleTheme, onOpenSettings, joinedCount = 0,
+  verified, user, theme, onToggleTheme, onOpenSettings, joinedCount = 0, onUnbuilt,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -120,11 +130,16 @@ export function Sidebar({
   const go = (item) => {
     if (item.action === "tea") return onTeaClick();
     if (item.action === "search") return onSearchClick();
+    if (item.action === "communities") return setActive("explore");
+    // Not built. A row that quietly does nothing is worse than one that
+    // tells you why, so these report instead of no-oping.
+    if (item.action === "saved") return onUnbuilt?.("Saved posts aren't built yet");
+    if (item.action === "notifications") return onUnbuilt?.("Notifications aren't built yet");
     setActive(item.key);
   };
 
   return (
-    <aside className="hidden lg:flex flex-col shrink-0 h-full bg-bg border-r border-line lg:w-rail-sm xl:w-rail transition-[width] duration-200">
+    <aside className="rail-edge hidden lg:flex flex-col shrink-0 h-full bg-bg lg:w-rail-sm xl:w-rail transition-[width] duration-200">
       {/* Wordmark */}
       <div className="px-3 xl:px-4 pt-5 pb-2 shrink-0">
         <button
@@ -170,8 +185,8 @@ export function Sidebar({
           onClick={onCreateClick}
           title="Create a community"
           className="w-full mt-5 flex items-center justify-center xl:justify-start gap-3 rounded-full
-            px-3 py-3 bg-accent text-accent-ink font-bold text-base shadow-lift
-            hover:bg-accent-press active:scale-[0.98] transition-[background-color,transform] duration-150"
+            px-3 py-3 bg-c-violet text-bg font-bold text-base shadow-lift
+            hover:opacity-90 active:scale-[0.98] transition-[background-color,transform] duration-150"
         >
           <Icon name="add" size={22} />
           <span className="hidden xl:inline">Create</span>

@@ -81,7 +81,8 @@ function EventCard({ e, registered, onRegister, onOpen, interested }) {
 
           <div className="mt-3.5">
             <Button
-              variant={registered ? "outline" : "primary"}
+              variant={registered ? "outline" : undefined}
+              tone={registered ? undefined : "orange"}
               size="sm"
               icon={registered ? "check" : "confirmation_number"}
               iconTint={registered ? undefined : ""}

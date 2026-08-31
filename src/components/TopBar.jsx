@@ -18,7 +18,7 @@ export function TopBar({ notifOpen, setNotifOpen, onTeaClick, onSearchClick, onM
           <circle cx="12" cy="12" r="3" /><circle cx="19" cy="5" r="2" /><circle cx="5" cy="19" r="2" />
           <path d="M10.4 21.9a10 10 0 0 0 9.941-15.416" /><path d="M13.5 2.1a10 10 0 0 0-9.841 15.416" />
         </svg>
-        <span className="text-xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-c-violet via-c-pink to-c-orange">
+        <span className="text-xl font-bold tracking-tight text-ink">
           Orbit
         </span>
       </button>

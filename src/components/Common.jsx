@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Icon, Avatar, Button } from "./ui/Primitives.jsx";
 
 export { Avatar };
@@ -14,7 +15,7 @@ export function Logo({ size = 24, showWordmark = true }) {
       </svg>
       {showWordmark && (
         <span
-          className="font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-c-violet via-c-pink to-c-orange"
+          className="font-bold tracking-tight text-ink"
           style={{ fontSize: size * 0.92 }}
         >
           Orbit
@@ -24,11 +25,13 @@ export function Logo({ size = 24, showWordmark = true }) {
   );
 }
 
-// Toast. Pinned to the bottom centre, above the mobile tab bar.
+// Toast. Bottom centre, above the mobile tab bar — and high enough to clear
+// the guest pill, since the most likely toast a guest sees is the one telling
+// them to sign in, which would otherwise land on top of it.
 export function Toast({ message }) {
   if (!message) return null;
   return (
-    <div className="fixed inset-x-0 bottom-20 lg:bottom-8 z-[90] flex justify-center px-4 pointer-events-none animate-rise">
+    <div className="fixed inset-x-0 bottom-36 lg:bottom-24 z-[90] flex justify-center px-4 pointer-events-none animate-rise">
       <div className="bg-solid text-solid-ink text-base font-medium px-4 py-2.5 rounded-full shadow-pop max-w-sm text-center">
         {message}
       </div>
@@ -36,17 +39,55 @@ export function Toast({ message }) {
   );
 }
 
-// Guest strip. A single line with an inline action — not a bordered banner.
+// Guest prompt.
+//
+// This was a full-width grey strip pinned under the header — the shape of a
+// browser permission bar, which is the one piece of UI everybody has learned
+// to ignore. It also pushed the whole page down by its own height on every
+// screen, permanently, for a message you only need to read once.
+//
+// It floats at the bottom now: a single dark pill, out of the content's way,
+// dismissible, and sitting above the mobile tab bar so it never covers the
+// nav. Dismissal is session-only — it comes back on reload rather than
+// hiding the one route back to an account forever.
 export function GuestBanner({ onVerify }) {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+
   return (
-    <div className="flex items-center justify-center gap-2 px-4 py-2 bg-bg-sunken border-b border-line text-center">
-      <Icon name="info" size={16} className="text-c-blue shrink-0" />
-      <p className="text-xs text-ink-2">
-        You&apos;re browsing as a guest.
-        <button onClick={onVerify} className="ml-1.5 font-semibold text-accent hover:opacity-70">
+    <div className="fixed inset-x-0 bottom-20 lg:bottom-6 z-[70] flex justify-center px-4 pointer-events-none">
+      <div
+        className="pointer-events-auto flex items-center gap-3 pl-4 pr-2 py-2 rounded-full
+          bg-solid text-solid-ink shadow-pop animate-rise max-w-[calc(100vw-2rem)]"
+      >
+        <span className="grid place-items-center w-7 h-7 rounded-full bg-white/15 shrink-0">
+          <Icon name="person" size={17} />
+        </span>
+
+        <p className="text-base font-medium truncate">
+          <span className="hidden sm:inline">You&apos;re browsing as a guest — </span>
+          <span className="sm:hidden">Guest — </span>
+          <span className="opacity-70">join, post and chat need an account.</span>
+        </p>
+
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={onVerify}
+          className="shrink-0 bg-bg text-ink hover:bg-bg-sunken"
+        >
           Sign in
+        </Button>
+
+        <button
+          onClick={() => setDismissed(true)}
+          aria-label="Dismiss"
+          className="grid place-items-center w-8 h-8 rounded-full shrink-0 opacity-60
+            hover:opacity-100 hover:bg-white/10 transition-all"
+        >
+          <Icon name="close" size={18} />
         </button>
-      </p>
+      </div>
     </div>
   );
 }

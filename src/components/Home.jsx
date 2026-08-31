@@ -102,7 +102,7 @@ function ComposerBar({ user, onOpen, disabled, disabledHint }) {
       >
         {disabled ? disabledHint : `What's happening, ${(user?.name || "").split(" ")[0] || "there"}?`}
       </button>
-      <Button variant="primary" size="sm" icon="edit" onClick={onOpen} className="shrink-0 hidden sm:inline-flex">
+      <Button tone="blue" size="sm" icon="edit" onClick={onOpen} className="shrink-0 hidden sm:inline-flex">
         Post
       </Button>
     </div>
@@ -133,7 +133,7 @@ function ComposerModal({ user, communities, onClose, onSubmit }) {
       footer={
         <div className="flex items-center justify-between gap-3">
           <span className="text-xs text-ink-3 tabular-nums">{text.length}/2000</span>
-          <Button variant="primary" size="md" onClick={submit} disabled={!canPost} loading={busy}>
+          <Button tone="blue" size="md" onClick={submit} disabled={!canPost} loading={busy}>
             Post
           </Button>
         </div>
@@ -267,6 +267,7 @@ export function HomeScreen({
   communities, joinedIds, onOpen, onCreateClick, interests,
   feedPosts, feedSparkIds, onSparkPost, onCreatePost,
   userName, user, onJoinToggle, onGoToExplore,
+  events = [], registeredEventIds = [], onRegisterEvent, onGoToEvents,
 }) {
   const [loading, setLoading] = useState(true);
   const [composing, setComposing] = useState(false);
@@ -288,6 +289,11 @@ export function HomeScreen({
       : [...pool].sort((a, b) => communityTrendScore(b) - communityTrendScore(a))
     ).slice(0, 5);
   }, [communities, joinedIds, interests]);
+
+  const openEvents = useMemo(
+    () => events.filter((e) => !registeredEventIds.includes(e.id)).slice(0, 3),
+    [events, registeredEventIds]
+  );
 
   const posts = feedPosts || [];
   const canPost = !!user?.verified && joined.length > 0;
@@ -332,15 +338,15 @@ export function HomeScreen({
               </p>
               <div className="flex flex-wrap items-center justify-center gap-2.5 mt-6">
                 {joined.length === 0 ? (
-                  <Button variant="primary" size="md" icon="explore" onClick={onGoToExplore}>
+                  <Button tone="teal" size="md" icon="explore" onClick={onGoToExplore}>
                     Find communities
                   </Button>
                 ) : (
-                  <Button variant="primary" size="md" icon="edit" onClick={openComposer}>
+                  <Button tone="blue" size="md" icon="edit" onClick={openComposer}>
                     Write a post
                   </Button>
                 )}
-                <Button variant="soft" size="md" icon="add" iconTint="text-c-violet" onClick={onCreateClick}>
+                <Button tone="violet" size="md" icon="add" onClick={onCreateClick}>
                   Create a community
                 </Button>
               </div>
@@ -363,6 +369,66 @@ export function HomeScreen({
             shortcut, not the directory. */}
         <aside className="hidden lg:block w-aside shrink-0 py-6">
           <div className="sticky top-6 space-y-6">
+            {/* Registration open. Every listed event accepts a registration,
+                so "open" here means the ones you haven't taken yet — the
+                schema has no open/closed flag to read, and inventing one
+                would put a label on the card that nothing backs. */}
+            {openEvents.length > 0 && (
+              <section className="card p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Icon name="confirmation_number" size={18} className="text-c-orange" />
+                  <h2 className="text-base font-bold text-ink flex-1">Registration open</h2>
+                  <span className="text-2xs font-bold text-c-orange tabular-nums">{openEvents.length}</span>
+                </div>
+
+                <div className="space-y-3">
+                  {openEvents.map((e) => {
+                    const cat = CATEGORIES.find((x) => x.name === e.category);
+                    const [head, ...rest] = String(e.when || "").split(/[\s,]+/).filter(Boolean);
+                    return (
+                      <div key={e.id} className="flex items-start gap-3">
+                        <span className="w-10 shrink-0 text-center leading-none pt-0.5">
+                          <span className={cx("block text-base font-bold tabular-nums", cat?.tint || "text-c-orange")}>
+                            {head || "TBA"}
+                          </span>
+                          <span className="block text-2xs font-semibold text-ink-2 uppercase mt-1 truncate">
+                            {rest.slice(0, 1).join(" ")}
+                          </span>
+                        </span>
+
+                        <span className="min-w-0 flex-1">
+                          <button onClick={onGoToEvents} className="text-left block w-full">
+                            <span className="block text-base font-semibold text-ink truncate hover:opacity-70">
+                              {e.title}
+                            </span>
+                          </button>
+                          <span className="flex items-center gap-1 text-xs text-ink-2 mt-0.5 min-w-0">
+                            <Icon name="location_on" size={13} className="text-c-pink shrink-0" />
+                            <span className="truncate">{e.where}</span>
+                          </span>
+                          <Button
+                            tone="orange"
+                            size="xs"
+                            className="mt-2"
+                            onClick={() => onRegisterEvent && onRegisterEvent(e)}
+                          >
+                            Register
+                          </Button>
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <button
+                  onClick={onGoToEvents}
+                  className="w-full text-center text-xs font-semibold text-accent hover:opacity-70 pt-3 mt-3 border-t border-line"
+                >
+                  All events
+                </button>
+              </section>
+            )}
+
             <section className="card p-4">
               <div className="flex items-baseline justify-between mb-1">
                 <h2 className="text-base font-bold text-ink">Suggested communities</h2>
@@ -385,7 +451,7 @@ export function HomeScreen({
                         {compact(c.members)} members · {c.category}
                       </span>
                     </button>
-                    <Button variant="soft" size="xs" onClick={() => onJoinToggle(c.id)} className="shrink-0">
+                    <Button tone="green" size="xs" onClick={() => onJoinToggle(c.id)} className="shrink-0">
                       Join
                     </Button>
                   </div>

@@ -45,7 +45,7 @@ function GoogleMark({ size = 18 }) {
 function Mark({ size = 44, radius = "rounded-[12px]" }) {
   return (
     <span
-      className={cx("grid place-items-center shrink-0 bg-gradient-to-br from-c-violet via-c-pink to-c-orange", radius)}
+      className={cx("grid place-items-center shrink-0 bg-accent", radius)}
       style={{ width: size, height: size }}
     >
       <svg viewBox="0 0 24 24" width={size * 0.55} height={size * 0.55} fill="none" stroke="white"
@@ -244,9 +244,31 @@ export function Onboarding({ onDone, onGuest }) {
     }
   };
 
+  // The campus photo comes in from the step that names the campus onward, so
+  // it lands as a response to "you're at MUJ" rather than as decoration that
+  // was always there. Scrimmed heavily — it is a backdrop behind a form, and
+  // the card has to stay the thing you read.
+  const showCampus = index >= 1;
+
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto bg-bg-sunken">
-      <div className="min-h-full w-full flex items-center justify-center p-4 sm:p-8">
+    <div className="relative flex-1 min-h-0 overflow-y-auto bg-bg-sunken">
+      <div
+        aria-hidden="true"
+        className={cx(
+          "fixed inset-0 bg-cover bg-center transition-opacity duration-700 pointer-events-none",
+          showCampus ? "opacity-100" : "opacity-0"
+        )}
+        style={{ backgroundImage: "url('/muj.jpg')" }}
+      />
+      <div
+        aria-hidden="true"
+        className={cx(
+          "fixed inset-0 pointer-events-none transition-opacity duration-700",
+          "bg-bg-sunken/85 dark:bg-bg-sunken/90 backdrop-blur-[2px]",
+          showCampus ? "opacity-100" : "opacity-0"
+        )}
+      />
+      <div className="relative min-h-full w-full flex items-center justify-center p-4 sm:p-8">
         <div className="w-full max-w-[1040px] bg-bg rounded-[20px] shadow-pop overflow-hidden flex flex-col lg:flex-row">
 
           {/* ---------------- Left: context ---------------- */}

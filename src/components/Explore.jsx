@@ -146,7 +146,7 @@ export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, j
         <div className="max-w-xl mx-auto">
           <h1 className="text-3xl font-bold text-ink text-center">
             Find your{" "}
-            <span className="bg-clip-text text-transparent bg-gradient-to-r from-c-violet via-c-pink to-c-orange">
+            <span className="text-accent">
               people
             </span>
           </h1>
@@ -230,7 +230,7 @@ export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, j
             icon="search_off"
             title="Nothing found"
             body="Try a different search, or clear the topic filter."
-            action={<Button variant="soft" onClick={() => { setQuery(""); setCat(null); }}>Clear filters</Button>}
+            action={<Button tone="teal" onClick={() => { setQuery(""); setCat(null); }}>Clear filters</Button>}
           />
         ) : (
           // Mosaic: every third tile is double-height, which breaks the grid

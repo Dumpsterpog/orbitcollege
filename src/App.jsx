@@ -779,7 +779,8 @@ export default function App() {
         onTeaClick={openTea} onSearchClick={openSearch} onCreateClick={openCreate}
         onOpenSettings={() => goToTab("settings")}
         verified={user.verified} user={user} theme={theme} onToggleTheme={toggleTheme}
-        joinedCount={joinedIds.length} />
+        joinedCount={joinedIds.length}
+        onUnbuilt={(m) => showToast(m)} />
       <div className="flex-1 flex flex-col overflow-hidden lg:h-full min-w-0">
       {!showingSubPage && (
         <TopBar notifOpen={notifOpen} setNotifOpen={setNotifOpen}
@@ -794,11 +795,6 @@ export default function App() {
           now" to the far right on a wide monitor, with the actual content
           centered between them — the call to action ended up furthest from the
           thing it refers to. */}
-      {!showingSubPage && !user.verified && (
-        <div className="shrink-0">
-          <GuestBanner onVerify={goToInitialPage} />
-        </div>
-      )}
       <div className="flex-1 overflow-hidden flex flex-col min-w-0">
       {selectedCommunity ? (
         <CommunityDetail
@@ -839,6 +835,10 @@ export default function App() {
           onJoinToggle={(id) => { if (!id) { handleBlocked(); return; } if (!user.verified) { handleBlocked(); return; } handleJoinToggle(id); }}
           user={user}
           onGoToExplore={() => goToTab("explore")}
+          events={events}
+          registeredEventIds={registeredEventIds}
+          onRegisterEvent={handleRegisterEvent}
+          onGoToEvents={() => goToTab("events")}
         />
       ) : activeTab === "explore" ? (
         <ExploreScreen subTab={exploreTab} setSubTab={setExploreTab} clubs={clubs} communities={communities}
@@ -888,6 +888,9 @@ export default function App() {
           onComingSoon={() => showToast("Coming soon")}
           notifPrefs={notifPrefs}
           onNotifChange={(key, val) => setNotifPrefs((p) => ({ ...p, [key]: val }))}
+          joinedCommunities={joinedCommunities}
+          onOpenCommunity={setSelectedCommunity}
+          onGoToExplore={() => goToTab("explore")}
         />
       ) : null}
       </div>
@@ -902,6 +905,7 @@ export default function App() {
       {reportTarget && (
         <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} onSubmit={handleReportSubmit} />
       )}
+      {!showingSubPage && !user.verified && <GuestBanner onVerify={goToInitialPage} />}
       <Toast message={toastMsg} />
     </div>
   );

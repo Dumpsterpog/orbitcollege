@@ -52,19 +52,16 @@
   --danger-wash: 254 238 237;
   --success: 20 145 84;
 
-  /* Story ring. Warm-to-cool sweep so an "active" community reads at a
-     glance without needing a label. */
-  --ring-a: 255 133 45;
-  --ring-b: 236 62 118;
-  --ring-c: 118 71 233;
-
+  /* Active-community ring. A single accent ring rather than the three-stop
+     conic sweep — the rainbow read as another product's brand, and one
+     colour states "there's something new here" just as clearly. */
 
   /* Expressive palette. Icons are always filled and always carry a hue —
      a screen of grey glyphs reads as unfinished. Colour is assigned by
      meaning (a category, a metric, a state), never decoratively, so the
      same subject is the same colour everywhere in the app.
-     Tuned to clear 4.5:1 on the white surface so these are safe for text,
-     not just for 20px glyphs. */
+     Tuned to clear 4.5:1 on the white surface, so these are safe for text
+     and not just for 20px glyphs. */
   --c-blue: 0 102 255;
   --c-violet: 118 71 233;
   --c-pink: 214 41 118;
@@ -145,13 +142,7 @@
 
 /* Story ring: a 2px conic sweep with the avatar punched out of the middle. */
 .story-ring {
-  background: conic-gradient(
-    from 200deg,
-    rgb(var(--ring-a)),
-    rgb(var(--ring-b)),
-    rgb(var(--ring-c)),
-    rgb(var(--ring-a))
-  );
+  background: rgb(var(--accent));
 }
 
 /* Feed images arrive at unpredictable ratios; this keeps a row of them from
@@ -179,4 +170,39 @@
 }
 .dark .card:hover {
   box-shadow: 0 0 0 1px rgb(var(--line-strong)), 0 6px 24px rgb(0 0 0 / .5);
+}
+
+/* Rail edge. Replaces `border-r`: a hairline that fades out at the top and
+   bottom, over a soft falloff. A hard 1px rule running the full height reads
+   as a drawn line; this reads as two regions meeting. */
+.rail-edge {
+  position: relative;
+}
+.rail-edge::after {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  right: -1px;
+  width: 1px;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgb(var(--line) / 0) 0%,
+    rgb(var(--line)) 10%,
+    rgb(var(--line)) 90%,
+    rgb(var(--line) / 0) 100%
+  );
+}
+.rail-edge::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  right: 0;
+  width: 24px;
+  pointer-events: none;
+  transform: translateX(100%);
+  background: linear-gradient(to right, rgb(var(--ink) / 0.035), transparent);
+}
+.dark .rail-edge::before {
+  background: linear-gradient(to right, rgb(0 0 0 / 0.5), transparent);
 }

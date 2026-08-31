@@ -41,6 +41,24 @@ const VARIANTS = {
   danger: "text-danger hover:bg-danger-wash",
 };
 
+// Per-action fills. A screen where every button is the same blue makes the
+// buttons furniture — nothing tells you which action you came for. `tone`
+// gives an action its own hue, assigned by what it does (create is violet,
+// join is green, register is orange) and kept consistent across screens.
+//
+// `text-bg` rather than white: the palette inverts between themes, so the
+// label follows the page background to stay legible on both.
+const TONES = {
+  blue: "bg-c-blue text-bg hover:opacity-90",
+  violet: "bg-c-violet text-bg hover:opacity-90",
+  pink: "bg-c-pink text-bg hover:opacity-90",
+  orange: "bg-c-orange text-bg hover:opacity-90",
+  amber: "bg-c-amber text-bg hover:opacity-90",
+  green: "bg-c-green text-bg hover:opacity-90",
+  teal: "bg-c-teal text-bg hover:opacity-90",
+  red: "bg-c-red text-bg hover:opacity-90",
+};
+
 const SIZES = {
   xs: "h-7 px-3 text-xs",
   sm: "h-8 px-3.5 text-xs",
@@ -49,14 +67,14 @@ const SIZES = {
 };
 
 export const Button = forwardRef(function Button(
-  { variant = "soft", size = "md", loading = false, icon, iconTint, className, children, disabled, ...rest },
+  { variant = "soft", tone, size = "md", loading = false, icon, iconTint, className, children, disabled, ...rest },
   ref
 ) {
   return (
     <button
       ref={ref}
       disabled={disabled || loading}
-      className={cx(BASE, VARIANTS[variant], variant !== "link" && SIZES[size], className)}
+      className={cx(BASE, tone ? TONES[tone] : VARIANTS[variant], variant !== "link" && SIZES[size], className)}
       {...rest}
     >
       {loading ? <Spinner size={15} /> : icon && <Icon name={icon} size={size === "lg" ? 20 : 18} className={iconTint} />}
