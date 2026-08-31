@@ -807,6 +807,7 @@ export default function App() {
           onGoToTea={openTea}
           user={user}
           onOpenProfile={() => goToTab("profile")}
+          onGoToExplore={() => goToTab("explore")}
         />
       ) : activeTab === "explore" ? (
         <ExploreScreen subTab={exploreTab} setSubTab={setExploreTab} clubs={clubs} communities={communities}
