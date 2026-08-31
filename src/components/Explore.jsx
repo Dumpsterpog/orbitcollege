@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { CATEGORIES } from "../data/constants.js";
 import { communityTrendScore } from "../utils/helpers.js";
 import { Icon, Avatar, Button, Input, Tag, cx } from "./ui/Primitives.jsx";
@@ -89,10 +89,22 @@ function Tile({ c, joined, onOpen, onJoin, tall = false }) {
   );
 }
 
+function TileSkeleton({ tall }) {
+  return (
+    <div className={cx("bg-bg-sunken animate-pulse", tall ? "row-span-2 aspect-[1/2.02]" : "aspect-square")} />
+  );
+}
+
 export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, joinedIds = [], onJoinToggle }) {
+  const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState("all");
   const [cat, setCat] = useState(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => setLoading(false), 450);
+    return () => clearTimeout(t);
+  }, []);
 
   const all = useMemo(() => [...clubs, ...communities], [clubs, communities]);
 
@@ -204,11 +216,16 @@ export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, j
         </div>
 
         <p className="text-xs text-ink-2 mt-6 mb-3 tabular-nums">
-          {results.length} {results.length === 1 ? "result" : "results"}
-          {cat && <> in <span className="font-semibold text-ink">{cat}</span></>}
+          {loading
+            ? "Loading communities…"
+            : <>{results.length} {results.length === 1 ? "result" : "results"}{cat && <> in <span className="font-semibold text-ink">{cat}</span></>}</>}
         </p>
 
-        {results.length === 0 ? (
+        {loading ? (
+          <div className="grid grid-cols-2 md:grid-cols-3 auto-rows-[minmax(0,1fr)] gap-1 sm:gap-2">
+            {Array.from({ length: 9 }).map((_, i) => <TileSkeleton key={i} tall={i % 7 === 0} />)}
+          </div>
+        ) : results.length === 0 ? (
           <Empty
             icon="search_off"
             title="Nothing found"

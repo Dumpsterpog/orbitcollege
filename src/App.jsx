@@ -388,6 +388,40 @@ export default function App() {
   // same table/pattern Community.jsx's Posts tab already uses (see its
   // toggleSpark). Optimistic update with rollback on failure, same as every
   // other write in this app.
+  // Posting from Home. The same community_posts insert Community.jsx does,
+  // except the community is chosen in the composer instead of being implied
+  // by which page you're on — which is what makes Home a feed you can post
+  // to rather than a feed you can only read.
+  const handleCreatePost = async (communityId, text) => {
+    if (!user.verified || !authUser) { handleBlocked(); return false; }
+    const body = text.trim();
+    if (!body || !communityId) return false;
+
+    const { data, error } = await supabase
+      .from("community_posts")
+      .insert({ community_id: communityId, author_id: authUser.id, text: body })
+      .select("id, text, has_image, image_url, spark_count, created_at, author_id")
+      .single();
+
+    if (error || !data) { showToast("Couldn't post — try again"); return false; }
+
+    setFeedPosts((ps) => [
+      {
+        id: data.id,
+        communityId,
+        who: user.name || "You",
+        text: data.text,
+        time: "just now",
+        hasImage: !!data.has_image,
+        imageUrl: data.image_url,
+        sparks: data.spark_count ?? 0,
+      },
+      ...ps,
+    ]);
+    showToast("Posted");
+    return true;
+  };
+
   const handleSparkPost = async (postId) => {
     if (!user.verified || !authUser) { handleBlocked(); return; }
     const wasSparked = feedSparkIds.includes(postId);
@@ -798,13 +832,10 @@ export default function App() {
           communities={allGroups} joinedIds={joinedIds}
           onOpen={setSelectedCommunity} interests={user.interests}
           feedPosts={feedPosts} feedSparkIds={feedSparkIds} onSparkPost={handleSparkPost}
-          onAdClick={() => showToast("Ads — demo content for this presentation, not a live ad network")}
+          onCreatePost={handleCreatePost}
           onCreateClick={openCreate}
-          events={events}
           userName={user.verified ? user.name : ""}
-          onJoinToggle={(id) => { if (!user.verified) { handleBlocked(); return; } handleJoinToggle(id); }}
-          onGoToEvents={() => goToTab("events")}
-          onGoToTea={openTea}
+          onJoinToggle={(id) => { if (!id) { handleBlocked(); return; } if (!user.verified) { handleBlocked(); return; } handleJoinToggle(id); }}
           user={user}
           onGoToExplore={() => goToTab("explore")}
         />
