@@ -55,6 +55,7 @@ function mapFeedPostRow(row) {
   return {
     id: row.id,
     communityId: row.community_id,
+    authorId: row.author_id,
     who: row.profiles?.name || "Someone",
     text: row.text,
     time: timeAgo(row.created_at),
@@ -223,7 +224,7 @@ export default function App() {
     (async () => {
       const { data, error } = await supabase
         .from("community_posts")
-        .select("id, community_id, text, has_image, image_url, spark_count, created_at, profiles!author_id(name)")
+        .select("id, community_id, author_id, text, has_image, image_url, spark_count, created_at, profiles!author_id(name)")
         .order("created_at", { ascending: false })
         .limit(40);
       if (!error && data) setFeedPosts(data.map(mapFeedPostRow));
@@ -244,7 +245,7 @@ export default function App() {
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "community_posts" }, async (payload) => {
         const { data } = await supabase
           .from("community_posts")
-          .select("id, community_id, text, has_image, image_url, spark_count, created_at, profiles!author_id(name)")
+          .select("id, community_id, author_id, text, has_image, image_url, spark_count, created_at, profiles!author_id(name)")
           .eq("id", payload.new.id)
           .single();
         if (!data) return;
@@ -832,6 +833,15 @@ export default function App() {
           onOpenSettings={() => goToTab("settings")}
           onOpenCommunity={setSelectedCommunity}
           onComingSoon={() => showToast("Coming soon")}
+          authUserId={authUser?.id}
+          allCommunities={allGroups}
+          myPosts={authUser ? feedPosts.filter((p) => p.authorId === authUser.id) : []}
+          registeredEvents={events.filter((e) => registeredEventIds.includes(e.id))}
+          onOpenEvent={(e) => {
+            const c = e.linkedCommunityId && dbCommunities.find((x) => x.id === e.linkedCommunityId);
+            if (c) setSelectedCommunity(c);
+            else goToTab("events");
+          }}
         />
       ) : activeTab === "settings" ? (
         <SettingsScreen
