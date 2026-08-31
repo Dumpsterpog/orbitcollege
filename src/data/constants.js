@@ -4,23 +4,27 @@ import {
   Library, Camera, PawPrint, HeartHandshake,
 } from "lucide-react";
 
+// `icon` is the lucide component the pre-M3 screens still render; `msr` is
+// the filled Material Symbols ligature the rebuilt dashboard uses. `tint`
+// gives each category its own filled colour so a directory of sixteen
+// doesn't read as sixteen identical grey glyphs.
 export const CATEGORIES = [
-  { name: "Study", icon: BookOpen, color: "indigo" },
-  { name: "Sports", icon: Trophy, color: "rose" },
-  { name: "Fitness", icon: Dumbbell, color: "emerald" },
-  { name: "Coding & Projects", icon: Code2, color: "violet" },
-  { name: "Roommates", icon: HomeIcon, color: "amber" },
-  { name: "Travel", icon: Plane, color: "sky" },
-  { name: "Gaming", icon: Gamepad2, color: "fuchsia" },
-  { name: "Networking & Social", icon: Handshake, color: "orange" },
-  { name: "Music", icon: Music, color: "pink" },
-  { name: "Cooking", icon: ChefHat, color: "yellow" },
-  { name: "Art & Design", icon: Palette, color: "purple" },
-  { name: "Movies & TV", icon: Clapperboard, color: "red" },
-  { name: "Books & Reading", icon: Library, color: "teal" },
-  { name: "Photography", icon: Camera, color: "cyan" },
-  { name: "Pets & Animals", icon: PawPrint, color: "lime" },
-  { name: "Volunteering", icon: HeartHandshake, color: "stone" },
+  { name: "Study", icon: BookOpen, color: "indigo", msr: "menu_book", tint: "text-icon-blue" },
+  { name: "Sports", icon: Trophy, color: "rose", msr: "sports_soccer", tint: "text-icon-green" },
+  { name: "Fitness", icon: Dumbbell, color: "emerald", msr: "fitness_center", tint: "text-icon-teal" },
+  { name: "Coding & Projects", icon: Code2, color: "violet", msr: "code", tint: "text-icon-violet" },
+  { name: "Roommates", icon: HomeIcon, color: "amber", msr: "house", tint: "text-icon-amber" },
+  { name: "Travel", icon: Plane, color: "sky", msr: "flight", tint: "text-icon-blue" },
+  { name: "Gaming", icon: Gamepad2, color: "fuchsia", msr: "sports_esports", tint: "text-icon-pink" },
+  { name: "Networking & Social", icon: Handshake, color: "orange", msr: "handshake", tint: "text-icon-amber" },
+  { name: "Music", icon: Music, color: "pink", msr: "music_note", tint: "text-icon-pink" },
+  { name: "Cooking", icon: ChefHat, color: "yellow", msr: "restaurant", tint: "text-icon-amber" },
+  { name: "Art & Design", icon: Palette, color: "purple", msr: "palette", tint: "text-icon-violet" },
+  { name: "Movies & TV", icon: Clapperboard, color: "red", msr: "movie", tint: "text-icon-pink" },
+  { name: "Books & Reading", icon: Library, color: "teal", msr: "local_library", tint: "text-icon-teal" },
+  { name: "Photography", icon: Camera, color: "cyan", msr: "photo_camera", tint: "text-icon-teal" },
+  { name: "Pets & Animals", icon: PawPrint, color: "lime", msr: "pets", tint: "text-icon-green" },
+  { name: "Volunteering", icon: HeartHandshake, color: "stone", msr: "volunteer_activism", tint: "text-icon-green" },
 ];
 
 // Strictly grayscale (per the black-and-white rebrand — no hue anywhere in
@@ -55,6 +59,6 @@ export const COLOR_MAP = {
 
 export const REPORT_REASONS = ["Spam or scam", "Harassment or bullying", "Inappropriate content", "Fake community or impersonation", "Something else"];
 
-export const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@500;600&display=swap'); .no-scrollbar{scrollbar-width:none;-ms-overflow-style:none;} .no-scrollbar::-webkit-scrollbar{display:none;width:0;height:0} .mono{font-family:'JetBrains Mono',monospace;}`;
+export const FONT_IMPORT = `@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@100..900&display=swap');@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0&display=swap'); .no-scrollbar{scrollbar-width:none;-ms-overflow-style:none;} .no-scrollbar::-webkit-scrollbar{display:none;width:0;height:0} .mono{font-family:'JetBrains Mono',monospace;} .msr{font-family:'Material Symbols Rounded';font-weight:400;font-style:normal;line-height:1;letter-spacing:normal;text-transform:none;display:inline-block;white-space:nowrap;word-wrap:normal;direction:ltr;-webkit-font-feature-settings:'liga';-webkit-font-smoothing:antialiased;user-select:none;font-variation-settings:'FILL' 1,'wght' 400,'GRAD' 0,'opsz' 24;}`;
 
 export const ONBOARDING_STEPS = ["contact", "profile"];

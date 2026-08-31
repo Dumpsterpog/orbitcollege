@@ -1,222 +1,186 @@
 import { useState, useMemo, useEffect } from "react";
-import { Plus, Flame, TrendingUp, Image as ImageIcon, Megaphone, Sparkles, Users } from "lucide-react";
+import { Plus } from "lucide-react";
 import { CATEGORIES } from "../data/constants.js";
-import { interestMatchCount, baseSparks, communityTrendScore } from "../utils/helpers.js";
-import { SkeletonFeed, SkeletonTile } from "./Skeleton.jsx";
+import { communityTrendScore, interestMatchCount } from "../utils/helpers.js";
+import { SkeletonFeed } from "./Skeleton.jsx";
 import { EmptyState } from "./EmptyState.jsx";
-import { Avatar, Button, Card, Badge, SectionLabel, cx } from "./ui/Primitives.jsx";
-import { Screen, PageHeader } from "./ui/Layout.jsx";
+import { Icon, cx } from "./ui/Primitives.jsx";
 
-// Home, rebuilt as a two-column dashboard.
+// Home, rebuilt to the Stitch mock (home.html): welcome headline, a
+// three-up stat bento, then a 12-column grid — feed across 8, context rail
+// across 4 (trending communities, upcoming events, campus map).
 //
-// The old Home was a single centred phone column: a stories rail, a trending
-// row, a matched row and then the feed, all stacked and capped at ~32rem. On
-// a wide screen that left most of the viewport empty while the secondary
-// content (trending, matched) pushed the actual feed below the fold.
-//
-// Now the feed owns a readable centre column and everything secondary moves
-// into a sticky right rail that only exists at xl. Below that it collapses
-// back to one column with the rail's content following the feed.
+// Everything is driven by the real data App.jsx already passes. Where the
+// mock showed invented content the honest equivalent is used instead: the
+// stat tiles read from live counts, and the campus-map tile is labelled as
+// not-yet-wired rather than showing a screenshot of Stanford.
 
-function CommunityMark({ community, size = 26 }) {
-  const cat = community ? CATEGORIES.find((x) => x.name === community.category) : null;
-  const Icon = cat?.icon;
-  if (community?.avatarUrl) {
-    return (
-      <img
-        src={community.avatarUrl}
-        alt=""
-        className="rounded shrink-0 object-cover border border-line"
-        style={{ width: size, height: size }}
-      />
-    );
-  }
+const initialsOf = (name = "") =>
+  name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
+
+const formatCount = (n) => (n >= 1000 ? `${(n / 1000).toFixed(1)}k` : `${n}`);
+
+/* -------------------------------------------------------------- Stat tile */
+
+function StatTile({ label, icon, tint, value, unit }) {
   return (
-    <span
-      className="rounded shrink-0 grid place-items-center bg-surface-inset border border-line text-content-secondary"
-      style={{ width: size, height: size }}
-    >
-      {Icon ? <Icon size={Math.round(size * 0.5)} /> : null}
-    </span>
-  );
-}
-
-/* ------------------------------------------------------------------ Feed */
-
-function PostFeedCard({ post, community, sparked, onSpark, onOpen }) {
-  return (
-    <Card className="overflow-hidden">
-      <button
-        onClick={() => community && onOpen(community)}
-        className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-left hover:bg-surface-inset transition-colors"
-      >
-        <CommunityMark community={community} size={26} />
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-content truncate">{community?.name || "Orbit"}</p>
-          <p className="text-2xs text-content-muted truncate">{post.who} · {post.time}</p>
-        </div>
-      </button>
-
-      {post.imageUrl && (
-        <button
-          onClick={() => community && onOpen(community)}
-          className="block w-full aspect-[16/10] bg-surface-inset overflow-hidden border-y border-line"
-        >
-          <img src={post.imageUrl} alt="" className="w-full h-full object-cover" loading="lazy" />
-        </button>
-      )}
-
-      {post.text && (
-        <p className="px-3.5 pt-3 text-sm text-content-secondary leading-relaxed">{post.text}</p>
-      )}
-
-      <div className="px-3.5 py-2.5 flex items-center gap-1">
-        <button
-          type="button"
-          onClick={() => onSpark(post.id)}
-          aria-pressed={sparked}
-          className={cx(
-            "inline-flex items-center gap-1.5 h-7 px-2 rounded-sm text-xs font-medium transition-colors",
-            sparked ? "text-accent bg-accent-subtle" : "text-content-muted hover:text-content hover:bg-surface-inset"
-          )}
-        >
-          <Flame size={14} fill={sparked ? "currentColor" : "none"} />
-          <span className="tabular-nums">{post.sparks}</span>
-        </button>
+    <div className="bg-surface-container-lowest border border-outline-variant/30 rounded-lg p-lg shadow-sm flex flex-col justify-between h-32">
+      <div className="flex justify-between items-start">
+        <span className="text-label-md font-medium text-on-surface-variant uppercase tracking-wider">{label}</span>
+        <Icon name={icon} size={22} className={tint} />
       </div>
-    </Card>
-  );
-}
-
-// Demo sponsored content — clearly labelled, not disguised as a real post.
-// No ad backend is wired; these are static placeholders so the every-third-
-// post slot can actually be seen, and can be swapped for a real network's
-// response without touching the layout.
-const DEMO_ADS = [
-  {
-    id: "demo-ad-cafe",
-    kind: "Local business",
-    title: "Campus Grind Café",
-    subtitle: "20% off for MUJ students this week — show your Orbit profile at the counter.",
-    cta: "View offer",
-    image: "https://loremflickr.com/900/560/coffee,cafe?lock=2001",
-  },
-  {
-    id: "demo-ad-fest",
-    kind: "Campus event",
-    title: "Zeal 2026 — MUJ Cultural Fest",
-    subtitle: "Registrations are open. Headline night passes are going fast.",
-    cta: "Learn more",
-    image: "https://loremflickr.com/900/560/concert,festival?lock=2002",
-  },
-  {
-    id: "demo-ad-print",
-    kind: "Local business",
-    title: "PrintHub Jaipur",
-    subtitle: "Same-day assignment printing and spiral binding, 5 minutes from the campus gate.",
-    cta: "Get directions",
-    image: "https://loremflickr.com/900/560/printer,stationery?lock=2003",
-  },
-];
-
-function AdCard({ ad, onClick }) {
-  return (
-    <Card className="overflow-hidden">
-      <div className="flex items-center gap-2.5 px-3.5 py-2.5">
-        <span className="h-[26px] w-[26px] rounded shrink-0 grid place-items-center bg-surface-inset border border-line">
-          <Megaphone size={13} className="text-content-muted" />
-        </span>
-        <div className="flex-1 min-w-0">
-          <p className="text-xs font-medium text-content truncate">{ad.title}</p>
-          <p className="text-2xs text-content-faint truncate">Sponsored · {ad.kind}</p>
-        </div>
-        <Badge tone="neutral">Ad</Badge>
+      <div>
+        <span className="text-headline-lg font-bold text-on-surface tabular-nums">{value}</span>
+        <span className="text-body-sm text-on-surface-variant ml-xs">{unit}</span>
       </div>
-      <button onClick={onClick} className="block w-full aspect-[16/10] bg-surface-inset overflow-hidden border-y border-line">
-        <img src={ad.image} alt="" className="w-full h-full object-cover" loading="lazy" />
-      </button>
-      <div className="px-3.5 py-3">
-        <p className="text-sm text-content-secondary leading-relaxed">{ad.subtitle}</p>
-        <Button variant="secondary" size="sm" onClick={onClick} className="mt-2.5">{ad.cta}</Button>
-      </div>
-    </Card>
-  );
-}
-
-function LatestPostsFeed({ feedPosts, communities, sparkIds, onSparkPost, onOpen, onAdClick }) {
-  const items = useMemo(() => {
-    const out = [];
-    feedPosts.forEach((post, i) => {
-      out.push({ type: "post", key: post.id, post });
-      if ((i + 1) % 3 === 0) {
-        out.push({ type: "ad", key: `ad-${i}`, ad: DEMO_ADS[Math.floor(i / 3) % DEMO_ADS.length] });
-      }
-    });
-    return out;
-  }, [feedPosts]);
-
-  if (feedPosts.length === 0) {
-    return (
-      <EmptyState
-        icon={ImageIcon}
-        title="No posts yet"
-        subtitle="Posts from every community land here, newest first, as they're made."
-      />
-    );
-  }
-
-  return (
-    <div className="space-y-2.5">
-      {items.map((item) =>
-        item.type === "post" ? (
-          <PostFeedCard
-            key={item.key}
-            post={item.post}
-            community={communities.find((c) => c.id === item.post.communityId)}
-            sparked={sparkIds.includes(item.post.id)}
-            onSpark={onSparkPost}
-            onOpen={onOpen}
-          />
-        ) : (
-          <AdCard key={item.key} ad={item.ad} onClick={onAdClick} />
-        )
-      )}
     </div>
+  );
+}
+
+/* ------------------------------------------------------------- Post card */
+
+function PostCard({ post, community, sparked, onSpark, onOpen }) {
+  const cat = community ? CATEGORIES.find((x) => x.name === community.category) : null;
+
+  return (
+    <article className="bg-surface-container-lowest border border-outline-variant/30 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow">
+      <div className="p-md flex items-center justify-between border-b border-outline-variant/10">
+        <button onClick={() => community && onOpen(community)} className="flex items-center gap-sm text-left min-w-0 group">
+          <span className="w-10 h-10 rounded bg-surface-container grid place-items-center text-on-surface text-label-md font-medium shrink-0 overflow-hidden">
+            {community?.avatarUrl
+              ? <img src={community.avatarUrl} alt="" className="w-full h-full object-cover" />
+              : cat ? <Icon name={cat.msr} size={20} className={cat.tint} /> : initialsOf(community?.name)}
+          </span>
+          <span className="min-w-0">
+            <span className="block text-label-md font-medium text-on-surface truncate group-hover:text-primary transition-colors">
+              {community?.name || "Orbit"}
+            </span>
+            <span className="block text-body-sm text-on-surface-variant truncate">
+              Posted by {post.who} • {post.time}
+            </span>
+          </span>
+        </button>
+        <button
+          aria-label="More"
+          className="text-on-surface-variant hover:text-on-surface transition-colors shrink-0 p-xs rounded-full hover:bg-surface-container"
+        >
+          <Icon name="more_horiz" size={20} />
+        </button>
+      </div>
+
+      {(post.title || post.text || post.imageUrl) && (
+        <div className="p-md">
+          {post.title && <h4 className="text-headline-sm font-semibold text-on-surface mb-sm">{post.title}</h4>}
+          {post.text && <p className="text-body-md text-on-surface-variant mb-md leading-relaxed">{post.text}</p>}
+          {post.imageUrl && (
+            <button onClick={() => community && onOpen(community)} className="block w-full">
+              <img
+                src={post.imageUrl}
+                alt=""
+                loading="lazy"
+                className="w-full h-64 object-cover rounded border border-outline-variant/20"
+              />
+            </button>
+          )}
+        </div>
+      )}
+
+      <div className="p-sm px-md bg-surface border-t border-outline-variant/10 flex items-center justify-between">
+        <div className="flex gap-md">
+          <button
+            onClick={() => onSpark(post.id)}
+            aria-pressed={sparked}
+            className={cx(
+              "flex items-center gap-xs text-label-sm font-medium transition-colors",
+              sparked ? "text-primary" : "text-on-surface-variant hover:text-primary"
+            )}
+          >
+            <Icon name="thumb_up" size={20} className={sparked ? "text-icon-blue" : ""} />
+            <span className="tabular-nums">{post.sparks}</span>
+          </button>
+          <button
+            onClick={() => community && onOpen(community)}
+            className="flex items-center gap-xs text-label-sm font-medium text-on-surface-variant hover:text-primary transition-colors"
+          >
+            <Icon name="chat_bubble" size={20} className="text-icon-teal" />
+            {/* community_posts carries no comment count, so the number is
+                omitted rather than hard-coded to 0 — the icon still opens
+                the community where the replies actually live. */}
+            {typeof post.commentCount === "number" && (
+              <span className="tabular-nums">{post.commentCount}</span>
+            )}
+          </button>
+        </div>
+        <button className="text-on-surface-variant hover:text-primary transition-colors text-label-sm font-medium flex items-center gap-xs">
+          <Icon name="bookmark" size={20} className="text-icon-amber" />Save
+        </button>
+      </div>
+    </article>
   );
 }
 
 /* ------------------------------------------------------------------ Rail */
 
-function RailRow({ community, onOpen, rank, meta }) {
+function RailCard({ title, action, children, className }) {
   return (
-    <button
-      onClick={() => onOpen(community)}
-      className="w-full flex items-center gap-2.5 px-2 py-1.5 rounded-sm text-left transition-colors hover:bg-surface-inset"
-    >
-      {typeof rank === "number" && (
-        <span className="w-3.5 text-2xs tabular-nums text-content-faint shrink-0">{rank}</span>
-      )}
-      <CommunityMark community={community} size={22} />
-      <span className="min-w-0 flex-1">
-        <span className="block text-xs font-medium text-content truncate leading-tight">
-          {community.name.split(" — ")[0]}
-        </span>
-        <span className="block text-2xs text-content-muted truncate leading-tight mt-0.5">{meta}</span>
-      </span>
-    </button>
+    <section className={cx("bg-surface-container-lowest border border-outline-variant/30 rounded-lg shadow-sm p-lg", className)}>
+      <div className="flex items-center justify-between mb-md">
+        <h2 className="text-headline-sm font-semibold text-on-surface">{title}</h2>
+        {action}
+      </div>
+      {children}
+    </section>
   );
 }
 
-function RailSection({ icon: Icon, title, children, action }) {
+function TrendingRow({ c, joined, onOpen, onJoin }) {
+  const cat = CATEGORIES.find((x) => x.name === c.category);
   return (
-    <section className="space-y-1.5">
-      <div className="flex items-center gap-1.5 px-2">
-        {Icon && <Icon size={12} className="text-content-faint shrink-0" />}
-        <SectionLabel className="flex-1">{title}</SectionLabel>
-        {action}
-      </div>
-      <div className="space-y-0.5">{children}</div>
-    </section>
+    <div className="flex items-center justify-between gap-sm group">
+      <button onClick={() => onOpen(c)} className="flex items-center gap-sm min-w-0 text-left">
+        <span className="w-8 h-8 rounded bg-surface-container grid place-items-center text-on-surface text-label-sm font-medium shrink-0 overflow-hidden">
+          {c.avatarUrl
+            ? <img src={c.avatarUrl} alt="" className="w-full h-full object-cover" />
+            : cat ? <Icon name={cat.msr} size={17} className={cat.tint} /> : initialsOf(c.name)}
+        </span>
+        <span className="min-w-0">
+          <span className="block text-label-md font-medium text-on-surface truncate group-hover:text-primary transition-colors">
+            {c.name}
+          </span>
+          <span className="block text-label-sm text-on-surface-variant">{formatCount(c.members)} members</span>
+        </span>
+      </button>
+      {joined ? (
+        <span className="text-label-sm text-on-surface-variant px-sm py-xs shrink-0">Joined</span>
+      ) : (
+        <button
+          onClick={() => onJoin(c.id)}
+          className="text-label-sm font-medium text-primary bg-primary/10 px-sm py-xs rounded hover:bg-primary hover:text-on-primary transition-colors shrink-0"
+        >
+          Join
+        </button>
+      )}
+    </div>
+  );
+}
+
+function EventTimeline({ events, onViewAll }) {
+  if (events.length === 0) {
+    return <p className="text-body-sm text-on-surface-variant">Nothing scheduled yet.</p>;
+  }
+  return (
+    <div className="relative pl-md border-l-2 border-outline-variant/20 space-y-lg">
+      {events.map((e) => (
+        <div key={e.id} className="relative">
+          <span className="absolute -left-[23px] top-1 w-3 h-3 bg-surface-variant rounded-full border-2 border-surface-container-lowest" />
+          <h3 className="text-label-md font-medium text-on-surface">{e.title}</h3>
+          <p className="text-body-sm text-on-surface-variant mt-xs">{e.when}</p>
+          <p className="text-label-sm text-on-surface-variant flex items-center gap-xs mt-xs">
+            <Icon name="location_on" size={14} className="text-icon-pink" />{e.where}
+          </p>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -225,114 +189,183 @@ function RailSection({ icon: Icon, title, children, action }) {
 export function HomeScreen({
   communities, joinedIds, onOpen, onCreateClick, interests,
   feedPosts, feedSparkIds, onSparkPost, onAdClick,
+  events = [], userName, onJoinToggle, onGoToEvents, onGoToTea,
 }) {
-  // Brief skeleton pass on first mount so the feed reads as fetching rather
-  // than popping in fully formed.
   const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
   useEffect(() => {
     const t = setTimeout(() => setLoading(false), 450);
     return () => clearTimeout(t);
   }, []);
 
-  const joined = useMemo(
-    () => communities.filter((c) => joinedIds.includes(c.id)).sort((a, b) => a.lastActive - b.lastActive),
-    [communities, joinedIds]
-  );
-
   const trending = useMemo(
-    () => [...communities].sort((a, b) => communityTrendScore(b) - communityTrendScore(a)).slice(0, 5),
+    () => [...communities].sort((a, b) => communityTrendScore(b) - communityTrendScore(a)).slice(0, 3),
     [communities]
   );
 
-  const matched = useMemo(() => {
-    if (!interests || interests.length === 0) return [];
-    return communities
-      .filter((c) => !joinedIds.includes(c.id) && interestMatchCount(c, interests) > 0)
-      .sort((a, b) => interestMatchCount(b, interests) - interestMatchCount(a, interests))
-      .slice(0, 4);
-  }, [communities, interests, joinedIds]);
+  const upcoming = useMemo(() => events.slice(0, 2), [events]);
 
-  const rail = (
-    <div className="space-y-6">
-      <RailSection icon={TrendingUp} title="Trending">
-        {trending.map((c, i) => (
-          <RailRow key={c.id} community={c} onOpen={onOpen} rank={i + 1} meta={`${c.members} members`} />
-        ))}
-      </RailSection>
+  // "Important" = posts from communities you've actually joined. The mock's
+  // second tab had no defined meaning, and a filter that returns an
+  // arbitrary subset is worse than one that returns a meaningful one.
+  const visiblePosts = useMemo(() => {
+    const list = feedPosts || [];
+    return filter === "important" ? list.filter((p) => joinedIds.includes(p.communityId)) : list;
+  }, [feedPosts, filter, joinedIds]);
 
-      {matched.length > 0 && (
-        <RailSection icon={Sparkles} title="For you">
-          {matched.map((c) => (
-            <RailRow key={c.id} community={c} onOpen={onOpen} meta={c.category} />
-          ))}
-        </RailSection>
-      )}
-
-      <RailSection
-        icon={Users}
-        title="Your communities"
-        action={
-          <button onClick={onCreateClick} className="text-content-faint hover:text-content transition-colors" aria-label="Create community">
-            <Plus size={13} />
-          </button>
-        }
-      >
-        {joined.length === 0 ? (
-          <p className="px-2 text-2xs text-content-faint leading-relaxed">
-            Nothing joined yet. Find one in Explore.
-          </p>
-        ) : (
-          joined.slice(0, 8).map((c) => (
-            <RailRow
-              key={c.id}
-              community={c}
-              onOpen={onOpen}
-              meta={c.lastActive <= 10 ? "Active now" : `${c.members} members`}
-            />
-          ))
-        )}
-      </RailSection>
-    </div>
-  );
+  const firstName = (userName || "").split(" ")[0];
 
   return (
-    <Screen>
-      <PageHeader
-        title="Home"
-        subtitle="Latest from every community"
-        actions={<Button variant="secondary" size="sm" icon={Plus} onClick={onCreateClick}>New</Button>}
-      />
+    <div className="flex-1 min-h-0 overflow-y-auto bg-surface">
+      <div className="px-md lg:px-margin-desktop py-xl max-w-[1400px] mx-auto flex flex-col gap-xl">
 
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <div className="w-full max-w-5xl mx-auto px-5 lg:px-8 py-5 flex gap-8 items-start">
-          <div className="flex-1 min-w-0 max-w-2xl mx-auto xl:mx-0">
+        {/* Welcome + stats */}
+        <div className="flex flex-col gap-lg">
+          <div className="flex flex-wrap items-end justify-between gap-md">
+            <div className="min-w-0">
+              <h1 className="text-headline-lg-mobile lg:text-headline-xl font-bold text-on-surface">
+                {firstName ? `Welcome back, ${firstName}.` : "Welcome to Orbit."}
+              </h1>
+              <p className="text-body-lg text-on-surface-variant mt-xs">
+                Here is what's happening around campus today.
+              </p>
+            </div>
+            <button
+              onClick={onCreateClick}
+              className="bg-primary text-on-primary text-label-md font-medium px-lg py-md rounded-lg flex items-center gap-sm hover:bg-on-primary-fixed-variant transition-colors shadow-sm shrink-0"
+            >
+              <Plus size={18} />New Post
+            </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-md">
+            <StatTile label="Communities" icon="groups" tint="text-icon-blue" value={joinedIds.length} unit="joined" />
+            <StatTile label="Upcoming" icon="event" tint="text-icon-amber" value={events.length} unit="events listed" />
+            <StatTile label="Activity" icon="bolt" tint="text-icon-violet" value={(feedPosts || []).length} unit="recent posts" />
+          </div>
+        </div>
+
+        {/* Feed + rail */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-xl">
+          <div className="lg:col-span-8 flex flex-col gap-lg min-w-0">
+            <div className="flex items-center justify-between border-b border-outline-variant/30 pb-sm gap-md">
+              <h2 className="text-headline-md font-semibold text-on-surface min-w-0 truncate">
+                Latest from your communities
+              </h2>
+              <div className="flex gap-sm shrink-0">
+                {[{ k: "all", l: "All" }, { k: "important", l: "Important" }].map((t) => (
+                  <button
+                    key={t.k}
+                    onClick={() => setFilter(t.k)}
+                    className={cx(
+                      "text-label-sm font-medium px-md py-xs rounded-full transition-colors",
+                      filter === t.k
+                        ? "text-primary bg-primary/10"
+                        : "text-on-surface-variant hover:bg-surface-container"
+                    )}
+                  >
+                    {t.l}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {loading ? (
-              <SkeletonFeed count={4} />
-            ) : (
-              <LatestPostsFeed
-                feedPosts={feedPosts || []}
-                communities={communities}
-                sparkIds={feedSparkIds || []}
-                onSparkPost={onSparkPost}
-                onOpen={onOpen}
-                onAdClick={onAdClick}
+              <SkeletonFeed count={3} />
+            ) : visiblePosts.length === 0 ? (
+              <EmptyState
+                title={filter === "important" ? "Nothing from your communities yet" : "No posts yet"}
+                subtitle={
+                  filter === "important"
+                    ? "Join a community, or switch to All to see everything happening on campus."
+                    : "Posts from every community land here, newest first, as they're made."
+                }
               />
+            ) : (
+              <div className="flex flex-col gap-md">
+                {visiblePosts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={post}
+                    community={communities.find((c) => c.id === post.communityId)}
+                    sparked={(feedSparkIds || []).includes(post.id)}
+                    onSpark={onSparkPost}
+                    onOpen={onOpen}
+                  />
+                ))}
+              </div>
             )}
           </div>
 
-          <aside className="hidden xl:block w-60 shrink-0 sticky top-0">
-            {loading
-              ? <div className="space-y-2.5">{Array.from({ length: 3 }).map((_, i) => <SkeletonTile key={i} />)}</div>
-              : rail}
-          </aside>
-        </div>
+          <div className="lg:col-span-4 flex flex-col gap-xl min-w-0">
+            <RailCard title="Trending Communities">
+              <div className="flex flex-col gap-md">
+                {trending.length === 0 ? (
+                  <p className="text-body-sm text-on-surface-variant">Nothing trending yet.</p>
+                ) : (
+                  trending.map((c) => (
+                    <TrendingRow
+                      key={c.id}
+                      c={c}
+                      joined={joinedIds.includes(c.id)}
+                      onOpen={onOpen}
+                      onJoin={onJoinToggle}
+                    />
+                  ))
+                )}
+              </div>
+            </RailCard>
 
-        {/* Below xl the rail has nowhere to sit, so it follows the feed
-            rather than being dropped entirely. */}
-        {!loading && (
-          <div className="xl:hidden max-w-2xl mx-auto px-5 lg:px-8 pb-6">{rail}</div>
-        )}
+            <RailCard
+              title="Upcoming Events"
+              action={
+                <button onClick={onGoToEvents} className="text-label-sm font-medium text-primary hover:underline">
+                  View All
+                </button>
+              }
+            >
+              <EventTimeline events={upcoming} />
+            </RailCard>
+
+            {/* Campus map. The mock used a stock screenshot of Stanford; this
+                is a real, live OpenStreetMap view of Manipal University
+                Jaipur — no API key, no billing, and it's actually the
+                campus the app is for. */}
+            <section className="bg-surface-container-lowest border border-outline-variant/30 rounded-lg shadow-sm overflow-hidden p-xs">
+              <div className="w-full h-48 rounded overflow-hidden bg-surface-container">
+                <iframe
+                  title="Manipal University Jaipur campus map"
+                  loading="lazy"
+                  className="w-full h-full border-0"
+                  src="https://www.openstreetmap.org/export/embed.html?bbox=75.5510%2C26.8360%2C75.5800%2C26.8520&layer=mapnik&marker=26.8438%2C75.5651"
+                />
+              </div>
+              <div className="p-sm text-center">
+                <a
+                  href="https://www.openstreetmap.org/?mlat=26.8438&mlon=75.5651#map=15/26.8438/75.5651"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-label-sm font-medium text-on-surface-variant uppercase tracking-widest hover:text-primary transition-colors"
+                >
+                  Campus Map
+                </a>
+              </div>
+            </section>
+
+            <RailCard title="Locali-Tea">
+              <p className="text-body-sm text-on-surface-variant mb-md leading-relaxed">
+                Anonymous campus confessions and gossip. Everything posted disappears after 48 hours.
+              </p>
+              <button
+                onClick={onGoToTea}
+                className="w-full py-md border border-outline-variant/40 rounded-lg text-label-md font-medium text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-colors"
+              >
+                Open Locali-Tea
+              </button>
+            </RailCard>
+          </div>
+        </div>
       </div>
-    </Screen>
+    </div>
   );
 }

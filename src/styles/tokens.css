@@ -1,80 +1,141 @@
-/* Orbit design tokens — Linear/Vercel-style dense dashboard.
+/* Orbit design tokens — Material 3, from the Stitch home.html mock.
  *
- * Every colour in the rebuilt UI resolves through one of these semantic
- * names, never a raw Tailwind shade. The previous UI wrote pairs like
- * `text-zinc-600 dark:text-zinc-400` at every call site, which meant the
- * light and dark palettes drifted independently and a tweak had to be made
- * twice. Here dark is a variable swap and components stay theme-agnostic.
+ * Two naming layers over one palette:
  *
- * Scale is deliberately tight: surfaces sit close together in luminance and
- * separation comes from hairline borders rather than shadow, which is what
- * makes a dense product UI stay legible at 13px.
+ *  - M3 names (--m3-primary, --m3-on-surface, --m3-outline-variant …) match
+ *    the mock's vocabulary exactly, so the rebuilt Home / Sidebar / TopBar
+ *    can be written straight from the design without translating anything.
+ *  - The semantic names the rest of the app already uses (--bg, --text,
+ *    --accent …) are aliased onto the same values, so all seventeen screens
+ *    adopt the new palette without being rewritten.
+ *
+ * Light values are lifted verbatim from the mock's tailwind.config. Dark is
+ * the matching M3 dark scheme for the same seed — the mock only shipped a
+ * light theme, but the app has a working theme toggle, and inverse-primary
+ * (#b7c4ff) in the mock's own token set is the dark-scheme primary, so the
+ * ramp below is derived from that rather than invented.
  */
 
 :root {
-  /* Surfaces, lightest to most raised */
-  --bg: 255 255 255;
-  --bg-subtle: 250 250 250;
-  --bg-elevated: 255 255 255;
-  --bg-inset: 244 244 245;
+  /* ---- M3 core (verbatim from the mock) ---- */
+  --m3-primary: 0 62 199;                 /* #003ec7 */
+  --m3-on-primary: 255 255 255;
+  --m3-primary-container: 0 82 255;       /* #0052ff */
+  --m3-on-primary-container: 223 227 255; /* #dfe3ff */
+  --m3-primary-fixed: 221 225 255;        /* #dde1ff */
+  --m3-on-primary-fixed-variant: 0 56 182;/* #0038b6 */
 
-  /* Hairlines. -strong is for a border that must read as a real edge
-     (active field, selected card), not just a division. */
-  --border: 228 228 231;
-  --border-strong: 212 212 216;
+  --m3-secondary: 79 96 115;              /* #4f6073 */
+  --m3-secondary-container: 210 228 251;  /* #d2e4fb */
 
-  /* Text, in descending emphasis. -muted is the floor for readable body
-     copy; anything lower is decorative only. */
-  --text: 24 24 27;
-  --text-secondary: 82 82 91;
-  --text-muted: 113 113 122;
-  --text-faint: 161 161 170;
+  --m3-surface: 248 249 255;              /* #f8f9ff */
+  --m3-surface-container-lowest: 255 255 255;
+  --m3-surface-container-low: 239 244 255;/* #eff4ff */
+  --m3-surface-container: 229 238 255;    /* #e5eeff */
+  --m3-surface-container-high: 220 233 255;
+  --m3-surface-container-highest: 211 228 254;
+  --m3-surface-variant: 211 228 254;      /* #d3e4fe */
+  --m3-surface-dim: 203 219 245;
 
-  /* Single accent. Orbit's brand gold reads beautifully on near-black but
-     fails contrast as text on white, so light mode uses a deepened variant
-     of the same hue rather than a different colour. */
-  --accent: 146 106 6;
-  --accent-hover: 122 88 5;
-  --accent-fg: 255 255 255;
-  --accent-subtle: 250 243 224;
+  --m3-on-surface: 11 28 48;              /* #0b1c30 */
+  --m3-on-surface-variant: 67 70 86;      /* #434656 */
+  --m3-outline: 115 118 136;              /* #737688 */
+  --m3-outline-variant: 195 197 217;      /* #c3c5d9 */
 
-  /* Inverted solid — primary buttons, active nav. Monochrome by design;
-     the accent is reserved for brand moments, not every CTA. */
-  --solid: 24 24 27;
-  --solid-hover: 39 39 42;
-  --solid-fg: 250 250 250;
+  --m3-error: 186 26 26;                  /* #ba1a1a */
+  --m3-on-error: 255 255 255;
+  --m3-error-container: 255 218 214;
 
-  --danger: 190 42 42;
-  --danger-subtle: 254 242 242;
+  --m3-inverse-surface: 33 49 69;
+  --m3-inverse-on-surface: 234 241 255;
 
-  --radius: 8px;
-  --radius-sm: 6px;
-  --radius-lg: 12px;
+  /* ---- Aliases the existing screens consume ---- */
+  --bg: var(--m3-surface);
+  --bg-subtle: var(--m3-surface-container-low);
+  --bg-elevated: var(--m3-surface-container-lowest);
+  --bg-inset: var(--m3-surface-container);
+
+  --border: var(--m3-outline-variant);
+  --border-strong: var(--m3-outline);
+
+  --text: var(--m3-on-surface);
+  --text-secondary: var(--m3-on-surface-variant);
+  --text-muted: var(--m3-outline);
+  --text-faint: 143 146 165;
+
+  /* The accent is now the M3 primary — blue, not gold. In the mock the
+     primary CTA, the active nav pill and every link share this one colour. */
+  --accent: var(--m3-primary);
+  --accent-hover: var(--m3-on-primary-fixed-variant);
+  --accent-fg: var(--m3-on-primary);
+  --accent-subtle: 231 236 255;
+
+  /* Solid = the filled button. Previously inverted monochrome; the mock's
+     "New Post" is blue with white text, so solid and accent now coincide. */
+  --solid: var(--m3-primary);
+  --solid-hover: var(--m3-on-primary-fixed-variant);
+  --solid-fg: var(--m3-on-primary);
+
+  --danger: var(--m3-error);
+  --danger-subtle: var(--m3-error-container);
+
+
+  /* Filled-icon accents. Icons are solid glyphs, not hollow outlines, so
+     they carry colour of their own instead of reading as grey furniture.
+     Each is tuned to sit on the light surface at ~4.5:1. */
+  --icon-blue: 0 62 199;
+  --icon-teal: 0 105 110;
+  --icon-amber: 154 92 0;
+  --icon-pink: 158 41 123;
+  --icon-green: 30 109 62;
+  --icon-violet: 91 61 196;
+
+  --radius: 4px;
+  --radius-sm: 4px;
+  --radius-lg: 8px;
 }
 
 .dark {
-  --bg: 9 9 11;
-  --bg-subtle: 12 12 14;
-  --bg-elevated: 24 24 27;
-  --bg-inset: 24 24 27;
+  --m3-primary: 183 196 255;              /* the mock's own inverse-primary */
+  --m3-on-primary: 0 20 82;               /* #001452 */
+  --m3-primary-container: 0 56 182;       /* #0038b6 */
+  --m3-on-primary-container: 221 225 255;
+  --m3-primary-fixed: 221 225 255;
+  --m3-on-primary-fixed-variant: 199 210 255;
 
-  --border: 39 39 42;
-  --border-strong: 63 63 70;
+  --m3-secondary: 183 200 222;
+  --m3-secondary-container: 56 72 90;
 
-  --text: 250 250 250;
-  --text-secondary: 161 161 170;
-  --text-muted: 113 113 122;
-  --text-faint: 82 82 91;
+  --m3-surface: 16 19 28;
+  --m3-surface-container-lowest: 11 14 22;
+  --m3-surface-container-low: 24 28 38;
+  --m3-surface-container: 28 32 42;
+  --m3-surface-container-high: 38 42 53;
+  --m3-surface-container-highest: 49 53 64;
+  --m3-surface-variant: 68 71 89;
+  --m3-surface-dim: 16 19 28;
 
-  --accent: 212 175 55;
-  --accent-hover: 224 191 84;
-  --accent-fg: 24 24 27;
-  --accent-subtle: 42 35 14;
+  --m3-on-surface: 226 226 233;
+  --m3-on-surface-variant: 196 198 217;
+  --m3-outline: 142 144 164;
+  --m3-outline-variant: 68 71 89;
 
-  --solid: 250 250 250;
-  --solid-hover: 228 228 231;
-  --solid-fg: 24 24 27;
+  --m3-error: 255 180 171;
+  --m3-on-error: 105 0 5;
+  --m3-error-container: 147 0 10;
 
-  --danger: 248 113 113;
-  --danger-subtle: 42 16 16;
+  --m3-inverse-surface: 226 226 233;
+  --m3-inverse-on-surface: 47 48 54;
+
+
+  /* Lifted for the dark surface — the light values go muddy below 20% L. */
+  --icon-blue: 168 190 255;
+  --icon-teal: 98 216 222;
+  --icon-amber: 240 190 100;
+  --icon-pink: 255 174 220;
+  --icon-green: 130 219 152;
+  --icon-violet: 197 180 255;
+
+  --text-faint: 122 124 143;
+  --accent-subtle: 32 40 66;
 }

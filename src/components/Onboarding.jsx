@@ -90,7 +90,7 @@ export function Onboarding({ onDone, onGuest }) {
       <aside className="hidden lg:flex flex-col justify-between w-[44%] max-w-lg shrink-0 border-r border-line bg-surface-subtle p-10">
         <Logo size={22} />
         <div className="space-y-5">
-          <h1 className="text-3xl font-semibold text-content" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+          <h1 className="text-3xl font-semibold text-content" style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
             Every club.<br />Every community.<br />One platform.
           </h1>
           <ul className="space-y-2.5">
@@ -116,7 +116,7 @@ export function Onboarding({ onDone, onGuest }) {
         <div className="flex-1 flex flex-col justify-center px-6 lg:px-10 pb-10 max-w-md w-full mx-auto">
           {step === "signin" && (
             <div className="animate-fade-in-up">
-              <h2 className="text-2xl font-semibold text-content" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              <h2 className="text-2xl font-semibold text-content" style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
                 Sign in to Orbit
               </h2>
               <p className="text-sm text-content-muted mt-2 mb-7">
@@ -165,7 +165,7 @@ export function Onboarding({ onDone, onGuest }) {
                 <ChevronLeft size={13} />Back
               </button>
 
-              <h2 className="text-2xl font-semibold text-content" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
+              <h2 className="text-2xl font-semibold text-content" style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
                 Set up your profile
               </h2>
               <p className="text-sm text-content-muted mt-2 mb-6">Two quick things, then you're in.</p>

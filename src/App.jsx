@@ -692,7 +692,7 @@ export default function App() {
 
   if (loadingSession) {
     return (
-      <div className={shellClassAuth} style={{ fontFamily: "'Inter', sans-serif" }}>
+      <div className={shellClassAuth} style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
         <style>{FONT_IMPORT}</style>
         <div className="flex-1 flex items-center justify-center">
           <Logo size={26} />
@@ -703,7 +703,7 @@ export default function App() {
 
   if (stage === "onboarding") {
     return (
-      <div className={shellClassAuth} style={{ fontFamily: "'Inter', sans-serif" }}>
+      <div className={shellClassAuth} style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
         <style>{FONT_IMPORT}</style>
         <Onboarding
           onDone={async (name, interests) => {
@@ -741,7 +741,7 @@ export default function App() {
   const openCreate = () => { if (!user.verified) { handleBlocked(); return; } setShowCreate(true); };
 
   return (
-    <div className={shellClassApp} style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className={shellClassApp} style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
       <style>{FONT_IMPORT}</style>
       <Sidebar active={activeTab} setActive={goToTab} onTeaClick={openTea} onSearchClick={openSearch} onCreateClick={openCreate} verified={user.verified} user={user} theme={theme} onToggleTheme={toggleTheme} />
       <div className="flex-1 flex flex-col overflow-hidden lg:h-full min-w-0">
@@ -750,7 +750,8 @@ export default function App() {
           onTeaClick={openTea}
           onSearchClick={openSearch}
           onMessagesClick={() => showToast("DMs — coming soon")}
-          onLogoClick={() => goToTab("home")} />
+          onLogoClick={() => goToTab("home")}
+          user={user} />
       )}
       {/* Capped to the same width as the content pane below it. Left full-bleed
           this stretched "Browsing as guest" to the far left edge and "Verify
@@ -758,11 +759,11 @@ export default function App() {
           centered between them — the call to action ended up furthest from the
           thing it refers to. */}
       {!showingSubPage && !user.verified && (
-        <div className="shrink-0 lg:max-w-5xl lg:mx-auto lg:w-full">
+        <div className="shrink-0">
           <GuestBanner onVerify={goToInitialPage} />
         </div>
       )}
-      <div className="flex-1 overflow-hidden flex flex-col lg:max-w-5xl lg:mx-auto lg:w-full">
+      <div className="flex-1 overflow-hidden flex flex-col min-w-0">
       {selectedCommunity ? (
         <CommunityDetail
           key={selectedCommunity.id}
@@ -793,11 +794,16 @@ export default function App() {
         />
       ) : activeTab === "home" ? (
         <HomeScreen
-          communities={communities} joinedIds={joinedIds}
+          communities={allGroups} joinedIds={joinedIds}
           onOpen={setSelectedCommunity} interests={user.interests}
           feedPosts={feedPosts} feedSparkIds={feedSparkIds} onSparkPost={handleSparkPost}
           onAdClick={() => showToast("Ads — demo content for this presentation, not a live ad network")}
           onCreateClick={openCreate}
+          events={events}
+          userName={user.verified ? user.name : ""}
+          onJoinToggle={(id) => { if (!user.verified) { handleBlocked(); return; } handleJoinToggle(id); }}
+          onGoToEvents={() => goToTab("events")}
+          onGoToTea={openTea}
         />
       ) : activeTab === "explore" ? (
         <ExploreScreen subTab={exploreTab} setSubTab={setExploreTab} clubs={clubs} communities={communities} onOpen={setSelectedCommunity} />

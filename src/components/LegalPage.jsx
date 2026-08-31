@@ -61,7 +61,7 @@ function renderLines(lines) {
 
 function LegalPageBody({ content, otherHref, otherLabel }) {
   return (
-    <div className="min-h-dvh bg-surface" style={{ fontFamily: "'Inter', sans-serif" }}>
+    <div className="min-h-dvh bg-surface" style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
       <div className="max-w-2xl mx-auto px-6 py-10 sm:py-14">
         <a href="/" className="text-sm text-content-secondary hover:text-content transition-colors">&larr; Back to Orbit</a>
         <div className="mt-6">{renderLines(content)}</div>

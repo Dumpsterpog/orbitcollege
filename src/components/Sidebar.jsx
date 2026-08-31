@@ -1,123 +1,98 @@
-import { Home, Compass, CalendarDays, User, Coffee, Search, Plus, Settings, Sun, Moon } from "lucide-react";
-import { Logo, Avatar, Badge, SectionLabel, cx } from "./ui/Primitives.jsx";
+import { Icon, cx } from "./ui/Primitives.jsx";
 
-// Desktop-only left rail (lg+). Mobile keeps BottomNav; this never renders
-// below lg.
+// Sidebar, matching the Stitch mock: a fixed 288px rail on
+// surface-container-low, an M3 filled pill for the active item, and a
+// bottom group split off by a hairline for Appearance / Feedback.
 //
-// Fixed width on purpose. An earlier version rested as a 76px icon rail and
-// widened on :hover, which animated the width of a flex sibling and reflowed
-// the whole content pane whenever the pointer crossed it. A stable rail costs
-// ~190px on screens already 1024px+ and buys a nav that never moves.
-//
-// Rebuilt on semantic tokens: rows are 28px with a 6px radius rather than
-// 44px pills, and the active row is a quiet inset surface instead of a
-// full-contrast inverted block — at this density an inverted row per screen
-// reads as an alert, not a location.
+// The mock's nav is Home / Explore / Events / Communities / Settings. This
+// app's real surfaces are Home / Explore / Events / Locali-Tea / Profile /
+// Settings, so "Communities" maps to Locali-Tea's slot being kept separate
+// — inventing a Communities route that doesn't exist would look right in a
+// screenshot and 404 on click.
 
-const NAV_ITEMS = [
-  { key: "home", label: "Home", icon: Home },
-  { key: "explore", label: "Explore", icon: Compass },
-  { key: "events", label: "Events", icon: CalendarDays },
+// Each item keeps its own filled colour so the rail reads as a set of
+// distinct destinations rather than six identical grey glyphs. The colour
+// stays on when the row is active too — the active pill already carries the
+// selected state, so the icon doesn't need to drop to a flat tint.
+const NAV = [
+  { key: "home", label: "Home", icon: "home", tint: "text-icon-blue" },
+  { key: "explore", label: "Explore", icon: "explore", tint: "text-icon-teal" },
+  { key: "events", label: "Events", icon: "calendar_month", tint: "text-icon-amber" },
+  { key: "tea", label: "Locali-Tea", icon: "local_cafe", tint: "text-icon-pink" },
+  { key: "profile", label: "Profile", icon: "account_circle", tint: "text-icon-green" },
+  { key: "settings", label: "Settings", icon: "settings", tint: "text-icon-violet" },
 ];
 
-const ROW =
-  "w-full flex items-center gap-2.5 h-7 px-2 rounded-sm text-xs font-medium text-left transition-colors " +
-  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-content/20";
-const ROW_IDLE = "text-content-secondary hover:text-content hover:bg-surface-inset";
-const ROW_ACTIVE = "bg-surface-inset text-content";
-
-function NavRow({ icon: Icon, label, active, onClick, iconClass, trailing }) {
+function NavRow({ icon, tint, label, active, onClick }) {
   return (
     <button
       onClick={onClick}
       aria-current={active ? "page" : undefined}
-      className={cx(ROW, active ? ROW_ACTIVE : ROW_IDLE)}
+      className={cx(
+        "w-full flex items-center gap-md px-md py-sm rounded-lg transition-all text-left",
+        active
+          ? "bg-primary-container text-on-primary-container font-semibold"
+          : "text-on-surface-variant hover:bg-surface-container hover:text-on-surface"
+      )}
     >
-      <Icon size={14} className={cx("shrink-0", iconClass, active ? "text-content" : "text-content-muted")} />
-      <span className="truncate flex-1">{label}</span>
-      {trailing}
+      <Icon name={icon} size={22} className={active ? "text-on-primary-container" : tint} />
+      <span className="text-label-md font-medium">{label}</span>
     </button>
   );
 }
 
-export function Sidebar({
-  active, setActive, onTeaClick, onSearchClick, onCreateClick,
-  verified, user, theme, onToggleTheme,
-}) {
+export function Sidebar({ active, setActive, onTeaClick, onSearchClick, onCreateClick, verified, user, theme, onToggleTheme }) {
+  const go = (key) => {
+    if (key === "tea") { onTeaClick(); return; }
+    if (key === "settings") { setActive("settings"); return; }
+    setActive(key);
+  };
+
   return (
-    <aside className="hidden lg:flex flex-col shrink-0 h-full w-56 bg-surface-subtle border-r border-line">
-      <div className="h-12 flex items-center px-3 shrink-0 border-b border-line">
-        <button onClick={() => setActive("home")} className="flex items-center hover:opacity-80 transition-opacity">
-          <Logo size={19} />
-        </button>
-      </div>
-
-      <div className="flex-1 min-h-0 overflow-y-auto px-2 py-3 space-y-5">
-        <nav className="space-y-0.5">
-          <button
-            onClick={onSearchClick}
-            className={cx(ROW, ROW_IDLE, "justify-between")}
-          >
-            <span className="flex items-center gap-2.5 min-w-0">
-              <Search size={14} className="shrink-0 text-content-muted" />
-              <span className="truncate">Search</span>
-            </span>
-            <kbd className="text-[10px] font-sans text-content-faint border border-line rounded-sm px-1 leading-4 shrink-0">/</kbd>
-          </button>
-          {NAV_ITEMS.map((it) => (
-            <NavRow
-              key={it.key}
-              icon={it.icon}
-              label={it.label}
-              active={active === it.key}
-              onClick={() => setActive(it.key)}
-            />
-          ))}
-        </nav>
-
-        <div className="space-y-1">
-          <SectionLabel className="px-2">Discover</SectionLabel>
-          <div className="space-y-0.5">
-            <NavRow icon={Coffee} label="Locali-Tea" onClick={onTeaClick} iconClass="text-accent" />
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <SectionLabel className="px-2">You</SectionLabel>
-          <div className="space-y-0.5">
-            <NavRow icon={User} label="Profile" active={active === "profile"} onClick={() => setActive("profile")} />
-            <NavRow icon={Settings} label="Settings" active={active === "settings"} onClick={() => setActive("settings")} />
-          </div>
-        </div>
-      </div>
-
-      <div className="shrink-0 p-2 border-t border-line space-y-0.5">
-        {verified && (
-          <button
-            onClick={onCreateClick}
-            className={cx(ROW, "bg-solid text-solid-fg hover:bg-solid-hover justify-center font-semibold")}
-          >
-            <Plus size={14} className="shrink-0" />
-            New community
-          </button>
-        )}
-        <NavRow
-          icon={theme === "dark" ? Sun : Moon}
-          label={theme === "dark" ? "Light mode" : "Dark mode"}
-          onClick={onToggleTheme}
-        />
-        <button
-          onClick={() => setActive("profile")}
-          className="w-full flex items-center gap-2 h-9 px-2 rounded-sm text-left transition-colors hover:bg-surface-inset"
-        >
-          <Avatar name={user?.name || "Guest"} size={22} />
-          <span className="min-w-0 flex-1">
-            <span className="block text-xs font-medium text-content truncate leading-tight">
-              {user?.name || "Guest"}
-            </span>
+    <aside className="hidden lg:flex flex-col shrink-0 w-72 h-full bg-surface-container-low border-r border-outline-variant/30">
+      {/* Brand */}
+      <div className="p-lg">
+        <button onClick={() => setActive("home")} className="flex items-center gap-sm hover:opacity-80 transition-opacity">
+          <span className="grid place-items-center w-8 h-8 rounded-lg bg-primary text-on-primary shrink-0">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" /><circle cx="19" cy="5" r="2" /><circle cx="5" cy="19" r="2" />
+              <path d="M10.4 21.9a10 10 0 0 0 9.941-15.416" /><path d="M13.5 2.1a10 10 0 0 0-9.841 15.416" />
+            </svg>
           </span>
-          {!verified && <Badge tone="neutral">Guest</Badge>}
+          <span className="text-headline-md font-semibold text-primary tracking-tight">Orbit</span>
         </button>
+      </div>
+
+      {/* Nav */}
+      <nav className="flex-1 px-md space-y-xs overflow-y-auto">
+        {NAV.map((item) => (
+          <NavRow
+            key={item.key}
+            icon={item.icon}
+            tint={item.tint}
+            label={item.label}
+            active={active === item.key}
+            onClick={() => go(item.key)}
+          />
+        ))}
+      </nav>
+
+      {/* Bottom group */}
+      <div className="px-md py-lg mt-auto space-y-xs border-t border-outline-variant/20">
+        <button
+          onClick={onToggleTheme}
+          className="w-full flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all text-left"
+        >
+          <Icon name={theme === "dark" ? "light_mode" : "dark_mode"} size={22} className="text-icon-amber" />
+          <span className="text-label-md font-medium">Appearance</span>
+        </button>
+        <a
+          href="mailto:atharvat2006@gmail.com?subject=Orbit%20feedback"
+          className="w-full flex items-center gap-md px-md py-sm rounded-lg text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all"
+        >
+          <Icon name="help" size={22} className="text-icon-teal" />
+          <span className="text-label-md font-medium">Feedback &amp; Help</span>
+        </a>
       </div>
     </aside>
   );

@@ -211,3 +211,24 @@ export function SectionLabel({ className, children }) {
 export function Spinner({ size = 16, className }) {
   return <Loader2 size={size} className={cx("animate-spin text-content-muted", className)} />;
 }
+
+/* -------------------------------------------------------------- Icon */
+
+// Filled icon glyph (Material Symbols Rounded, FILL 1). The Stitch mock used
+// the hollow Outlined set; these are the solid equivalents, and because they
+// are text they take colour from a normal `text-*` class, which is what lets
+// each one carry its own accent instead of all reading as grey furniture.
+//
+// `name` is a Material Symbols ligature (e.g. "home", "calendar_month").
+export function Icon({ name, size = 20, className, style, ...rest }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={cx("msr shrink-0", className)}
+      style={{ fontSize: size, width: size, height: size, ...style }}
+      {...rest}
+    >
+      {name}
+    </span>
+  );
+}
