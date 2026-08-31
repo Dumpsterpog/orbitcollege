@@ -154,7 +154,7 @@ export function SettingsScreen({
             tint="text-c-pink"
             title="Report a problem"
             body="Tell us about content or behaviour on Orbit."
-            onClick={() => { window.location.href = "mailto:atharvat2006@gmail.com?subject=Orbit%20report"; }}
+            onClick={() => { window.location.href = "mailto:team.orbit@gmail.com?subject=Orbit%20report"; }}
           >
             <Icon name="chevron_right" size={20} className="text-ink-3 shrink-0" />
           </Row>
@@ -170,7 +170,7 @@ export function SettingsScreen({
           <Row icon="shield" tint="text-c-green" title="Privacy Policy" onClick={() => { window.location.href = "/privacy"; }}>
             <Icon name="open_in_new" size={18} className="text-ink-3 shrink-0" />
           </Row>
-          <Row icon="help" tint="text-c-teal" title="Help &amp; support" onClick={() => { window.location.href = "mailto:atharvat2006@gmail.com?subject=Orbit%20support"; }}>
+          <Row icon="help" tint="text-c-teal" title="Help &amp; support" onClick={() => { window.location.href = "mailto:team.orbit@gmail.com?subject=Orbit%20support"; }}>
             <Icon name="open_in_new" size={18} className="text-ink-3 shrink-0" />
           </Row>
         </Group>

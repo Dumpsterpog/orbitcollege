@@ -22,12 +22,10 @@ import { auth } from "../lib/firebase.js";
 
 const STEPS = ["name", "study", "interests", "phone", "signin"];
 
-const UNIVERSITIES = [
-  "Manipal University Jaipur",
-  "MIT Manipal",
-  "Manipal Academy of Higher Education",
-  "Other",
-];
+// Orbit is a single-campus product, so university isn't a question — it's a
+// fact the step states. A chip group with one option would be asking
+// something there is no second answer to.
+const UNIVERSITY = "Manipal University Jaipur";
 
 const YEARS = ["1st year", "2nd year", "3rd year", "4th year", "5th year+", "Faculty / Staff"];
 
@@ -69,7 +67,31 @@ function InfoBlock({ title, body, children, last }) {
   );
 }
 
-function Chip({ selected, onClick, children }) {
+// Selected fill per hue. `text-bg` rather than a literal white: the palette
+// inverts between themes (c-blue is a deep blue on white and a light blue on
+// black), so the label has to follow the page background to stay legible in
+// both. Whole class strings so Tailwind's scanner keeps them.
+const FILL = {
+  "text-c-blue": "bg-c-blue text-bg",
+  "text-c-violet": "bg-c-violet text-bg",
+  "text-c-pink": "bg-c-pink text-bg",
+  "text-c-orange": "bg-c-orange text-bg",
+  "text-c-amber": "bg-c-amber text-bg",
+  "text-c-green": "bg-c-green text-bg",
+  "text-c-teal": "bg-c-teal text-bg",
+  "text-c-red": "bg-c-red text-bg",
+};
+
+const YEAR_TONES = [
+  "text-c-blue", "text-c-violet", "text-c-pink",
+  "text-c-orange", "text-c-teal", "text-c-green",
+];
+
+// `tone` is the category's own hue. Selected chips take that colour rather
+// than all going black — with sixteen of them, a single fill turns the grid
+// into an unreadable block, and the colour is already how each category is
+// identified everywhere else in the app.
+function Chip({ selected, onClick, children, tone }) {
   return (
     <button
       type="button"
@@ -77,9 +99,9 @@ function Chip({ selected, onClick, children }) {
       aria-pressed={selected}
       className={cx(
         "inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-base font-medium",
-        "transition-[background-color,color] duration-150 active:scale-[0.97]",
+        "transition-[background-color,color,box-shadow] duration-150 active:scale-[0.97]",
         selected
-          ? "bg-ink text-bg"
+          ? cx(FILL[tone] || "bg-ink text-bg", "shadow-lift")
           : "bg-bg-sunken text-ink hover:bg-black/[0.07] dark:hover:bg-white/[0.12]"
       )}
     >
@@ -156,7 +178,7 @@ const SOCIALS = [
   { label: "X", icon: "tag", href: "#" },
   { label: "LinkedIn", icon: "work", href: "#" },
   { label: "YouTube", icon: "smart_display", href: "#" },
-  { label: "Email", icon: "mail", href: "mailto:atharvat2006@gmail.com" },
+  { label: "Email", icon: "mail", href: "mailto:team.orbit@gmail.com" },
 ];
 
 /* ----------------------------------------------------------------- flow */
@@ -166,8 +188,6 @@ export function Onboarding({ onDone, onGuest }) {
   const [returning, setReturning] = useState(false); // jumped straight to sign-in
 
   const [name, setName] = useState("");
-  const [university, setUniversity] = useState(UNIVERSITIES[0]);
-  const [otherUni, setOtherUni] = useState("");
   const [year, setYear] = useState("");
   const [interests, setInterests] = useState([]);
   const [phone, setPhone] = useState("");
@@ -180,8 +200,6 @@ export function Onboarding({ onDone, onGuest }) {
   const toggle = (n) =>
     setInterests((cur) => (cur.includes(n) ? cur.filter((x) => x !== n) : [...cur, n]));
 
-  const resolvedUni = university === "Other" ? otherUni.trim() : university;
-  const uniValid = university !== "Other" || !!otherUni.trim();
   // Optional, but if something's been typed it should look like a number.
   const phoneValid = !phone.trim() || /^[0-9+\-\s()]{7,20}$/.test(phone.trim());
 
@@ -213,7 +231,7 @@ export function Onboarding({ onDone, onGuest }) {
       await saveProfile(user.uid, {
         name: finalName,
         interests,
-        university: resolvedUni,
+        university: UNIVERSITY,
         year: year || null,
         phone: phone.trim() || null,
       });
@@ -248,10 +266,10 @@ export function Onboarding({ onDone, onGuest }) {
                 body="Built at MUJ, for MUJ. Tell us what's broken and we'll fix it."
               >
                 <a
-                  href="mailto:atharvat2006@gmail.com?subject=Orbit%20feedback"
+                  href="mailto:team.orbit@gmail.com?subject=Orbit%20feedback"
                   className="block text-base font-medium text-ink underline underline-offset-[3px] decoration-line hover:decoration-ink transition-colors"
                 >
-                  atharvat2006@gmail.com
+                  team.orbit@gmail.com
                 </a>
               </InfoBlock>
               <InfoBlock
@@ -331,42 +349,36 @@ export function Onboarding({ onDone, onGuest }) {
             {/* 2 — Study */}
             {step === "study" && (
               <form className="animate-rise flex flex-col flex-1"
-                    onSubmit={(e) => { e.preventDefault(); if (uniValid) go("interests"); }}>
-                <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">Where do you study?</h1>
+                    onSubmit={(e) => { e.preventDefault(); go("interests"); }}>
+                <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">What year are you in?</h1>
                 <p className="text-md text-ink-2 mt-2 max-w-md">
-                  Orbit is built for Manipal University Jaipur, so campus communities are matched to it.
+                  Helps put you alongside people at the same stage.
                 </p>
 
-                <div className="mt-8">
-                  <p className="text-base font-semibold text-ink mb-3">University</p>
-                  <div className="flex flex-wrap gap-2.5 max-w-2xl">
-                    {UNIVERSITIES.map((u) => (
-                      <Chip key={u} selected={university === u} onClick={() => setUniversity(u)}>
-                        {university === u && <Icon name="check" size={16} />}
-                        {u}
-                      </Chip>
-                    ))}
-                  </div>
-                  {university === "Other" && (
-                    <div className="mt-3 max-w-md animate-rise">
-                      <Input
-                        autoFocus value={otherUni} maxLength={80}
-                        onChange={(e) => setOtherUni(e.target.value)}
-                        placeholder="Which one?"
-                        className="h-12 rounded-full px-5 text-md ring-1 ring-line bg-bg focus:ring-ink border-transparent"
-                      />
-                    </div>
-                  )}
+                {/* University is stated, not asked — Orbit is one campus. */}
+                <div className="mt-8 max-w-md flex items-center gap-3 rounded-[14px] ring-1 ring-line px-4 py-3.5">
+                  <span className="grid place-items-center w-9 h-9 rounded-full bg-c-blue/10 shrink-0">
+                    <Icon name="school" size={20} className="text-c-blue" />
+                  </span>
+                  <span className="min-w-0 flex-1 leading-tight">
+                    <span className="block text-base font-semibold text-ink truncate">{UNIVERSITY}</span>
+                    <span className="block text-base text-ink-2">Your campus</span>
+                  </span>
+                  <Icon name="check_circle" size={20} className="text-c-green shrink-0" />
                 </div>
 
                 <div className="mt-8">
-                  <p className="text-base font-semibold text-ink mb-1">
+                  <p className="text-base font-semibold text-ink mb-3">
                     Year <span className="font-normal text-ink-2">· optional</span>
                   </p>
-                  <p className="text-base text-ink-2 mb-3">Helps put you with people at the same stage.</p>
                   <div className="flex flex-wrap gap-2.5 max-w-2xl">
-                    {YEARS.map((y) => (
-                      <Chip key={y} selected={year === y} onClick={() => setYear(year === y ? "" : y)}>
+                    {YEARS.map((y, i) => (
+                      <Chip
+                        key={y}
+                        selected={year === y}
+                        tone={YEAR_TONES[i % YEAR_TONES.length]}
+                        onClick={() => setYear(year === y ? "" : y)}
+                      >
                         {y}
                       </Chip>
                     ))}
@@ -375,7 +387,10 @@ export function Onboarding({ onDone, onGuest }) {
 
                 <div className="flex items-center justify-between gap-3 mt-10 pt-2">
                   <GoBack onClick={() => go("name")} />
-                  <Continue type="submit" disabled={!uniValid} />
+                  <div className="flex items-center gap-2">
+                    <SkipLink onClick={() => { setYear(""); go("interests"); }} />
+                    <Continue type="submit" />
+                  </div>
                 </div>
               </form>
             )}
@@ -393,7 +408,7 @@ export function Onboarding({ onDone, onGuest }) {
                     {CATEGORIES.map((cat) => {
                       const on = interests.includes(cat.name);
                       return (
-                        <Chip key={cat.name} selected={on} onClick={() => toggle(cat.name)}>
+                        <Chip key={cat.name} selected={on} tone={cat.tint} onClick={() => toggle(cat.name)}>
                           <Icon name={cat.msr} size={16} className={on ? "" : cat.tint} />
                           {cat.name}
                         </Chip>
@@ -476,7 +491,7 @@ export function Onboarding({ onDone, onGuest }) {
                   <dl className="mt-7 max-w-md rounded-[14px] ring-1 ring-line divide-y divide-line">
                     {[
                       { k: "Name", v: name.trim() || "—", step: "name" },
-                      { k: "University", v: resolvedUni || "—", step: "study" },
+                      { k: "University", v: UNIVERSITY, step: "study" },
                       { k: "Year", v: year || "Not set", step: "study" },
                       { k: "Interests", v: interests.length ? `${interests.length} selected` : "None", step: "interests" },
                       { k: "Phone", v: phone.trim() || "Not set", step: "phone" },

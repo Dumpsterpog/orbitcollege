@@ -203,7 +203,7 @@ export function Sidebar({
               {theme === "dark" ? "Light mode" : "Dark mode"}
             </button>
             <a
-              href="mailto:atharvat2006@gmail.com?subject=Orbit%20feedback"
+              href="mailto:team.orbit@gmail.com?subject=Orbit%20feedback"
               className="w-full flex items-center gap-3 px-4 py-3 text-base font-medium text-ink hover:bg-bg-sunken transition-colors border-t border-line"
             >
               <Icon name="help" size={20} className="text-c-teal" />Feedback
