@@ -340,7 +340,7 @@ export function HomeScreen({
                     Write a post
                   </Button>
                 )}
-                <Button variant="soft" size="md" icon="add" onClick={onCreateClick}>
+                <Button variant="soft" size="md" icon="add" iconTint="text-c-violet" onClick={onCreateClick}>
                   Create a community
                 </Button>
               </div>

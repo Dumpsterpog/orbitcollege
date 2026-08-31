@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import { CATEGORIES } from "../data/constants.js";
 import { Icon, Button, Tag, cx } from "./ui/Primitives.jsx";
-import { Screen, Column, Empty } from "./ui/Layout.jsx";
+import { Screen, Empty } from "./ui/Layout.jsx";
 
 // Events — a list, not a grid of cards.
 //
@@ -30,71 +30,69 @@ function DateBlock({ when, tint }) {
   );
 }
 
-function EventRow({ e, registered, onRegister, onOpen, interested }) {
+function EventCard({ e, registered, onRegister, onOpen, interested }) {
   const cat = CATEGORIES.find((x) => x.name === e.category);
   return (
-    <article className="group flex gap-4 py-5 border-b border-line last:border-0">
-      <DateBlock when={e.when} tint={cat?.tint || "text-c-orange"} />
-
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2 mb-1">
-          <Icon name={cat?.msr || "confirmation_number"} size={15} className={cat?.tint} />
-          <span className={cx("text-2xs font-semibold uppercase tracking-wide", cat?.tint)}>{e.category}</span>
-          {interested && (
-            <>
-              <span className="text-ink-3">·</span>
-              <span className="text-2xs font-semibold text-c-violet uppercase tracking-wide">For you</span>
-            </>
-          )}
-        </div>
-
-        <button onClick={() => onOpen(e)} className="text-left block w-full">
-          <h3 className="text-lg font-semibold text-ink leading-snug group-hover:opacity-70 transition-opacity">
-            {e.title}
-          </h3>
-        </button>
-
-        {e.desc && <p className="text-base text-ink-2 mt-1 line-clamp-2 leading-normal">{e.desc}</p>}
-
-        <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-2.5 text-xs text-ink-2">
-          <span className="inline-flex items-center gap-1.5">
-            <Icon name="schedule" size={15} className="text-c-blue" />{e.when}
-          </span>
-          <span className="inline-flex items-center gap-1.5 min-w-0">
-            <Icon name="location_on" size={15} className="text-c-pink" />
-            <span className="truncate">{e.where}</span>
-          </span>
-          {e.capacity && (
-            <span className="inline-flex items-center gap-1.5">
-              <Icon name="group" size={15} className="text-c-teal" />
-              <span className="tabular-nums">{e.capacity}</span> spots
-            </span>
-          )}
-        </div>
-
-        <div className="mt-3.5">
-          <Button
-            variant={registered ? "outline" : "primary"}
-            size="sm"
-            icon={registered ? "check" : undefined}
-            onClick={() => onRegister(e)}
-            disabled={registered}
-          >
-            {registered ? "Going" : "Register"}
-          </Button>
-        </div>
-      </div>
-
+    <article className="card group flex flex-col overflow-hidden">
       {e.imageUrl && (
-        <button onClick={() => onOpen(e)} className="hidden sm:block shrink-0">
-          <img
-            src={e.imageUrl}
-            alt=""
-            loading="lazy"
-            className="w-28 h-28 rounded object-cover media"
-          />
+        <button onClick={() => onOpen(e)} className="block w-full media">
+          <img src={e.imageUrl} alt="" loading="lazy" className="w-full h-40 object-cover" />
         </button>
       )}
+
+      <div className="flex gap-4 p-4 flex-1">
+        <DateBlock when={e.when} tint={cat?.tint || "text-c-orange"} />
+
+        <div className="min-w-0 flex-1 flex flex-col">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
+            <Icon name={cat?.msr || "confirmation_number"} size={15} className={cat?.tint} />
+            <span className={cx("text-2xs font-semibold uppercase tracking-wide", cat?.tint)}>{e.category}</span>
+            {interested && (
+              <>
+                <span className="text-ink-3">·</span>
+                <span className="text-2xs font-semibold text-c-violet uppercase tracking-wide">For you</span>
+              </>
+            )}
+          </div>
+
+          <button onClick={() => onOpen(e)} className="text-left block w-full">
+            <h3 className="text-lg font-semibold text-ink leading-snug group-hover:opacity-70 transition-opacity">
+              {e.title}
+            </h3>
+          </button>
+
+          {e.desc && <p className="text-base text-ink-2 mt-1 line-clamp-2 leading-normal flex-1">{e.desc}</p>}
+
+          <div className="flex items-center flex-wrap gap-x-4 gap-y-1 mt-2.5 text-xs text-ink-2">
+            <span className="inline-flex items-center gap-1.5">
+              <Icon name="schedule" size={15} className="text-c-blue" />{e.when}
+            </span>
+            <span className="inline-flex items-center gap-1.5 min-w-0">
+              <Icon name="location_on" size={15} className="text-c-pink" />
+              <span className="truncate">{e.where}</span>
+            </span>
+            {e.capacity && (
+              <span className="inline-flex items-center gap-1.5">
+                <Icon name="group" size={15} className="text-c-teal" />
+                <span className="tabular-nums">{e.capacity}</span> spots
+              </span>
+            )}
+          </div>
+
+          <div className="mt-3.5">
+            <Button
+              variant={registered ? "outline" : "primary"}
+              size="sm"
+              icon={registered ? "check" : "confirmation_number"}
+              iconTint={registered ? undefined : ""}
+              onClick={() => onRegister(e)}
+              disabled={registered}
+            >
+              {registered ? "Going" : "Register"}
+            </Button>
+          </div>
+        </div>
+      </div>
     </article>
   );
 }
@@ -128,7 +126,7 @@ export function EventsScreen({
 
   return (
     <Screen>
-      <Column width="prose" className="pt-8 pb-16 max-w-2xl">
+      <div className="w-full px-5 sm:px-8 lg:px-12 xl:px-16 pt-8 pb-16">
         <div className="flex items-end justify-between gap-4 mb-6">
           <div>
             <h1 className="text-3xl font-bold text-ink">
@@ -188,9 +186,9 @@ export function EventsScreen({
             }
           />
         ) : (
-          <div>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
             {list.map((e) => (
-              <EventRow
+              <EventCard
                 key={e.id}
                 e={e}
                 interested={matches(e)}
@@ -201,7 +199,7 @@ export function EventsScreen({
             ))}
           </div>
         )}
-      </Column>
+      </div>
     </Screen>
   );
 }

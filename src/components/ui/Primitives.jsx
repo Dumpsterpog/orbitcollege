@@ -49,7 +49,7 @@ const SIZES = {
 };
 
 export const Button = forwardRef(function Button(
-  { variant = "soft", size = "md", loading = false, icon, className, children, disabled, ...rest },
+  { variant = "soft", size = "md", loading = false, icon, iconTint, className, children, disabled, ...rest },
   ref
 ) {
   return (
@@ -59,7 +59,7 @@ export const Button = forwardRef(function Button(
       className={cx(BASE, VARIANTS[variant], variant !== "link" && SIZES[size], className)}
       {...rest}
     >
-      {loading ? <Spinner size={15} /> : icon && <Icon name={icon} size={size === "lg" ? 20 : 18} />}
+      {loading ? <Spinner size={15} /> : icon && <Icon name={icon} size={size === "lg" ? 20 : 18} className={iconTint} />}
       {children}
     </button>
   );

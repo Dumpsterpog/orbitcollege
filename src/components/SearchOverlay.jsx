@@ -1,10 +1,19 @@
 import { useState, useMemo } from "react";
 import { CATEGORIES } from "../data/constants.js";
-import { Icon, Avatar, Input, cx } from "./ui/Primitives.jsx";
+import { communityTrendScore } from "../utils/helpers.js";
+import { Icon, Avatar, Input, IconButton, cx } from "./ui/Primitives.jsx";
 import { Screen, Column, Empty } from "./ui/Layout.jsx";
 
 // Search. Arrow keys move the selection, Enter opens it, Escape closes —
 // a search surface that can only be driven by mouse isn't finished.
+
+// Category tint for the coverless marks, as whole class strings.
+const MARK = {
+  "text-c-blue": "bg-c-blue/10", "text-c-violet": "bg-c-violet/10",
+  "text-c-pink": "bg-c-pink/10", "text-c-orange": "bg-c-orange/10",
+  "text-c-amber": "bg-c-amber/10", "text-c-green": "bg-c-green/10",
+  "text-c-teal": "bg-c-teal/10", "text-c-red": "bg-c-red/10",
+};
 
 const compact = (n) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : `${n}`);
 
@@ -25,6 +34,11 @@ export function SearchOverlay({ communities, onOpen, onClose }) {
       .slice(0, 30);
   }, [q, communities]);
 
+  const trending = useMemo(
+    () => [...communities].sort((a, b) => communityTrendScore(b) - communityTrendScore(a)).slice(0, 9),
+    [communities]
+  );
+
   const choose = (c) => { onOpen(c); onClose(); };
 
   const onKeyDown = (e) => {
@@ -39,8 +53,15 @@ export function SearchOverlay({ communities, onOpen, onClose }) {
     <Screen>
       <Column className="max-w-2xl pt-8 pb-16">
         <div className="flex items-center gap-3 mb-6">
-          <h1 className="text-3xl font-bold text-ink flex-1">Search</h1>
-          <button onClick={onClose} className="text-base font-semibold text-accent hover:opacity-70">Done</button>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-3xl font-bold text-ink">Search</h1>
+            <p className="text-base text-ink-2 mt-1">
+              {communities.length} communities and clubs across campus.
+            </p>
+          </div>
+          {/* Close, not "Done". Nothing is being confirmed here, and a text
+              Done is a modal affordance on a page that isn't a modal. */}
+          <IconButton icon="close" label="Close search" size={22} onClick={onClose} className="shrink-0" />
         </div>
 
         <div className="relative">
@@ -65,19 +86,65 @@ export function SearchOverlay({ communities, onOpen, onClose }) {
         </div>
 
         {!q && (
-          <div className="mt-8">
-            <p className="text-2xs font-semibold text-ink-2 uppercase tracking-wider mb-3">Browse by topic</p>
-            <div className="flex flex-wrap gap-2">
-              {CATEGORIES.map((c) => (
-                <button
-                  key={c.name}
-                  onClick={() => { setQ(c.name); setCursor(0); }}
-                  className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full text-xs font-semibold text-ink-2 bg-bg-sunken hover:text-ink transition-colors"
-                >
-                  <Icon name={c.msr} size={16} className={c.tint} />{c.name}
-                </button>
-              ))}
+          <div className="mt-8 space-y-8">
+            <div>
+              <p className="text-2xs font-semibold text-ink-2 uppercase tracking-wider mb-3">Browse by topic</p>
+              <div className="flex flex-wrap gap-2">
+                {CATEGORIES.map((c) => (
+                  <button
+                    key={c.name}
+                    onClick={() => { setQ(c.name); setCursor(0); }}
+                    className="inline-flex items-center gap-1.5 h-9 px-4 rounded-full text-xs font-semibold text-ink-2 bg-bg-sunken hover:text-ink transition-colors"
+                  >
+                    <Icon name={c.msr} size={16} className={c.tint} />{c.name}
+                  </button>
+                ))}
+              </div>
             </div>
+
+            {/* The default surface. An empty search page that only offers
+                filters gives you nothing to look at; this is the equivalent
+                of a discovery grid — real communities, tappable, ranked by
+                activity. */}
+            {trending.length > 0 && (
+              <div>
+                <p className="text-2xs font-semibold text-ink-2 uppercase tracking-wider mb-3">Trending now</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {trending.map((c) => {
+                    const cat = CATEGORIES.find((x) => x.name === c.category);
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => choose(c)}
+                        className="card group p-3 flex flex-col items-start gap-2 text-left"
+                      >
+                        {c.avatarUrl ? (
+                          <Avatar src={c.avatarUrl} name={c.name} size={40} />
+                        ) : (
+                          <span className={cx("grid place-items-center w-10 h-10 rounded-full shrink-0", MARK[cat?.tint] || MARK["text-c-blue"])}>
+                            <Icon name={cat?.msr || "groups"} size={20} className={cat?.tint} />
+                          </span>
+                        )}
+                        <span className="min-w-0 w-full">
+                          <span className="flex items-center gap-1 min-w-0">
+                            <span className="text-base font-bold text-ink truncate group-hover:opacity-70">
+                              {c.name.split(" — ")[0]}
+                            </span>
+                            {c.official && <Icon name="verified" size={14} className="text-c-blue shrink-0" />}
+                          </span>
+                          <span className="flex items-center gap-1 text-xs mt-0.5">
+                            <Icon name={cat?.msr || "groups"} size={13} className={cat?.tint} />
+                            <span className={cx("font-semibold truncate", cat?.tint)}>{c.category}</span>
+                            <span className="text-ink-3">·</span>
+                            <span className="text-ink-2 tabular-nums shrink-0">{compact(c.members)}</span>
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         )}
 

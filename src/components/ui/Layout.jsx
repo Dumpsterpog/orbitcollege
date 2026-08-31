@@ -81,14 +81,14 @@ export function Modal({ title, onClose, children, footer, width = "max-w-sm" }) 
   );
 }
 
-// Full-bleed empty state. Thin glyph here on purpose — a filled icon at
-// 40px+ reads as a solid blob rather than as an illustration.
-export function Empty({ icon, title, body, action, className }) {
+// Full-bleed empty state. The glyph is filled and tinted — an outlined one
+// in a ringed circle read as a placeholder rather than as part of the app.
+export function Empty({ icon, tint = "text-c-violet", title, body, action, className }) {
   return (
     <div className={cx("flex flex-col items-center text-center py-16 px-6", className)}>
       {icon && (
-        <span className="grid place-items-center w-16 h-16 rounded-full border-2 border-ink mb-4">
-          <Icon name={icon} size={30} thin className="text-ink" />
+        <span className="grid place-items-center w-16 h-16 rounded-full bg-bg-sunken mb-4">
+          <Icon name={icon} size={32} className={tint} />
         </span>
       )}
       <p className="text-xl font-semibold text-ink">{title}</p>
