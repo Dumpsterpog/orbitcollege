@@ -806,7 +806,10 @@ export default function App() {
           onGoToTea={openTea}
         />
       ) : activeTab === "explore" ? (
-        <ExploreScreen subTab={exploreTab} setSubTab={setExploreTab} clubs={clubs} communities={communities} onOpen={setSelectedCommunity} />
+        <ExploreScreen subTab={exploreTab} setSubTab={setExploreTab} clubs={clubs} communities={communities}
+          onOpen={setSelectedCommunity}
+          joinedIds={joinedIds}
+          onJoinToggle={(id) => { if (!user.verified) { handleBlocked(); return; } handleJoinToggle(id); }} />
       ) : activeTab === "events" ? (
         <EventsScreen
           events={events} interests={user.interests}
