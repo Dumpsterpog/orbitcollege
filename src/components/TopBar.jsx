@@ -38,7 +38,7 @@ export function TopBar({ notifOpen, setNotifOpen, onTeaClick, onSearchClick, onM
               <Icon name="notifications" size={26} className="text-c-red" />
               <p className="text-base text-ink">Nothing yet</p>
               <p className="text-xs text-ink-2 leading-relaxed">
-                Notifications aren&apos;t built yet — this won&apos;t fill up until they are.
+                Notifications aren&apos;t built yet. This won&apos;t fill up until they are.
               </p>
             </div>
           </div>

@@ -129,7 +129,7 @@ export function CreateCommunity({ onCreate, onClose, verified, onBlocked, onVeri
                   placeholder="Sunday Football League"
                 />
               </Field>
-              <Field label="Description" htmlFor="cc-desc" hint="Optional — who it is for and what happens.">
+              <Field label="Description" htmlFor="cc-desc" hint="Optional: who it is for and what happens.">
                 <Textarea id="cc-desc" rows={4} maxLength={800} value={desc} onChange={(e) => setDesc(e.target.value)} />
               </Field>
             </div>
@@ -143,7 +143,7 @@ export function CreateCommunity({ onCreate, onClose, verified, onBlocked, onVeri
         {step === 3 && (
           <form onSubmit={(e) => { e.preventDefault(); go(4); }}>
             <h2 className="text-xl font-semibold text-ink">Tag its interests</h2>
-            <p className="text-base text-ink-2 mt-1 mb-6">Everything that applies — this is how the right people find it.</p>
+            <p className="text-base text-ink-2 mt-1 mb-6">Everything that applies. This is how the right people find it.</p>
             <div className="flex flex-wrap gap-2">
               {CATEGORIES.map((c) => {
                 const on = tags.includes(c.name);

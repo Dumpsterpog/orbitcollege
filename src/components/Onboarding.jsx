@@ -463,7 +463,7 @@ export function Onboarding({ onDone, onGuest }) {
                 </h1>
                 <p className="text-md text-ink-2 mt-2 max-w-md">
                   Entirely optional. It's only used if a community organiser needs to reach you about
-                  an event you registered for — it is never shown on your profile.
+                  an event you registered for. It is never shown on your profile.
                 </p>
 
                 <div className="mt-8 max-w-md">
@@ -498,7 +498,7 @@ export function Onboarding({ onDone, onGuest }) {
             {step === "signin" && (
               <div className="animate-rise flex flex-col flex-1">
                 <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">
-                  {returning ? "Welcome back" : "Last thing — sign in"}
+                  {returning ? "Welcome back" : "Last thing, sign in"}
                 </h1>
                 <p className="text-md text-ink-2 mt-2 max-w-md">
                   {returning
@@ -512,7 +512,7 @@ export function Onboarding({ onDone, onGuest }) {
                 {!returning && (
                   <dl className="mt-7 max-w-md rounded-[14px] ring-1 ring-line divide-y divide-line">
                     {[
-                      { k: "Name", v: name.trim() || "—", step: "name" },
+                      { k: "Name", v: name.trim() || "Not set", step: "name" },
                       { k: "University", v: UNIVERSITY, step: "study" },
                       { k: "Year", v: year || "Not set", step: "study" },
                       { k: "Interests", v: interests.length ? `${interests.length} selected` : "None", step: "interests" },

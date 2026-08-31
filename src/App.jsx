@@ -359,7 +359,7 @@ export default function App() {
     Object.fromEntries(events.filter((e) => e.linkedCommunityId).map((e) => [e.id, e.linkedCommunityId]))
   ), [events]);
 
-  const handleBlocked = () => showToast("Verify your account first — head to Profile");
+  const handleBlocked = () => showToast("Verify your account first. Head to Profile");
 
   const handleJoinToggle = async (id) => {
     const isJoined = joinedIds.includes(id);
@@ -376,7 +376,7 @@ export default function App() {
     if (error) {
       setJoinedIds((ids) => (isJoined ? [...ids, id] : ids.filter((x) => x !== id)));
       setDbCommunities((cs) => cs.map((c) => (c.id === id ? { ...c, members: c.members - delta } : c)));
-      showToast("Something went wrong — try again");
+      showToast("Something went wrong, try again");
     }
   };
 
@@ -403,7 +403,7 @@ export default function App() {
       .select("id, text, has_image, image_url, spark_count, created_at, author_id")
       .single();
 
-    if (error || !data) { showToast("Couldn't post — try again"); return false; }
+    if (error || !data) { showToast("Couldn't post, try again"); return false; }
 
     setFeedPosts((ps) => [
       {
@@ -452,7 +452,7 @@ export default function App() {
       })
       .select()
       .single();
-    if (error || !data) { showToast("Couldn't create — try again"); return; }
+    if (error || !data) { showToast("Couldn't create, try again"); return; }
     const mapped = mapCommunityRow(data);
     setDbCommunities((cs) => [{ ...mapped, members: 1 }, ...cs]);
     setJoinedIds((ids) => [...ids, mapped.id]);
@@ -487,7 +487,7 @@ export default function App() {
     if (!trimmedName || !authUser) return;
     setUser((u) => ({ ...u, name: trimmedName, bio }));
     const { error } = await supabase.from("profiles").update({ name: trimmedName, bio }).eq("id", authUser.id);
-    showToast(error ? "Couldn't save profile — try again" : "Profile updated");
+    showToast(error ? "Couldn't save profile, try again" : "Profile updated");
   };
 
   const handleDeleteCommunity = async (id) => {
@@ -495,7 +495,7 @@ export default function App() {
     setJoinedIds((ids) => ids.filter((x) => x !== id));
     setSelectedCommunity(null);
     const { error } = await supabase.from("communities").delete().eq("id", id);
-    showToast(error ? "Delete failed — refresh and retry" : "Deleted");
+    showToast(error ? "Delete failed, refresh and retry" : "Deleted");
   };
 
   // Previously this only console.log'd — nothing was ever saved, so reports
@@ -511,7 +511,7 @@ export default function App() {
     setSelectedCommunity(null);
     showToast("Report submitted for review");
     if (!authUser) return;
-    const body = detail ? `${reason} — ${detail}` : reason;
+    const body = detail ? `${reason}: ${detail}` : reason;
     await supabase.from("reports").insert({ reporter_id: authUser.id, target: String(target), reason: body });
   };
 
@@ -522,7 +522,7 @@ export default function App() {
   const handleRegisterEvent = async (event) => {
     if (!authUser) { handleBlocked(); return; }
     const { data: communityId, error } = await supabase.rpc("register_for_event", { p_event_id: event.id });
-    if (error || !communityId) { showToast("Registration failed — try again"); return; }
+    if (error || !communityId) { showToast("Registration failed, try again"); return; }
 
     setRegisteredEventIds((ids) => [...ids, event.id]);
     setJoinedIds((ids) => (ids.includes(communityId) ? ids : [...ids, communityId]));
@@ -593,9 +593,9 @@ export default function App() {
     if (!error && data) {
       setTeaPosts((ts) => [{ ...mapTeaRow(data), comments: [] }, ...ts]);
       setMyTeaPostIds((ids) => { const next = new Set(ids); next.add(data.id); saveIdSet("orbit_my_tea_post_ids", next); return next; });
-      showToast("Posted anonymously — gone in 48h");
+      showToast("Posted anonymously, gone in 48h");
     } else {
-      showToast("Couldn't post — try again");
+      showToast("Couldn't post, try again");
     }
   };
 
@@ -605,7 +605,7 @@ export default function App() {
     const { error } = await supabase.from("tea_posts").delete().eq("id", id);
     if (error) {
       setTeaPosts(prevPosts);
-      showToast("Couldn't delete — try again");
+      showToast("Couldn't delete, try again");
     } else {
       setMyTeaPostIds((ids) => { const next = new Set(ids); next.delete(id); saveIdSet("orbit_my_tea_post_ids", next); return next; });
     }
@@ -786,7 +786,7 @@ export default function App() {
         <TopBar notifOpen={notifOpen} setNotifOpen={setNotifOpen}
           onTeaClick={openTea}
           onSearchClick={openSearch}
-          onMessagesClick={() => showToast("DMs — coming soon")}
+          onMessagesClick={() => showToast("DMs are coming soon")}
           onLogoClick={() => goToTab("home")}
           user={user} />
       )}
@@ -839,6 +839,7 @@ export default function App() {
           registeredEventIds={registeredEventIds}
           onRegisterEvent={handleRegisterEvent}
           onGoToEvents={() => goToTab("events")}
+          onGoToTea={openTea}
         />
       ) : activeTab === "explore" ? (
         <ExploreScreen subTab={exploreTab} setSubTab={setExploreTab} clubs={clubs} communities={communities}

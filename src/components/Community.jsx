@@ -101,7 +101,7 @@ export function CommunitySettings({ c, onSave, onDelete, onClose }) {
           <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-ink">Only admins can post</p>
             <p className="text-2xs text-ink-2 mt-0.5 leading-relaxed">
-              Posts tab only — Chat stays open to every member either way.
+              Posts tab only. Chat stays open to every member either way.
             </p>
           </div>
           <Switch label="Only admins can post" checked={postsAdminOnly} onChange={setPostsAdminOnly} />
@@ -685,7 +685,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
             })()}
             <div className="flex-1 overflow-y-auto no-scrollbar px-5 py-3 space-y-2.5">
               {!joined && (
-                <p className="text-xs text-ink-2 text-center py-6">Join this {c.official ? "club" : "community"} to send messages — you can still read along.</p>
+                <p className="text-xs text-ink-2 text-center py-6">Join this {c.official ? "club" : "community"} to send messages. You can still read along.</p>
               )}
               {chatMessages.map((m) => (
                 <div key={m.id} className="flex gap-2.5 group">
@@ -726,7 +726,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                 {!stickersLoaded ? (
                   <p className="text-xs text-ink-3 py-3 text-center">Loading...</p>
                 ) : stickers.length === 0 ? (
-                  <p className="text-xs text-ink-3 py-3 text-center">No stickers yet — add the first one.</p>
+                  <p className="text-xs text-ink-3 py-3 text-center">No stickers yet. Add the first one.</p>
                 ) : (
                   <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                     {stickers.map((s) => (

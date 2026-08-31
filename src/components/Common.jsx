@@ -65,8 +65,8 @@ export function GuestBanner({ onVerify }) {
         </span>
 
         <p className="text-base font-medium truncate">
-          <span className="hidden sm:inline">You&apos;re browsing as a guest — </span>
-          <span className="sm:hidden">Guest — </span>
+          <span className="hidden sm:inline">You&apos;re browsing as a guest. </span>
+          <span className="sm:hidden">Guest: </span>
           <span className="opacity-70">join, post and chat need an account.</span>
         </p>
 

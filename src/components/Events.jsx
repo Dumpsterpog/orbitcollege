@@ -179,7 +179,7 @@ export function EventsScreen({
               scope === "mine"
                 ? "Events you register for will be listed here."
                 : scope === "foryou"
-                ? "Nothing matches your interests yet — try All."
+                ? "Nothing matches your interests yet. Try All."
                 : "Check back soon, new events are added regularly."
             }
             action={

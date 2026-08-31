@@ -291,7 +291,7 @@ export function SettingsScreen({
             )}
 
             {section === "appearance" && (
-              <Card title="Theme" subtitle="System follows your device and keeps following it — no reload needed.">
+              <Card title="Theme" subtitle="System follows your device and keeps following it. No reload needed.">
                 <div className="grid grid-cols-3 gap-4">
                   <ThemeSwatch value="light" current={themeMode} onChange={onSetTheme} label="Light" icon="light_mode" />
                   <ThemeSwatch value="dark" current={themeMode} onChange={onSetTheme} label="Dark" icon="dark_mode" />
@@ -308,7 +308,7 @@ export function SettingsScreen({
             {section === "notifications" && (
               <Card
                 title="What you would be told about"
-                subtitle="Delivery is not built yet — these switches work, but nothing is sent, and the choices last only for this session."
+                subtitle="Delivery is not built yet. These switches work, but nothing is sent, and the choices last only for this session."
               >
                 <Row icon="event" tint="text-c-orange" title="Event reminders" body="Before events you have registered for.">
                   <Switch label="Event reminders" checked={notifPrefs.events} onChange={(v) => onNotifChange("events", v)} />
@@ -324,7 +324,7 @@ export function SettingsScreen({
 
             {section === "privacy" && (
               <>
-                <Card title="Not built yet" subtitle="Listed so you know where they will live — not to imply they work.">
+                <Card title="Not built yet" subtitle="Listed so you know where they will live, not to imply they work.">
                   <Row icon="visibility" tint="text-c-teal" title="Account visibility" body="Let other students find your profile."><Unbuilt /></Row>
                   <Row icon="block" tint="text-c-red" title="Blocked accounts" body="Manage people you have blocked."><Unbuilt /></Row>
                   <Row icon="download" tint="text-c-amber" title="Download your data" body="Request an archive of your account." last><Unbuilt /></Row>

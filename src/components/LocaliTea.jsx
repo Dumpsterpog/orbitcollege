@@ -176,7 +176,7 @@ function TeaDetail({
         <div className="py-5 space-y-4">
           {t.comments === null && <p className="text-xs text-ink-3 text-center py-6">Loading…</p>}
           {t.comments && t.comments.length === 0 && (
-            <Empty icon="mode_comment" title="No replies yet" body="Start it — anonymously, like everything here." className="py-10" />
+            <Empty icon="mode_comment" title="No replies yet" body="Start it anonymously, like everything here." className="py-10" />
           )}
           {(t.comments || []).map((c, i) => (
             <div key={c.id ?? i} className="flex items-start justify-between gap-3 group">
@@ -304,7 +304,7 @@ export function LocaliTeaScreen({
               onChange={(e) => setDraft(e.target.value)}
               rows={2}
               maxLength={2000}
-              placeholder={tab === "tea" ? "Spill it — anonymous, gone in 48h" : "Get it off your chest — anonymous, gone in 48h"}
+              placeholder={tab === "tea" ? "Spill it. Anonymous, gone in 48h" : "Get it off your chest. Anonymous, gone in 48h"}
               className="bg-transparent px-0 text-md"
             />
             <div className="flex items-center justify-between mt-2">
@@ -325,7 +325,7 @@ export function LocaliTeaScreen({
           <Empty
             icon={tab === "tea" ? "local_cafe" : "favorite"}
             title={tab === "tea" ? "No tea right now" : "No confessions right now"}
-            body="Be the first — it disappears in 48 hours either way."
+            body="Be the first. It disappears in 48 hours either way."
           />
         ) : (
           <div>
