@@ -1,141 +1,161 @@
-/* Orbit design tokens — Material 3, from the Stitch home.html mock.
+/* Orbit — design tokens.
  *
- * Two naming layers over one palette:
+ * Rebuilt from scratch against a social-product reference (Instagram web)
+ * rather than a Material component kit. The difference that matters is
+ * structural, not chromatic:
  *
- *  - M3 names (--m3-primary, --m3-on-surface, --m3-outline-variant …) match
- *    the mock's vocabulary exactly, so the rebuilt Home / Sidebar / TopBar
- *    can be written straight from the design without translating anything.
- *  - The semantic names the rest of the app already uses (--bg, --text,
- *    --accent …) are aliased onto the same values, so all seventeen screens
- *    adopt the new palette without being rewritten.
+ *   Material separates content by drawing a container around it — border,
+ *   radius, shadow, on a tinted surface. Do that four times on one screen
+ *   and you get boxes inside boxes, which is what the previous pass looked
+ *   like. A social feed separates content with whitespace and a single
+ *   hairline, and spends its contrast budget on the content itself.
  *
- * Light values are lifted verbatim from the mock's tailwind.config. Dark is
- * the matching M3 dark scheme for the same seed — the mock only shipped a
- * light theme, but the app has a working theme toggle, and inverse-primary
- * (#b7c4ff) in the mock's own token set is the dark-scheme primary, so the
- * ramp below is derived from that rather than invented.
+ * So: exactly one surface colour per theme (no five-step container ramp),
+ * one hairline, a three-step ink ramp, and one accent. Anything that reads
+ * as "elevated" has to earn it — modals and menus only.
  */
 
 :root {
-  /* ---- M3 core (verbatim from the mock) ---- */
-  --m3-primary: 0 62 199;                 /* #003ec7 */
-  --m3-on-primary: 255 255 255;
-  --m3-primary-container: 0 82 255;       /* #0052ff */
-  --m3-on-primary-container: 223 227 255; /* #dfe3ff */
-  --m3-primary-fixed: 221 225 255;        /* #dde1ff */
-  --m3-on-primary-fixed-variant: 0 56 182;/* #0038b6 */
+  color-scheme: light;
 
-  --m3-secondary: 79 96 115;              /* #4f6073 */
-  --m3-secondary-container: 210 228 251;  /* #d2e4fb */
+  /* Surfaces. `raised` is for overlays only (menus, dialogs, sheets).
+     `sunken` is for input wells and hover states, not for content blocks. */
+  --bg: 255 255 255;
+  --bg-sunken: 250 250 250;
+  --bg-raised: 255 255 255;
+  --bg-hover: 0 0 0 / 0.04;
 
-  --m3-surface: 248 249 255;              /* #f8f9ff */
-  --m3-surface-container-lowest: 255 255 255;
-  --m3-surface-container-low: 239 244 255;/* #eff4ff */
-  --m3-surface-container: 229 238 255;    /* #e5eeff */
-  --m3-surface-container-high: 220 233 255;
-  --m3-surface-container-highest: 211 228 254;
-  --m3-surface-variant: 211 228 254;      /* #d3e4fe */
-  --m3-surface-dim: 203 219 245;
+  /* One hairline. `line-strong` exists only for a focused input edge. */
+  --line: 219 219 219;
+  --line-strong: 168 168 168;
 
-  --m3-on-surface: 11 28 48;              /* #0b1c30 */
-  --m3-on-surface-variant: 67 70 86;      /* #434656 */
-  --m3-outline: 115 118 136;              /* #737688 */
-  --m3-outline-variant: 195 197 217;      /* #c3c5d9 */
+  /* Ink. `ink` is body and headings both — weight separates them, not
+     colour. `ink-2` is metadata; `ink-3` is the floor for anything that
+     still has to be readable. There is no fourth step: if text needs to be
+     quieter than ink-3 it should not be on the screen. */
+  --ink: 0 0 0;
+  --ink-2: 115 115 115;
+  --ink-3: 168 168 168;
 
-  --m3-error: 186 26 26;                  /* #ba1a1a */
-  --m3-on-error: 255 255 255;
-  --m3-error-container: 255 218 214;
+  /* One accent, used for interactive text, active nav and primary fills. */
+  --accent: 0 102 255;
+  --accent-press: 0 82 214;
+  --accent-ink: 255 255 255;
+  --accent-wash: 232 240 254;
 
-  --m3-inverse-surface: 33 49 69;
-  --m3-inverse-on-surface: 234 241 255;
+  /* Solid inverse — the highest-emphasis button. */
+  --solid: 0 0 0;
+  --solid-press: 38 38 38;
+  --solid-ink: 255 255 255;
 
-  /* ---- Aliases the existing screens consume ---- */
-  --bg: var(--m3-surface);
-  --bg-subtle: var(--m3-surface-container-low);
-  --bg-elevated: var(--m3-surface-container-lowest);
-  --bg-inset: var(--m3-surface-container);
+  --danger: 237 65 54;
+  --danger-wash: 254 238 237;
+  --success: 20 145 84;
 
-  --border: var(--m3-outline-variant);
-  --border-strong: var(--m3-outline);
-
-  --text: var(--m3-on-surface);
-  --text-secondary: var(--m3-on-surface-variant);
-  --text-muted: var(--m3-outline);
-  --text-faint: 143 146 165;
-
-  /* The accent is now the M3 primary — blue, not gold. In the mock the
-     primary CTA, the active nav pill and every link share this one colour. */
-  --accent: var(--m3-primary);
-  --accent-hover: var(--m3-on-primary-fixed-variant);
-  --accent-fg: var(--m3-on-primary);
-  --accent-subtle: 231 236 255;
-
-  /* Solid = the filled button. Previously inverted monochrome; the mock's
-     "New Post" is blue with white text, so solid and accent now coincide. */
-  --solid: var(--m3-primary);
-  --solid-hover: var(--m3-on-primary-fixed-variant);
-  --solid-fg: var(--m3-on-primary);
-
-  --danger: var(--m3-error);
-  --danger-subtle: var(--m3-error-container);
+  /* Story ring. Warm-to-cool sweep so an "active" community reads at a
+     glance without needing a label. */
+  --ring-a: 255 133 45;
+  --ring-b: 236 62 118;
+  --ring-c: 118 71 233;
 
 
-  /* Filled-icon accents. Icons are solid glyphs, not hollow outlines, so
-     they carry colour of their own instead of reading as grey furniture.
-     Each is tuned to sit on the light surface at ~4.5:1. */
-  --icon-blue: 0 62 199;
-  --icon-teal: 0 105 110;
-  --icon-amber: 154 92 0;
-  --icon-pink: 158 41 123;
-  --icon-green: 30 109 62;
-  --icon-violet: 91 61 196;
+  /* Expressive palette. Icons are always filled and always carry a hue —
+     a screen of grey glyphs reads as unfinished. Colour is assigned by
+     meaning (a category, a metric, a state), never decoratively, so the
+     same subject is the same colour everywhere in the app.
+     Tuned to clear 4.5:1 on the white surface so these are safe for text,
+     not just for 20px glyphs. */
+  --c-blue: 0 102 255;
+  --c-violet: 118 71 233;
+  --c-pink: 214 41 118;
+  --c-orange: 214 92 0;
+  --c-amber: 166 108 0;
+  --c-green: 20 130 76;
+  --c-teal: 0 122 130;
+  --c-red: 210 43 43;
 
-  --radius: 4px;
-  --radius-sm: 4px;
-  --radius-lg: 8px;
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
 }
 
 .dark {
-  --m3-primary: 183 196 255;              /* the mock's own inverse-primary */
-  --m3-on-primary: 0 20 82;               /* #001452 */
-  --m3-primary-container: 0 56 182;       /* #0038b6 */
-  --m3-on-primary-container: 221 225 255;
-  --m3-primary-fixed: 221 225 255;
-  --m3-on-primary-fixed-variant: 199 210 255;
+  color-scheme: dark;
 
-  --m3-secondary: 183 200 222;
-  --m3-secondary-container: 56 72 90;
+  /* True black, like the reference — on OLED it reads as depth rather than
+     as a dark-grey sheet, and it lets the hairline do all the structural
+     work without competing with a lifted surface. */
+  --bg: 0 0 0;
+  --bg-sunken: 18 18 18;
+  --bg-raised: 26 26 26;
+  --bg-hover: 255 255 255 / 0.06;
 
-  --m3-surface: 16 19 28;
-  --m3-surface-container-lowest: 11 14 22;
-  --m3-surface-container-low: 24 28 38;
-  --m3-surface-container: 28 32 42;
-  --m3-surface-container-high: 38 42 53;
-  --m3-surface-container-highest: 49 53 64;
-  --m3-surface-variant: 68 71 89;
-  --m3-surface-dim: 16 19 28;
+  --line: 38 38 38;
+  --line-strong: 84 84 84;
 
-  --m3-on-surface: 226 226 233;
-  --m3-on-surface-variant: 196 198 217;
-  --m3-outline: 142 144 164;
-  --m3-outline-variant: 68 71 89;
+  --ink: 245 245 245;
+  --ink-2: 168 168 168;
+  --ink-3: 115 115 115;
 
-  --m3-error: 255 180 171;
-  --m3-on-error: 105 0 5;
-  --m3-error-container: 147 0 10;
+  --accent: 77 155 255;
+  --accent-press: 120 180 255;
+  --accent-ink: 0 0 0;
+  --accent-wash: 18 32 56;
 
-  --m3-inverse-surface: 226 226 233;
-  --m3-inverse-on-surface: 47 48 54;
+  --solid: 245 245 245;
+  --solid-press: 219 219 219;
+  --solid-ink: 0 0 0;
 
+  --danger: 255 105 97;
+  --danger-wash: 48 20 19;
+  --success: 78 200 140;
 
-  /* Lifted for the dark surface — the light values go muddy below 20% L. */
-  --icon-blue: 168 190 255;
-  --icon-teal: 98 216 222;
-  --icon-amber: 240 190 100;
-  --icon-pink: 255 174 220;
-  --icon-green: 130 219 152;
-  --icon-violet: 197 180 255;
+  /* Lifted for the black surface; the light values collapse below ~25% L. */
+  --c-blue: 90 162 255;
+  --c-violet: 178 150 255;
+  --c-pink: 255 138 191;
+  --c-orange: 255 158 87;
+  --c-amber: 240 190 100;
+  --c-green: 92 208 143;
+  --c-teal: 90 214 222;
+  --c-red: 255 122 114;
 
-  --text-faint: 122 124 143;
-  --accent-subtle: 32 40 66;
+}
+
+/* Filled icon face. Kept filled at every state — an outline set reads as
+   unfinished at 20px, and the fill is what makes the active nav item land
+   without needing a background chip behind it. */
+.icon {
+  font-family: "Material Symbols Rounded";
+  font-weight: 400;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: "liga";
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+}
+.icon-thin { font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24; }
+
+/* Story ring: a 2px conic sweep with the avatar punched out of the middle. */
+.story-ring {
+  background: conic-gradient(
+    from 200deg,
+    rgb(var(--ring-a)),
+    rgb(var(--ring-b)),
+    rgb(var(--ring-c)),
+    rgb(var(--ring-a))
+  );
+}
+
+/* Feed images arrive at unpredictable ratios; this keeps a row of them from
+   jittering while they load. */
+.media {
+  background: rgb(var(--bg-sunken));
 }

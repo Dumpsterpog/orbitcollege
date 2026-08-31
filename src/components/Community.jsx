@@ -1,14 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
-import {
-  Settings, TrendingUp, Crown, Flame, Search, Pin, Send,
-  Image as ImageIcon, Camera, Flag, Check, X, Trash2, QrCode, BadgeCheck,
-  Sticker, Loader2,
-} from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { CATEGORIES } from "../data/constants.js";
 import { baseSparks, handleFor, timeAgo } from "../utils/helpers.js";
-import { Avatar, Button, IconButton, Card, Input, Textarea, Field, Badge, SectionLabel, Spinner, cx } from "./ui/Primitives.jsx";
-import { Screen, PageHeader, Modal, Switch } from "./ui/Layout.jsx";
+import { Icon, Avatar, Button, IconButton, Input, Textarea, Field, Spinner, cx } from "./ui/Primitives.jsx";
+import { Switch } from "./ui/Primitives.jsx";
+import { Screen, PageHeader, Modal } from "./ui/Layout.jsx";
 import { EmptyState } from "./EmptyState.jsx";
 import { supabase } from "../lib/supabaseClient.js";
 
@@ -71,18 +67,18 @@ export function CommunitySettings({ c, onSave, onDelete, onClose }) {
     >
       <div className="space-y-5 max-h-[60vh] overflow-y-auto -mx-4 px-4">
         <div>
-          <SectionLabel className="mb-1.5">Status image</SectionLabel>
-          <p className="text-2xs text-content-muted mb-2.5 leading-relaxed">
+          <p className="text-2xs font-semibold text-ink-2 uppercase tracking-wider mb-1.5">Status image</p>
+          <p className="text-2xs text-ink-2 mb-2.5 leading-relaxed">
             Shown on this community's page and in the joined-communities strip. Only you can change it.
           </p>
           <label className="flex items-center gap-3 cursor-pointer w-fit">
-            <span className="w-14 h-14 rounded-lg bg-surface-subtle border border-line overflow-hidden grid place-items-center shrink-0">
+            <span className="w-14 h-14 rounded-lg bg-bg-sunken border border-line overflow-hidden grid place-items-center shrink-0">
               {avatarPreview
                 ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
-                : <ImageIcon size={17} className="text-content-faint" />}
+                : <Icon name="image" size={17} className="text-ink-3" />}
             </span>
-            <span className="text-xs font-medium text-content-secondary inline-flex items-center gap-1.5">
-              <Camera size={13} />{avatarPreview ? "Change image" : "Upload image"}
+            <span className="text-xs font-medium text-ink-2 inline-flex items-center gap-1.5">
+              <Icon name="photo_camera" size={13} className="text-c-teal" />{avatarPreview ? "Change image" : "Upload image"}
             </span>
             <input type="file" accept="image/*" className="hidden" onChange={pickAvatar} />
           </label>
@@ -101,10 +97,10 @@ export function CommunitySettings({ c, onSave, onDelete, onClose }) {
           <Textarea id="cs-desc" value={desc} rows={3} maxLength={800} onChange={(e) => setDesc(e.target.value)} />
         </Field>
 
-        <div className="flex items-center gap-4 bg-surface-subtle border border-line rounded px-3.5 py-3">
+        <div className="flex items-center gap-4 bg-bg-sunken border border-line rounded px-3.5 py-3">
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-medium text-content">Only admins can post</p>
-            <p className="text-2xs text-content-muted mt-0.5 leading-relaxed">
+            <p className="text-sm font-medium text-ink">Only admins can post</p>
+            <p className="text-2xs text-ink-2 mt-0.5 leading-relaxed">
               Posts tab only — Chat stays open to every member either way.
             </p>
           </div>
@@ -112,12 +108,11 @@ export function CommunitySettings({ c, onSave, onDelete, onClose }) {
         </div>
 
         <div>
-          <SectionLabel className="mb-2">Category</SectionLabel>
+          <p className="text-2xs font-semibold text-ink-2 uppercase tracking-wider mb-2">Category</p>
           <div className="grid grid-cols-2 gap-1.5">
             {CATEGORIES.map((cat) => {
               const selected = category === cat.name;
-              const Icon = cat.icon;
-              return (
+                            return (
                 <button
                   type="button"
                   key={cat.name}
@@ -126,13 +121,13 @@ export function CommunitySettings({ c, onSave, onDelete, onClose }) {
                   className={cx(
                     "flex items-center gap-2 h-9 px-2.5 rounded border text-left transition-colors",
                     selected
-                      ? "border-line-strong bg-surface-inset text-content"
-                      : "border-line text-content-secondary hover:border-line-strong hover:text-content"
+                      ? "border-line-strong bg-bg-sunken text-ink"
+                      : "border-line text-ink-2 hover:border-line-strong hover:text-ink"
                   )}
                 >
-                  <Icon size={14} className={cx("shrink-0", selected ? "text-accent" : "text-content-faint")} />
+                  <Icon size={14} className={cx("shrink-0", selected ? "text-accent" : "text-ink-3")} />
                   <span className="text-xs font-medium truncate flex-1">{cat.name}</span>
-                  {selected && <Check size={12} className="text-accent shrink-0" />}
+                  {selected && <Icon name="check" size={12} className="text-accent shrink-0" />}
                 </button>
               );
             })}
@@ -145,8 +140,8 @@ export function CommunitySettings({ c, onSave, onDelete, onClose }) {
               Delete community
             </Button>
           ) : (
-            <div className="mt-4 border border-danger/30 bg-danger-subtle rounded p-3.5">
-              <p className="text-xs text-content-secondary mb-3 leading-relaxed">
+            <div className="mt-4 border border-danger/30 bg-danger-wash rounded p-3.5">
+              <p className="text-xs text-ink-2 mb-3 leading-relaxed">
                 This deletes the community for everyone, including all its posts and chat. This can't be undone.
               </p>
               <div className="flex gap-2">
@@ -199,8 +194,7 @@ function mapMessageRow(row) {
 
 export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, verified, onBlocked, sparked, onSpark, onUpdate, onDelete, trendRank, interests, authUserId, myName }) {
   const cat = CATEGORIES.find((x) => x.name === c.category);
-  const Icon = cat.icon;
-  const sparks = baseSparks(c) + (sparked ? 1 : 0);
+    const sparks = baseSparks(c) + (sparked ? 1 : 0);
   const isAdmin = !!authUserId && c.creatorId === authUserId;
   const isLive = c.lastActive <= 10;
   const [tab, setTab] = useState("posts");
@@ -559,7 +553,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
         actions={
           <>
             {trendRank && (
-              <Badge tone="accent"><TrendingUp size={10} />#{trendRank}</Badge>
+              <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full bg-accent-wash text-accent text-2xs font-semibold"><Icon name="trending_up" size={10} className="text-c-green" />#{trendRank}</span>
             )}
             {isAdmin
               ? <IconButton icon={Settings} label="Community settings" size="sm" onClick={() => setSettingsOpen(true)} />
@@ -573,13 +567,13 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
           {/* Identity block */}
           <div className="flex items-start gap-4">
             <div className="relative shrink-0">
-              <div className="w-14 h-14 rounded-lg overflow-hidden border border-line bg-surface-inset grid place-items-center">
+              <div className="w-14 h-14 rounded-lg overflow-hidden border border-line bg-bg-sunken grid place-items-center">
                 {c.avatarUrl
                   ? <img src={c.avatarUrl} alt="" className="w-full h-full object-cover" />
-                  : <Icon size={24} className="text-content-secondary" />}
+                  : <Icon name={cat.msr} size={26} className={cat.tint} />}
               </div>
               {isLive && (
-                <span className="absolute -bottom-1 -right-1 flex items-center gap-1 bg-solid text-solid-fg text-[8px] font-bold px-1.5 h-4 rounded-full ring-2 ring-surface">
+                <span className="absolute -bottom-1 -right-1 flex items-center gap-1 bg-solid text-solid-ink text-[8px] font-bold px-1.5 h-4 rounded-full ring-2 ring-surface">
                   <span className="w-1 h-1 rounded-full bg-solid-fg animate-pulse" />LIVE
                 </span>
               )}
@@ -588,11 +582,11 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
             <div className="min-w-0 flex-1">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <h2 className="text-xl font-semibold text-content leading-tight">{c.name}</h2>
+                  <h2 className="text-xl font-semibold text-ink leading-tight">{c.name}</h2>
                   <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                    <Badge tone="neutral">{c.category}</Badge>
-                    {c.official && <Badge tone="accent"><BadgeCheck size={10} />Official club</Badge>}
-                    {isAdmin && <Badge tone="neutral"><Crown size={10} />You created this</Badge>}
+                    <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full bg-bg-sunken text-ink-2 text-2xs font-semibold">{c.category}</span>
+                    {c.official && <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full bg-accent-wash text-accent text-2xs font-semibold"><Icon name="verified" size={10} className="text-c-blue" />Official club</span>}
+                    {isAdmin && <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full bg-bg-sunken text-ink-2 text-2xs font-semibold"><Icon name="workspace_premium" size={10} className="text-c-amber" />You created this</span>}
                   </div>
                 </div>
                 <Button
@@ -607,7 +601,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
             </div>
           </div>
 
-          {c.desc && <p className="text-sm text-content-secondary leading-relaxed mt-3.5">{c.desc}</p>}
+          {c.desc && <p className="text-sm text-ink-2 leading-relaxed mt-3.5">{c.desc}</p>}
 
           <div className="flex items-center gap-1.5 mt-3.5 flex-wrap">
             <Button variant="secondary" size="sm" icon={QrCode} onClick={() => setQrOpen(true)}>QR</Button>
@@ -617,16 +611,16 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
               className={cx(
                 "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm border text-xs font-medium transition-colors",
                 sparked
-                  ? "bg-accent-subtle border-accent/30 text-accent"
-                  : "bg-surface-subtle border-line text-content-muted hover:border-line-strong hover:text-content"
+                  ? "bg-accent-wash border-accent/30 text-accent"
+                  : "bg-bg-sunken border-line text-ink-2 hover:border-line-strong hover:text-ink"
               )}
             >
-              <Flame size={13} fill={sparked ? "currentColor" : "none"} />
+              <Icon name="local_fire_department" size={13} className="text-c-orange" />
               <span className="tabular-nums">{sparks}</span> interested
             </button>
             <button
               onClick={() => setTab("members")}
-              className="inline-flex items-center gap-2 h-7 px-1.5 rounded-sm hover:bg-surface-inset transition-colors"
+              className="inline-flex items-center gap-2 h-7 px-1.5 rounded-sm hover:bg-bg-sunken transition-colors"
             >
               <span className="flex -space-x-1.5">
                 {faceStack.map((m, i) => (
@@ -635,17 +629,17 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                   </span>
                 ))}
               </span>
-              <span className="text-xs text-content-muted">
-                <span className="text-content font-medium tabular-nums">{total}</span> members
+              <span className="text-xs text-ink-2">
+                <span className="text-ink font-medium tabular-nums">{total}</span> members
               </span>
             </button>
           </div>
 
           {matchedMembers.length > 0 && (
-            <div className="mt-3.5 flex items-center gap-2.5 bg-accent-subtle border border-accent/20 rounded px-3 py-2">
+            <div className="mt-3.5 flex items-center gap-2.5 bg-accent-wash border border-accent/20 rounded px-3 py-2">
               <Avatar name={matchedMembers[0].name} size={22} />
-              <p className="text-xs text-content-secondary leading-snug min-w-0">
-                <span className="font-medium text-content">{matchedMembers[0].name}</span> shares your interest in {matchedMembers[0].overlap.join(", ")}
+              <p className="text-xs text-ink-2 leading-snug min-w-0">
+                <span className="font-medium text-ink">{matchedMembers[0].name}</span> shares your interest in {matchedMembers[0].overlap.join(", ")}
                 {matchedMembers.length > 1 && <> · +{matchedMembers.length - 1} more here</>}
               </p>
             </div>
@@ -661,12 +655,12 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                 className={cx(
                   "inline-flex items-center gap-1.5 px-3 h-9 -mb-px border-b-2 text-xs font-medium transition-colors",
                   tab === t.key
-                    ? "border-content text-content"
-                    : "border-transparent text-content-muted hover:text-content"
+                    ? "border-content text-ink"
+                    : "border-transparent text-ink-2 hover:text-ink"
                 )}
               >
                 {t.label}
-                {typeof t.count === "number" && <span className="text-content-faint tabular-nums">{t.count}</span>}
+                {typeof t.count === "number" && <span className="text-ink-3 tabular-nums">{t.count}</span>}
               </button>
             ))}
           </div>
@@ -677,41 +671,41 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
               const pinnedMessage = chatMessages.find((m) => m.pinned);
               if (!pinnedMessage) return null;
               return (
-                <div className="flex items-start gap-2 mx-5 lg:mx-8 mt-3 px-3 py-2 rounded bg-accent-subtle border border-accent/20">
-                  <Pin size={12} className="text-accent mt-0.5 shrink-0" />
+                <div className="flex items-start gap-2 mx-5 lg:mx-8 mt-3 px-3 py-2 rounded bg-accent-wash border border-accent/20">
+                  <Icon name="push_pin" size={12} className="text-accent mt-0.5 shrink-0" />
                   <div className="min-w-0 flex-1">
                     <p className="text-2xs text-accent font-semibold">Pinned · {pinnedMessage.who}</p>
-                    <p className="text-xs text-content-secondary truncate">{pinnedMessage.text}</p>
+                    <p className="text-xs text-ink-2 truncate">{pinnedMessage.text}</p>
                   </div>
                   {isAdmin && (
-                    <button onClick={() => togglePinMessage(pinnedMessage)} className="text-[10px] text-content-muted hover:text-content-secondary shrink-0">Unpin</button>
+                    <button onClick={() => togglePinMessage(pinnedMessage)} className="text-[10px] text-ink-2 hover:text-ink-2 shrink-0">Unpin</button>
                   )}
                 </div>
               );
             })()}
             <div className="flex-1 overflow-y-auto no-scrollbar px-5 py-3 space-y-2.5">
               {!joined && (
-                <p className="text-xs text-content-muted text-center py-6">Join this {c.official ? "club" : "community"} to send messages — you can still read along.</p>
+                <p className="text-xs text-ink-2 text-center py-6">Join this {c.official ? "club" : "community"} to send messages — you can still read along.</p>
               )}
               {chatMessages.map((m) => (
                 <div key={m.id} className="flex gap-2.5 group">
                   <Avatar name={m.who} size={26} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-content-secondary"><span className="font-medium text-content">{m.who}</span></p>
-                    {m.text && <p className="text-sm text-content-secondary">{m.text}</p>}
+                    <p className="text-sm text-ink-2"><span className="font-medium text-ink">{m.who}</span></p>
+                    {m.text && <p className="text-sm text-ink-2">{m.text}</p>}
                     {m.imageUrl && (
-                      <img src={m.imageUrl} alt="" className="mt-1 max-h-32 max-w-[160px] rounded-lg object-contain border border-line bg-surface-subtle" />
+                      <img src={m.imageUrl} alt="" className="mt-1 max-h-32 max-w-[160px] rounded-lg object-contain border border-line bg-bg-sunken" />
                     )}
                     <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-[11px] text-content-muted mono">{m.time}</p>
+                      <p className="text-[11px] text-ink-2 mono">{m.time}</p>
                       {isAdmin && (
-                        <button onClick={() => togglePinMessage(m)} className="text-[11px] text-content-faint hover:text-content flex items-center gap-0.5">
-                          <Pin size={10} />{m.pinned ? "Unpin" : "Pin"}
+                        <button onClick={() => togglePinMessage(m)} className="text-[11px] text-ink-3 hover:text-ink flex items-center gap-0.5">
+                          <Icon name="push_pin" size={10} className="text-c-amber" />{m.pinned ? "Unpin" : "Pin"}
                         </button>
                       )}
                       {(m.authorId === authUserId || isAdmin) && (
-                        <button onClick={() => deleteMessage(m)} className="text-[11px] text-content-faint hover:text-content-secondary flex items-center gap-0.5">
-                          <Trash2 size={10} />
+                        <button onClick={() => deleteMessage(m)} className="text-[11px] text-ink-3 hover:text-ink-2 flex items-center gap-0.5">
+                          <Icon name="delete" size={10} className="text-c-red" />
                         </button>
                       )}
                     </div>
@@ -722,21 +716,21 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
             {stickerPickerOpen && (
               <div className="border-t border-line px-5 py-3">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[11px] font-semibold text-content-muted uppercase tracking-wide">Stickers</p>
-                  <label className="text-[11px] text-content font-medium flex items-center gap-1 cursor-pointer">
-                    {uploadingSticker ? <Loader2 size={11} className="animate-spin" /> : <Camera size={11} />}
+                  <p className="text-[11px] font-semibold text-ink-2 uppercase tracking-wide">Stickers</p>
+                  <label className="text-[11px] text-ink font-medium flex items-center gap-1 cursor-pointer">
+                    {uploadingSticker ? <Icon name="progress_activity" size={11} className="animate-spin text-ink-2" /> : <Icon name="photo_camera" size={11} className="text-c-teal" />}
                     Add one
                     <input type="file" accept="image/*" className="hidden" disabled={uploadingSticker} onChange={(e) => { const f = e.target.files?.[0]; if (f) uploadSticker(f); }} />
                   </label>
                 </div>
                 {!stickersLoaded ? (
-                  <p className="text-xs text-content-faint py-3 text-center">Loading...</p>
+                  <p className="text-xs text-ink-3 py-3 text-center">Loading...</p>
                 ) : stickers.length === 0 ? (
-                  <p className="text-xs text-content-faint py-3 text-center">No stickers yet — add the first one.</p>
+                  <p className="text-xs text-ink-3 py-3 text-center">No stickers yet — add the first one.</p>
                 ) : (
                   <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
                     {stickers.map((s) => (
-                      <button key={s.id} onClick={() => sendSticker(s)} className="w-14 h-14 rounded-xl bg-surface-subtle border border-line overflow-hidden shrink-0 active:scale-90 transition-transform">
+                      <button key={s.id} onClick={() => sendSticker(s)} className="w-14 h-14 rounded-xl bg-bg-sunken border border-line overflow-hidden shrink-0 active:scale-90 transition-transform">
                         <img src={s.image_url} alt="" className="w-full h-full object-contain" />
                       </button>
                     ))}
@@ -748,9 +742,9 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
               <div className="flex items-center gap-2 px-5 py-3 border-t border-line">
                 <button
                   onClick={() => { setStickerPickerOpen((v) => !v); if (!stickersLoaded) loadStickers(); }}
-                  className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${stickerPickerOpen ? "bg-surface-inset text-content" : "text-content-muted hover:bg-surface-inset"}`}
+                  className={`w-9 h-9 rounded-full flex items-center justify-center shrink-0 ${stickerPickerOpen ? "bg-bg-sunken text-ink" : "text-ink-2 hover:bg-bg-sunken"}`}
                 >
-                  <Sticker size={17} />
+                  <Icon name="emoji_emotions" size={17} className="text-c-pink" />
                 </button>
                 <input
                   value={chatDraft} onChange={(e) => setChatDraft(e.target.value)}
@@ -760,13 +754,13 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                   }}
                   placeholder="Message the group"
                   maxLength={1000}
-                  className="flex-1 bg-surface-subtle border border-line text-content placeholder:text-content-faint rounded-full px-4 py-2 text-sm outline-none focus:border-line-strong"
+                  className="flex-1 bg-bg-sunken border border-line text-ink placeholder:text-ink-3 rounded-full px-4 py-2 text-sm outline-none focus:border-line-strong"
                 />
                 <button
                   onClick={sendChat}
-                  className="w-9 h-9 rounded-full bg-solid text-solid-fg flex items-center justify-center shrink-0"
+                  className="w-9 h-9 rounded-full bg-solid text-solid-ink flex items-center justify-center shrink-0"
                 >
-                  <Send size={15} />
+                  <Icon name="send" size={15} className="text-c-violet" />
                 </button>
               </div>
             )}
@@ -775,20 +769,20 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
         {tab === "posts" && (
           <div className="px-5 pt-4 pb-6">
             {joined && !canPost && (
-              <p className="text-xs text-content-muted text-center py-4 mb-2 bg-surface-subtle border border-line rounded-2xl">Only this community's admins can post right now.</p>
+              <p className="text-xs text-ink-2 text-center py-4 mb-2 bg-bg-sunken border border-line rounded-2xl">Only this community's admins can post right now.</p>
             )}
             {joined && canPost && (
-              <div className="bg-surface-subtle border border-line rounded-2xl p-3 mb-4">
+              <div className="bg-bg-sunken border border-line rounded-2xl p-3 mb-4">
                 {postImagePreview ? (
                   <div className="relative mb-2 w-full">
                     <img src={postImagePreview} alt="" className="w-full max-h-64 rounded-lg border border-line object-cover" />
-                    <button onClick={() => { setPostImageFile(null); setPostImagePreview(null); }} className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-surface border border-line-strong flex items-center justify-center">
-                      <X size={12} className="text-content-secondary" />
+                    <button onClick={() => { setPostImageFile(null); setPostImagePreview(null); }} className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-bg border border-line-strong flex items-center justify-center">
+                      <Icon name="close" size={12} className="text-ink-2" />
                     </button>
                   </div>
                 ) : (
-                  <label className="flex flex-col items-center justify-center gap-1.5 py-6 rounded-xl border-2 border-dashed border-line-strong cursor-pointer text-content-muted hover:border-line-strong mb-2">
-                    <Camera size={20} />
+                  <label className="flex flex-col items-center justify-center gap-1.5 py-6 rounded-xl border-2 border-dashed border-line-strong cursor-pointer text-ink-2 hover:border-line-strong mb-2">
+                    <Icon name="photo_camera" size={20} className="text-c-teal" />
                     <span className="text-xs font-medium">Add a photo to post</span>
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                       const file = e.target.files?.[0];
@@ -803,12 +797,12 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                   placeholder="Add a caption (optional)..."
                   rows={2}
                   maxLength={2000}
-                  className="w-full bg-transparent text-content placeholder:text-content-faint text-sm outline-none resize-none"
+                  className="w-full bg-transparent text-ink placeholder:text-ink-3 text-sm outline-none resize-none"
                 />
                 <div className="flex items-center justify-between mt-1.5">
-                  <p className="text-[10px] text-content-faint">Just want to say something? Use Chat instead.</p>
-                  <button disabled={!postImageFile || postingImage} onClick={handlePost} className="px-4 py-1.5 rounded-lg bg-solid disabled:bg-surface-inset text-solid-fg disabled:text-content-faint text-xs font-semibold flex items-center gap-1.5 shrink-0">
-                    {postingImage && <Loader2 size={12} className="animate-spin" />}
+                  <p className="text-[10px] text-ink-3">Just want to say something? Use Chat instead.</p>
+                  <button disabled={!postImageFile || postingImage} onClick={handlePost} className="px-4 h-8 rounded-full bg-solid disabled:bg-bg-sunken text-solid-ink disabled:text-ink-3 text-xs font-semibold flex items-center gap-1.5 shrink-0 active:scale-95 transition-transform">
+                    {postingImage && <Icon name="progress_activity" size={12} className="animate-spin text-ink-2" />}
                     {postingImage ? "Posting..." : "Post"}
                   </button>
                 </div>
@@ -819,31 +813,31 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                 const isPinned = p.pinned;
                 const postSparked = postSparkIds.includes(p.id);
                 return (
-                  <div key={p.id} className={cx("flex gap-2.5", isPinned && "bg-accent-subtle border border-accent/20 -mx-2 px-3 py-2.5 rounded")}>
+                  <div key={p.id} className={cx("flex gap-2.5", isPinned && "bg-accent-wash border border-accent/20 -mx-2 px-3 py-2.5 rounded")}>
                     <Avatar name={p.who} size={28} />
                     <div className="flex-1 min-w-0">
-                      {isPinned && <p className="text-2xs text-accent font-semibold flex items-center gap-1 mb-0.5"><Pin size={10} />Pinned</p>}
-                      <p className="text-sm text-content-secondary"><span className="font-medium text-content">{p.who}</span> {p.text}</p>
+                      {isPinned && <p className="text-2xs text-accent font-semibold flex items-center gap-1 mb-0.5"><Icon name="push_pin" size={10} className="text-c-amber" />Pinned</p>}
+                      <p className="text-sm text-ink-2"><span className="font-medium text-ink">{p.who}</span> {p.text}</p>
                       {p.imageUrl ? (
                         <img src={p.imageUrl} alt="" className="mt-1.5 max-h-60 w-full max-w-[220px] rounded-xl object-cover border border-line" />
                       ) : p.hasImage ? (
-                        <div className="mt-1.5 h-24 w-full max-w-[220px] rounded-xl bg-surface-subtle border border-line flex items-center justify-center">
-                          <ImageIcon size={18} className="text-content-secondary" />
+                        <div className="mt-1.5 h-24 w-full max-w-[220px] rounded-xl bg-bg-sunken border border-line flex items-center justify-center">
+                          <Icon name="image" size={18} className="text-ink-2" />
                         </div>
                       ) : null}
                       <div className="flex items-center gap-3 mt-1.5">
-                        <p className="text-[11px] text-content-muted mono">{p.time}</p>
-                        <button onClick={() => togglePostSpark(p.id)} className={`flex items-center gap-1 text-[11px] mono active:scale-90 transition-transform ${postSparked ? "text-content-secondary" : "text-content-muted hover:text-content-secondary"}`}>
-                          <Flame size={11} fill={postSparked ? "currentColor" : "none"} />{p.sparks || 0}
+                        <p className="text-[11px] text-ink-2 mono">{p.time}</p>
+                        <button onClick={() => togglePostSpark(p.id)} className={`flex items-center gap-1 text-[11px] mono active:scale-90 transition-transform ${postSparked ? "text-ink-2" : "text-ink-2 hover:text-ink-2"}`}>
+                          <Icon name="local_fire_department" size={11} className="text-c-orange" />{p.sparks || 0}
                         </button>
                         {isAdmin && (
-                          <button onClick={() => togglePin(p)} className="text-[11px] text-content-muted hover:text-content flex items-center gap-0.5">
-                            <Pin size={11} />{isPinned ? "Unpin" : "Pin"}
+                          <button onClick={() => togglePin(p)} className="text-[11px] text-ink-2 hover:text-ink flex items-center gap-0.5">
+                            <Icon name="push_pin" size={11} className="text-c-amber" />{isPinned ? "Unpin" : "Pin"}
                           </button>
                         )}
                         {(p.authorId === authUserId || isAdmin) && (
-                          <button onClick={() => deletePost(p)} className="text-[11px] text-content-muted hover:text-content-secondary flex items-center gap-0.5">
-                            <Trash2 size={11} />
+                          <button onClick={() => deletePost(p)} className="text-[11px] text-ink-2 hover:text-ink-2 flex items-center gap-0.5">
+                            <Icon name="delete" size={11} className="text-c-red" />
                           </button>
                         )}
                       </div>
@@ -858,22 +852,22 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
           <div className="px-5 pt-4 pb-6">
             {!memberQuery && recentlyJoined.length > 0 && (
               <div className="mb-4">
-                <p className="text-[11px] font-semibold text-content-muted uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                <p className="text-[11px] font-semibold text-ink-2 uppercase tracking-wide mb-2 flex items-center gap-1.5">
                   Recently joined
                 </p>
                 <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
                   {recentlyJoined.map((m) => (
                     <div key={m.userId} className="flex flex-col items-center gap-1 w-14 shrink-0">
                       <Avatar name={m.name} size={32} />
-                      <p className="text-[10px] text-content-secondary truncate w-full text-center">{m.name}</p>
+                      <p className="text-[10px] text-ink-2 truncate w-full text-center">{m.name}</p>
                     </div>
                   ))}
                 </div>
               </div>
             )}
-            <div className="flex items-center gap-2 bg-surface-subtle border border-line rounded-xl px-3 py-2 mb-4">
-              <Search size={14} className="text-content-muted shrink-0" />
-              <input value={memberQuery} onChange={(e) => setMemberQuery(e.target.value)} placeholder="Search members" className="flex-1 bg-transparent text-content placeholder:text-content-faint text-sm outline-none" />
+            <div className="flex items-center gap-2 bg-bg-sunken border border-line rounded-xl px-3 py-2 mb-4">
+              <Icon name="search" size={14} className="text-ink-2 shrink-0" />
+              <input value={memberQuery} onChange={(e) => setMemberQuery(e.target.value)} placeholder="Search members" className="flex-1 bg-transparent text-ink placeholder:text-ink-3 text-sm outline-none" />
             </div>
             <div className="space-y-1">
               {filteredMembers.map((m) => {
@@ -882,24 +876,24 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                   <div key={m.userId} className="flex items-center gap-3 py-2">
                     <Avatar name={m.name} size={30} />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-content truncate">{m.name}</p>
-                      <p className="text-[11px] text-content-muted flex items-center gap-1">
-                        {m.role === "Creator" && <Crown size={10} className="text-content-secondary" />}{m.role}
-                        {overlap.length > 0 && <span className="text-content">· shares {overlap.join(", ")}</span>}
+                      <p className="text-sm font-medium text-ink truncate">{m.name}</p>
+                      <p className="text-[11px] text-ink-2 flex items-center gap-1">
+                        {m.role === "Creator" && <Icon name="workspace_premium" size={10} className="text-ink-2" />}{m.role}
+                        {overlap.length > 0 && <span className="text-ink">· shares {overlap.join(", ")}</span>}
                       </p>
                     </div>
                     {isAdmin && m.role !== "Creator" && (
                       <div className="flex items-center gap-2.5 shrink-0">
-                        <button onClick={() => toggleMemberAdmin(m)} className="text-[11px] text-content-muted hover:text-content">
+                        <button onClick={() => toggleMemberAdmin(m)} className="text-[11px] text-ink-2 hover:text-ink">
                           {m.role === "Admin" ? "Remove admin" : "Make admin"}
                         </button>
-                        <button onClick={() => removeMember(m)} className="text-[11px] text-content-muted hover:text-content-secondary">Remove</button>
+                        <button onClick={() => removeMember(m)} className="text-[11px] text-ink-2 hover:text-ink-2">Remove</button>
                       </div>
                     )}
                   </div>
                 );
               })}
-              {filteredMembers.length === 0 && <p className="text-sm text-content-muted text-center py-8">No members match "{memberQuery}".</p>}
+              {filteredMembers.length === 0 && <p className="text-sm text-ink-2 text-center py-8">No members match "{memberQuery}".</p>}
             </div>
           </div>
         )}
@@ -915,11 +909,11 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
       {qrOpen && (
         <Modal title={c.name} onClose={() => setQrOpen(false)} max="max-w-xs">
           <div className="text-center">
-            <p className="text-xs text-content-muted mb-4">@{handle}</p>
+            <p className="text-xs text-ink-2 mb-4">@{handle}</p>
             <div className="bg-white rounded p-3 inline-block">
               <QRCodeSVG value={`https://orbit.app/${c.official ? "club" : "c"}/${handle}`} size={168} />
             </div>
-            <p className="text-2xs text-content-muted mt-4 leading-relaxed">
+            <p className="text-2xs text-ink-2 mt-4 leading-relaxed">
               Scan to open this {c.official ? "club" : "community"} on Orbit
             </p>
           </div>

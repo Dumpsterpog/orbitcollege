@@ -1,7 +1,6 @@
 import { useState } from "react";
-import { Check } from "lucide-react";
 import { REPORT_REASONS } from "../data/constants.js";
-import { Button, Textarea, cx } from "./ui/Primitives.jsx";
+import { Icon, Button, Textarea, cx } from "./ui/Primitives.jsx";
 import { Modal } from "./ui/Layout.jsx";
 
 export function ReportModal({ target, onClose, onSubmit }) {
@@ -21,7 +20,7 @@ export function ReportModal({ target, onClose, onSubmit }) {
         </div>
       }
     >
-      <p className="text-xs font-medium text-content-secondary mb-2">Reason</p>
+      <p className="text-xs font-medium text-ink-2 mb-2">Reason</p>
       <div className="space-y-1 mb-4">
         {REPORT_REASONS.map((r) => {
           const selected = reason === r;
@@ -34,19 +33,19 @@ export function ReportModal({ target, onClose, onSubmit }) {
               className={cx(
                 "w-full flex items-center gap-2 text-left text-sm px-2.5 py-2 rounded border transition-colors",
                 selected
-                  ? "border-line-strong bg-surface-inset text-content"
-                  : "border-line text-content-secondary hover:border-line-strong hover:text-content"
+                  ? "border-line-strong bg-bg-sunken text-ink"
+                  : "border-line text-ink-2 hover:border-line-strong hover:text-ink"
               )}
             >
               <span className="flex-1 min-w-0">{r}</span>
-              {selected && <Check size={13} className="text-accent shrink-0" />}
+              {selected && <Icon name="check" size={13} className="text-accent shrink-0" />}
             </button>
           );
         })}
       </div>
 
-      <p className="text-xs font-medium text-content-secondary mb-2">
-        Anything else? <span className="text-content-faint font-normal">Optional</span>
+      <p className="text-xs font-medium text-ink-2 mb-2">
+        Anything else? <span className="text-ink-3 font-normal">Optional</span>
       </p>
       <Textarea
         rows={3}
@@ -55,7 +54,7 @@ export function ReportModal({ target, onClose, onSubmit }) {
         onChange={(e) => setDetail(e.target.value)}
         placeholder="Context that would help a moderator."
       />
-      <p className="text-2xs text-content-faint mt-2.5 leading-relaxed">
+      <p className="text-2xs text-ink-3 mt-2.5 leading-relaxed">
         Reports go to the Orbit moderators. We don't tell the person who reported them.
       </p>
     </Modal>

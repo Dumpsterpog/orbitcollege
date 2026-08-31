@@ -8,23 +8,27 @@ import {
 // the filled Material Symbols ligature the rebuilt dashboard uses. `tint`
 // gives each category its own filled colour so a directory of sixteen
 // doesn't read as sixteen identical grey glyphs.
+// Each category owns a filled glyph and a hue for the life of the app, so
+// the same subject is recognisable at a glance in a feed row, a directory
+// tile and a filter pill without reading the label. `icon` is the legacy
+// lucide component, kept only for screens not yet migrated.
 export const CATEGORIES = [
-  { name: "Study", icon: BookOpen, color: "indigo", msr: "menu_book", tint: "text-icon-blue" },
-  { name: "Sports", icon: Trophy, color: "rose", msr: "sports_soccer", tint: "text-icon-green" },
-  { name: "Fitness", icon: Dumbbell, color: "emerald", msr: "fitness_center", tint: "text-icon-teal" },
-  { name: "Coding & Projects", icon: Code2, color: "violet", msr: "code", tint: "text-icon-violet" },
-  { name: "Roommates", icon: HomeIcon, color: "amber", msr: "house", tint: "text-icon-amber" },
-  { name: "Travel", icon: Plane, color: "sky", msr: "flight", tint: "text-icon-blue" },
-  { name: "Gaming", icon: Gamepad2, color: "fuchsia", msr: "sports_esports", tint: "text-icon-pink" },
-  { name: "Networking & Social", icon: Handshake, color: "orange", msr: "handshake", tint: "text-icon-amber" },
-  { name: "Music", icon: Music, color: "pink", msr: "music_note", tint: "text-icon-pink" },
-  { name: "Cooking", icon: ChefHat, color: "yellow", msr: "restaurant", tint: "text-icon-amber" },
-  { name: "Art & Design", icon: Palette, color: "purple", msr: "palette", tint: "text-icon-violet" },
-  { name: "Movies & TV", icon: Clapperboard, color: "red", msr: "movie", tint: "text-icon-pink" },
-  { name: "Books & Reading", icon: Library, color: "teal", msr: "local_library", tint: "text-icon-teal" },
-  { name: "Photography", icon: Camera, color: "cyan", msr: "photo_camera", tint: "text-icon-teal" },
-  { name: "Pets & Animals", icon: PawPrint, color: "lime", msr: "pets", tint: "text-icon-green" },
-  { name: "Volunteering", icon: HeartHandshake, color: "stone", msr: "volunteer_activism", tint: "text-icon-green" },
+  { name: "Study", icon: BookOpen, color: "indigo", msr: "menu_book", tint: "text-c-blue", ring: "bg-c-blue" },
+  { name: "Sports", icon: Trophy, color: "rose", msr: "sports_soccer", tint: "text-c-green", ring: "bg-c-green" },
+  { name: "Fitness", icon: Dumbbell, color: "emerald", msr: "fitness_center", tint: "text-c-teal", ring: "bg-c-teal" },
+  { name: "Coding & Projects", icon: Code2, color: "violet", msr: "code", tint: "text-c-violet", ring: "bg-c-violet" },
+  { name: "Roommates", icon: HomeIcon, color: "amber", msr: "house", tint: "text-c-amber", ring: "bg-c-amber" },
+  { name: "Travel", icon: Plane, color: "sky", msr: "flight", tint: "text-c-blue", ring: "bg-c-blue" },
+  { name: "Gaming", icon: Gamepad2, color: "fuchsia", msr: "sports_esports", tint: "text-c-pink", ring: "bg-c-pink" },
+  { name: "Networking & Social", icon: Handshake, color: "orange", msr: "handshake", tint: "text-c-orange", ring: "bg-c-orange" },
+  { name: "Music", icon: Music, color: "pink", msr: "music_note", tint: "text-c-pink", ring: "bg-c-pink" },
+  { name: "Cooking", icon: ChefHat, color: "yellow", msr: "restaurant", tint: "text-c-orange", ring: "bg-c-orange" },
+  { name: "Art & Design", icon: Palette, color: "purple", msr: "palette", tint: "text-c-violet", ring: "bg-c-violet" },
+  { name: "Movies & TV", icon: Clapperboard, color: "red", msr: "movie", tint: "text-c-red", ring: "bg-c-red" },
+  { name: "Books & Reading", icon: Library, color: "teal", msr: "local_library", tint: "text-c-teal", ring: "bg-c-teal" },
+  { name: "Photography", icon: Camera, color: "cyan", msr: "photo_camera", tint: "text-c-teal", ring: "bg-c-teal" },
+  { name: "Pets & Animals", icon: PawPrint, color: "lime", msr: "pets", tint: "text-c-green", ring: "bg-c-green" },
+  { name: "Volunteering", icon: HeartHandshake, color: "stone", msr: "volunteer_activism", tint: "text-c-green", ring: "bg-c-green" },
 ];
 
 // Strictly grayscale (per the black-and-white rebrand — no hue anywhere in

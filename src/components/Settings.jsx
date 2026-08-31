@@ -1,111 +1,83 @@
-import { useState, useEffect, useRef } from "react";
-import { Icon, Avatar, cx } from "./ui/Primitives.jsx";
+import { useState } from "react";
+import { Icon, Avatar, Button, Switch, cx } from "./ui/Primitives.jsx";
+import { Screen, Column } from "./ui/Layout.jsx";
 
-// Settings, rebuilt to the Stitch settings.html mock: a [1fr_2fr] grid with
-// a sticky section nav on the left (border-l-4 active marker) and stacked
-// sections on the right, each under a hairline-underlined heading.
+// Settings — a settings list, which is a different component from a page of
+// forms. Rows share one hairline, each has a coloured glyph so the eye can
+// find a section without reading, and nothing is wrapped in a panel.
 //
-// Several rows in the mock describe features this app doesn't have. Rather
-// than render a working-looking toggle that silently does nothing, those
-// rows keep the mock's exact layout but state plainly that they aren't
-// built — see the notes on each section below.
+// Theme is a three-up swatch picker rather than a dropdown: the thing being
+// chosen is visual, so the control should be too.
 
-const SECTIONS = [
-  { key: "account", label: "Account", icon: "person", tint: "text-icon-blue" },
-  { key: "appearance", label: "Appearance", icon: "palette", tint: "text-icon-violet" },
-  { key: "notifications", label: "Notifications", icon: "notifications", tint: "text-icon-amber" },
-  { key: "privacy", label: "Privacy & Safety", icon: "shield", tint: "text-icon-green" },
-  { key: "about", label: "About Orbit", icon: "info", tint: "text-icon-teal" },
-];
-
-function SectionCard({ children, className }) {
+function Row({ icon, tint, title, body, children, onClick, danger }) {
+  const Tag = onClick ? "button" : "div";
   return (
-    <div className={cx("bg-surface-container-lowest rounded-lg p-md shadow-sm flex flex-col gap-md", className)}>
-      {children}
-    </div>
-  );
-}
-
-function Row({ title, subtitle, children }) {
-  return (
-    <div className="flex items-center justify-between gap-md">
-      <div className="flex flex-col min-w-0">
-        <span className="text-label-md font-medium text-on-surface">{title}</span>
-        {subtitle && <span className="text-body-sm text-on-surface-variant">{subtitle}</span>}
-      </div>
-      {children}
-    </div>
-  );
-}
-
-const Divider = () => <hr className="border-outline-variant/20" />;
-
-// The mock's pill switch, wired to a real checkbox for keyboard and
-// screen-reader support.
-function Toggle({ checked, onChange, label }) {
-  return (
-    <label className="relative inline-flex items-center cursor-pointer shrink-0">
-      <input
-        type="checkbox"
-        checked={!!checked}
-        onChange={(e) => onChange(e.target.checked)}
-        aria-label={label}
-        className="sr-only peer"
-      />
-      <div
-        className="w-11 h-6 bg-outline-variant rounded-full peer
-          peer-focus-visible:ring-2 peer-focus-visible:ring-primary/40
-          peer-checked:bg-primary
-          after:content-[''] after:absolute after:top-[2px] after:left-[2px]
-          after:bg-white after:border after:border-gray-300 after:rounded-full
-          after:h-5 after:w-5 after:transition-all
-          peer-checked:after:translate-x-full peer-checked:after:border-white"
-      />
-    </label>
-  );
-}
-
-// A row for something genuinely not built. Same shape as the mock's rows,
-// but it says so instead of offering a control that does nothing.
-function UnbuiltRow({ title, subtitle }) {
-  return (
-    <Row title={title} subtitle={subtitle}>
-      <span className="text-label-sm text-on-surface-variant bg-surface-container px-sm py-1 rounded-full shrink-0">
-        Not built yet
+    <Tag
+      onClick={onClick}
+      className={cx(
+        "w-full flex items-center gap-4 py-3.5 text-left border-b border-line last:border-0",
+        onClick && "hover:opacity-70 transition-opacity"
+      )}
+    >
+      {icon && (
+        <span className="grid place-items-center w-9 h-9 rounded-full bg-bg-sunken shrink-0">
+          <Icon name={icon} size={20} className={tint} />
+        </span>
+      )}
+      <span className="min-w-0 flex-1">
+        <span className={cx("block text-base font-semibold", danger ? "text-danger" : "text-ink")}>{title}</span>
+        {body && <span className="block text-xs text-ink-2 mt-0.5 leading-normal">{body}</span>}
       </span>
-    </Row>
+      {children}
+    </Tag>
   );
 }
 
-function ThemeOption({ value, current, onChange, label, icon, children }) {
+function Group({ title, children }) {
+  return (
+    <section className="mb-9">
+      <h2 className="text-2xs font-semibold text-ink-2 uppercase tracking-wider mb-1">{title}</h2>
+      <div>{children}</div>
+    </section>
+  );
+}
+
+function Unbuilt() {
+  return (
+    <span className="text-2xs font-semibold text-ink-3 uppercase tracking-wide shrink-0">Not built</span>
+  );
+}
+
+function ThemeSwatch({ value, current, onChange, label, icon, split }) {
   const active = current === value;
   return (
-    <label className="flex flex-col items-center gap-sm cursor-pointer group">
-      <input
-        type="radio"
-        name="theme"
-        value={value}
-        checked={active}
-        onChange={() => onChange(value)}
-        className="peer sr-only"
-      />
-      <div
+    <button
+      onClick={() => onChange(value)}
+      className="flex flex-col items-center gap-2 group"
+      aria-pressed={active}
+    >
+      <span
         className={cx(
-          "w-full h-24 rounded-lg border-2 grid place-items-center transition-all relative overflow-hidden",
-          active ? "border-primary" : "border-outline-variant group-hover:border-primary/50",
-          children ? "bg-surface" : value === "dark" ? "bg-inverse-surface" : "bg-surface-container-lowest",
-          active && value === "light" && "bg-surface-container-low"
+          "relative grid place-items-center w-full h-20 rounded overflow-hidden transition-all",
+          active ? "ring-2 ring-accent ring-offset-2 ring-offset-bg" : "ring-1 ring-line group-hover:ring-line-strong"
         )}
       >
-        {children}
+        {split ? (
+          <>
+            <span className="absolute inset-y-0 left-0 w-1/2 bg-white" />
+            <span className="absolute inset-y-0 right-0 w-1/2 bg-black" />
+          </>
+        ) : (
+          <span className={cx("absolute inset-0", value === "dark" ? "bg-black" : "bg-white")} />
+        )}
         <Icon
           name={icon}
-          size={32}
-          className={cx("relative z-10", value === "dark" ? "text-on-primary" : value === "system" ? "text-outline" : "text-on-surface")}
+          size={26}
+          className={cx("relative z-10", split ? "text-c-violet" : value === "dark" ? "text-c-amber" : "text-c-orange")}
         />
-      </div>
-      <span className="text-body-sm text-on-surface">{label}</span>
-    </label>
+      </span>
+      <span className={cx("text-xs", active ? "font-semibold text-ink" : "text-ink-2")}>{label}</span>
+    </button>
   );
 }
 
@@ -113,227 +85,103 @@ export function SettingsScreen({
   user, theme, mode, onToggleTheme, onSetTheme, onLogout, onBack, onComingSoon,
   notifPrefs = {}, onNotifChange, onEditProfile, appVersion = "0.1.0",
 }) {
-  const [active, setActive] = useState("account");
-  const containerRef = useRef(null);
-
-  // Active nav marker follows whichever section is nearest the top of the
-  // scroll container.
-  useEffect(() => {
-    const root = containerRef.current;
-    if (!root) return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActive(visible[0].target.id.replace("set-", ""));
-      },
-      { root, rootMargin: "-10% 0px -70% 0px", threshold: 0 }
-    );
-    SECTIONS.forEach((s) => {
-      const el = document.getElementById(`set-${s.key}`);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  }, []);
-
-  const jumpTo = (key) => {
-    setActive(key);
-    document.getElementById(`set-${key}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
   const themeMode = mode || theme;
 
   return (
-    <div ref={containerRef} className="flex-1 min-h-0 overflow-y-auto bg-surface">
-      <div className="px-md lg:px-margin-desktop py-xl">
-        <div className="max-w-max-width w-full mx-auto">
+    <Screen>
+      <Column className="max-w-2xl pt-8 pb-16">
+        <h1 className="text-3xl font-bold text-ink mb-8">Settings</h1>
 
-          <div className="flex items-center gap-md mb-xl">
-            <Icon name="settings" size={32} className="text-primary" />
-            <h1 className="text-headline-xl font-bold text-on-surface">Settings</h1>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-xl">
-
-            {/* Section nav */}
-            <nav className="hidden lg:flex flex-col gap-sm sticky top-0 self-start">
-              {SECTIONS.map((s) => (
-                <button
-                  key={s.key}
-                  onClick={() => jumpTo(s.key)}
-                  aria-current={active === s.key ? "true" : undefined}
-                  className={cx(
-                    "flex items-center gap-md px-md py-sm rounded-lg text-label-md font-medium transition-colors text-left w-full border-l-4",
-                    active === s.key
-                      ? "bg-surface-container text-on-surface border-primary"
-                      : "text-on-surface-variant hover:bg-surface-container hover:text-on-surface border-transparent"
-                  )}
-                >
-                  <Icon name={s.icon} size={22} className={active === s.key ? s.tint : s.tint} />
-                  {s.label}
-                </button>
-              ))}
-            </nav>
-
-            <div className="flex flex-col gap-xl">
-
-              {/* Account */}
-              <section id="set-account" className="flex flex-col gap-lg scroll-mt-4">
-                <h2 className="text-headline-md font-semibold text-on-surface border-b border-outline-variant/30 pb-sm">
-                  Account
-                </h2>
-
-                <div className="bg-surface-container-lowest rounded-lg p-md shadow-sm flex items-center justify-between gap-md">
-                  <div className="flex items-center gap-md min-w-0">
-                    <Avatar name={user.name} size={48} />
-                    <div className="flex flex-col min-w-0">
-                      <span className="text-headline-sm font-semibold text-on-surface truncate">{user.name}</span>
-                      <span className="text-body-sm text-on-surface-variant truncate">
-                        {user.email || "Signed in as a guest"}
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={onEditProfile}
-                    className="px-md py-sm rounded-lg border border-outline-variant text-on-surface text-label-md font-medium hover:bg-surface-container-low transition-colors shrink-0"
-                  >
-                    Edit Profile
-                  </button>
-                </div>
-
-                <SectionCard>
-                  {/* The mock has a Password row. This app has no password —
-                      Google is the only sign-in method — so the row states
-                      the actual sign-in method instead. */}
-                  <Row title="Sign-in method" subtitle="Orbit uses Google sign-in — there's no separate password.">
-                    <span className="text-label-sm text-on-surface-variant bg-surface-container px-sm py-1 rounded-full shrink-0">
-                      Google
-                    </span>
-                  </Row>
-                  <Divider />
-                  <Row title="Sign out" subtitle="Ends this session on this device.">
-                    <button
-                      onClick={onLogout}
-                      className="px-md py-sm rounded-lg border border-outline-variant text-error text-label-md font-medium hover:bg-error-container/40 transition-colors shrink-0"
-                    >
-                      Sign out
-                    </button>
-                  </Row>
-                </SectionCard>
-              </section>
-
-              {/* Appearance */}
-              <section id="set-appearance" className="flex flex-col gap-lg scroll-mt-4">
-                <h2 className="text-headline-md font-semibold text-on-surface border-b border-outline-variant/30 pb-sm">
-                  Appearance
-                </h2>
-                <div className="bg-surface-container-lowest rounded-lg p-md shadow-sm flex flex-col gap-lg">
-                  <div className="flex flex-col gap-sm">
-                    <span className="text-label-md font-medium text-on-surface">Theme</span>
-                    <div className="grid grid-cols-3 gap-md">
-                      <ThemeOption value="light" current={themeMode} onChange={onSetTheme} label="Light" icon="light_mode" />
-                      <ThemeOption value="dark" current={themeMode} onChange={onSetTheme} label="Dark" icon="dark_mode" />
-                      <ThemeOption value="system" current={themeMode} onChange={onSetTheme} label="System" icon="brightness_auto">
-                        <span className="absolute left-0 top-0 bottom-0 w-1/2 bg-surface-container-lowest" />
-                        <span className="absolute right-0 top-0 bottom-0 w-1/2 bg-inverse-surface" />
-                      </ThemeOption>
-                    </div>
-                    {themeMode === "system" && (
-                      <p className="text-body-sm text-on-surface-variant">
-                        Following your device — currently {theme}.
-                      </p>
-                    )}
-                  </div>
-                </div>
-              </section>
-
-              {/* Notifications */}
-              <section id="set-notifications" className="flex flex-col gap-lg scroll-mt-4">
-                <h2 className="text-headline-md font-semibold text-on-surface border-b border-outline-variant/30 pb-sm">
-                  Notifications
-                </h2>
-                <SectionCard>
-                  <Row title="Event reminders" subtitle="Before events you've registered for.">
-                    <Toggle label="Event reminders" checked={notifPrefs.events} onChange={(v) => onNotifChange("events", v)} />
-                  </Row>
-                  <Divider />
-                  <Row title="Community posts" subtitle="New posts in communities you've joined.">
-                    <Toggle label="Community posts" checked={notifPrefs.posts} onChange={(v) => onNotifChange("posts", v)} />
-                  </Row>
-                  <Divider />
-                  <Row title="Replies" subtitle="When someone replies to you.">
-                    <Toggle label="Replies" checked={notifPrefs.replies} onChange={(v) => onNotifChange("replies", v)} />
-                  </Row>
-                  <Divider />
-                  {/* Stated rather than hidden: these switches move but there
-                      is no delivery system behind them yet, and nothing
-                      persists them past this session. */}
-                  <p className="text-body-sm text-on-surface-variant">
-                    Notification delivery isn't built yet — these preferences apply to this session only and aren't saved to your account.
-                  </p>
-                </SectionCard>
-              </section>
-
-              {/* Privacy & Safety */}
-              <section id="set-privacy" className="flex flex-col gap-lg scroll-mt-4">
-                <h2 className="text-headline-md font-semibold text-on-surface border-b border-outline-variant/30 pb-sm">
-                  Privacy &amp; Safety
-                </h2>
-                <SectionCard>
-                  {/* All three are real features in the mock and absent here:
-                      no visibility column on profiles, no blocks table, no
-                      export job. Shown as unbuilt rather than faked. */}
-                  <UnbuiltRow title="Account visibility" subtitle="Allow other students to find your profile." />
-                  <Divider />
-                  <UnbuiltRow title="Blocked users" subtitle="Manage accounts you have blocked." />
-                  <Divider />
-                  <UnbuiltRow title="Download data" subtitle="Request an archive of your account information." />
-                  <Divider />
-                  <Row title="Report a problem" subtitle="Tell us about content or behaviour on Orbit.">
-                    <a
-                      href="mailto:atharvat2006@gmail.com?subject=Orbit%20report"
-                      className="px-md py-sm rounded-lg border border-outline-variant text-on-surface text-label-md font-medium hover:bg-surface-container-low transition-colors shrink-0"
-                    >
-                      Email us
-                    </a>
-                  </Row>
-                </SectionCard>
-              </section>
-
-              {/* About */}
-              <section id="set-about" className="flex flex-col gap-lg mb-xl scroll-mt-4">
-                <h2 className="text-headline-md font-semibold text-on-surface border-b border-outline-variant/30 pb-sm">
-                  About Orbit
-                </h2>
-                <SectionCard>
-                  <Row title="Version">
-                    <span className="text-body-sm text-on-surface-variant font-mono">v{appVersion}</span>
-                  </Row>
-                  <Divider />
-                  <a
-                    href="mailto:atharvat2006@gmail.com?subject=Orbit%20support"
-                    className="flex items-center justify-between w-full text-left group"
-                  >
-                    <span className="text-label-md font-medium text-on-surface">Help &amp; Support</span>
-                    <Icon name="open_in_new" size={20} className="text-outline-variant group-hover:text-primary transition-colors" />
-                  </a>
-                  <Divider />
-                  <a href="/terms" className="flex items-center justify-between w-full text-left group">
-                    <span className="text-label-md font-medium text-on-surface">Terms of Service</span>
-                    <Icon name="open_in_new" size={20} className="text-outline-variant group-hover:text-primary transition-colors" />
-                  </a>
-                  <Divider />
-                  <a href="/privacy" className="flex items-center justify-between w-full text-left group">
-                    <span className="text-label-md font-medium text-on-surface">Privacy Policy</span>
-                    <Icon name="open_in_new" size={20} className="text-outline-variant group-hover:text-primary transition-colors" />
-                  </a>
-                </SectionCard>
-              </section>
+        <Group title="Account">
+          <div className="flex items-center gap-4 py-3.5 border-b border-line">
+            <Avatar name={user.name} size={52} ring />
+            <div className="min-w-0 flex-1 leading-tight">
+              <p className="text-base font-semibold text-ink truncate">{user.name}</p>
+              <p className="text-xs text-ink-2 truncate">{user.email || "Browsing as a guest"}</p>
             </div>
+            <Button variant="soft" size="sm" onClick={onEditProfile}>Edit</Button>
           </div>
-        </div>
-      </div>
-    </div>
+
+          <Row
+            icon="lock"
+            tint="text-c-green"
+            title="Sign-in method"
+            body="Orbit uses Google sign-in, so there's no separate password to manage."
+          >
+            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-2 shrink-0">
+              <Icon name="verified_user" size={16} className="text-c-blue" />Google
+            </span>
+          </Row>
+        </Group>
+
+        <Group title="Appearance">
+          <div className="py-4 border-b border-line">
+            <p className="text-base font-semibold text-ink mb-3">Theme</p>
+            <div className="grid grid-cols-3 gap-3">
+              <ThemeSwatch value="light" current={themeMode} onChange={onSetTheme} label="Light" icon="light_mode" />
+              <ThemeSwatch value="dark" current={themeMode} onChange={onSetTheme} label="Dark" icon="dark_mode" />
+              <ThemeSwatch value="system" current={themeMode} onChange={onSetTheme} label="System" icon="brightness_auto" split />
+            </div>
+            {themeMode === "system" && (
+              <p className="text-xs text-ink-2 mt-3">
+                Following your device — currently <span className="font-semibold text-ink">{theme}</span>.
+              </p>
+            )}
+          </div>
+        </Group>
+
+        <Group title="Notifications">
+          <Row icon="event" tint="text-c-orange" title="Event reminders" body="Before events you've registered for.">
+            <Switch label="Event reminders" checked={notifPrefs.events} onChange={(v) => onNotifChange("events", v)} />
+          </Row>
+          <Row icon="forum" tint="text-c-blue" title="Community posts" body="New posts in communities you've joined.">
+            <Switch label="Community posts" checked={notifPrefs.posts} onChange={(v) => onNotifChange("posts", v)} />
+          </Row>
+          <Row icon="reply" tint="text-c-violet" title="Replies" body="When someone replies to you.">
+            <Switch label="Replies" checked={notifPrefs.replies} onChange={(v) => onNotifChange("replies", v)} />
+          </Row>
+          <p className="text-xs text-ink-3 pt-3 leading-relaxed">
+            Delivery isn't built yet — these switches work, but nothing is sent, and the choices last only for this session.
+          </p>
+        </Group>
+
+        <Group title="Privacy &amp; safety">
+          <Row icon="visibility" tint="text-c-teal" title="Account visibility" body="Let other students find your profile."><Unbuilt /></Row>
+          <Row icon="block" tint="text-c-red" title="Blocked accounts" body="Manage people you've blocked."><Unbuilt /></Row>
+          <Row icon="download" tint="text-c-amber" title="Download your data" body="Request an archive of your account."><Unbuilt /></Row>
+          <Row
+            icon="flag"
+            tint="text-c-pink"
+            title="Report a problem"
+            body="Tell us about content or behaviour on Orbit."
+            onClick={() => { window.location.href = "mailto:atharvat2006@gmail.com?subject=Orbit%20report"; }}
+          >
+            <Icon name="chevron_right" size={20} className="text-ink-3 shrink-0" />
+          </Row>
+        </Group>
+
+        <Group title="About">
+          <Row icon="info" tint="text-c-blue" title="Version">
+            <span className="text-xs font-mono text-ink-2 shrink-0">v{appVersion}</span>
+          </Row>
+          <Row icon="description" tint="text-c-violet" title="Terms of Service" onClick={() => { window.location.href = "/terms"; }}>
+            <Icon name="open_in_new" size={18} className="text-ink-3 shrink-0" />
+          </Row>
+          <Row icon="shield" tint="text-c-green" title="Privacy Policy" onClick={() => { window.location.href = "/privacy"; }}>
+            <Icon name="open_in_new" size={18} className="text-ink-3 shrink-0" />
+          </Row>
+          <Row icon="help" tint="text-c-teal" title="Help &amp; support" onClick={() => { window.location.href = "mailto:atharvat2006@gmail.com?subject=Orbit%20support"; }}>
+            <Icon name="open_in_new" size={18} className="text-ink-3 shrink-0" />
+          </Row>
+        </Group>
+
+        <button
+          onClick={onLogout}
+          className="w-full py-3.5 text-base font-semibold text-danger hover:opacity-70 transition-opacity border-t border-line"
+        >
+          Sign out
+        </button>
+      </Column>
+    </Screen>
   );
 }

@@ -681,15 +681,11 @@ export default function App() {
   // Signed-in shell. Below lg it's a plain full-height column — the floating
   // phone card with its rounded corners and drop shadow is gone, since this
   // renders as a web app at every size rather than a simulated handset.
-  const shellClass = "w-full h-[var(--app-height,100dvh)] mx-auto bg-surface overflow-hidden relative flex flex-col animate-fade-in";
-  // Full-bleed, frameless — used by the loading and onboarding screens.
-  const shellClassAuth = "w-full h-[var(--app-height,100dvh)] bg-surface overflow-hidden relative flex flex-col animate-fade-in";
-  // Signed-in app shell: same phone-frame card up through the sm/md range,
-  // but from lg (1024px+) up it drops the frame entirely and becomes a real
-  // full-width desktop layout — Sidebar on the left, content pane on the
-  // right — instead of a mobile card floating in empty space.
-  // From lg it becomes the dashboard: sidebar rail beside a content pane.
-  const shellClassApp = `${shellClass} lg:flex-row lg:items-stretch`;
+  // App frame. No phone card, no max-width cage: the rail sits against the
+  // content and each screen owns its own measure.
+  const shellClass = "w-full h-[var(--app-height,100dvh)] bg-bg text-ink overflow-hidden relative flex flex-col";
+  const shellClassAuth = shellClass;
+  const shellClassApp = `${shellClass} lg:flex-row`;
 
   if (loadingSession) {
     return (
@@ -744,7 +740,11 @@ export default function App() {
   return (
     <div className={shellClassApp} style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
       <style>{FONT_IMPORT}</style>
-      <Sidebar active={activeTab} setActive={goToTab} onTeaClick={openTea} onSearchClick={openSearch} onCreateClick={openCreate} verified={user.verified} user={user} theme={theme} onToggleTheme={toggleTheme} />
+      <Sidebar
+        active={activeTab} setActive={goToTab}
+        onTeaClick={openTea} onSearchClick={openSearch} onCreateClick={openCreate}
+        onOpenSettings={() => goToTab("settings")}
+        verified={user.verified} user={user} theme={theme} onToggleTheme={toggleTheme} />
       <div className="flex-1 flex flex-col overflow-hidden lg:h-full min-w-0">
       {!showingSubPage && (
         <TopBar notifOpen={notifOpen} setNotifOpen={setNotifOpen}
@@ -805,6 +805,8 @@ export default function App() {
           onJoinToggle={(id) => { if (!user.verified) { handleBlocked(); return; } handleJoinToggle(id); }}
           onGoToEvents={() => goToTab("events")}
           onGoToTea={openTea}
+          user={user}
+          onOpenProfile={() => goToTab("profile")}
         />
       ) : activeTab === "explore" ? (
         <ExploreScreen subTab={exploreTab} setSubTab={setExploreTab} clubs={clubs} communities={communities}
@@ -857,14 +859,18 @@ export default function App() {
         />
       ) : null}
       </div>
-      <div className="lg:hidden">
-        <BottomNav active={activeTab} setActive={goToTab} />
+
+      {/* Mobile tab bar. Hidden on a sub-page so a detail view gets the full
+          height and its own back affordance instead of two nav surfaces. */}
+      {!showingSubPage && (
+        <BottomNav active={activeTab} setActive={goToTab} onCreateClick={openCreate} user={user} />
+      )}
       </div>
+
       {reportTarget && (
         <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} onSubmit={handleReportSubmit} />
       )}
       <Toast message={toastMsg} />
-      </div>
     </div>
   );
 }

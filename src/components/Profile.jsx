@@ -1,158 +1,31 @@
 import { useState, useMemo } from "react";
 import { CATEGORIES } from "../data/constants.js";
-import { EmptyState } from "./EmptyState.jsx";
-import { Icon, Input, Textarea, Field, cx } from "./ui/Primitives.jsx";
+import { Icon, Avatar, Button, Input, Textarea, Field, cx } from "./ui/Primitives.jsx";
+import { Screen, Column, Empty, Modal } from "./ui/Layout.jsx";
 
-// Profile, rebuilt to the Stitch profile.html mock: a 12-column grid with an
-// identity column at 4 and a tabbed content column at 8.
+// Profile — the reference's header layout: avatar left, everything else in a
+// column to the right, and the counts as an inline row of numerals with no
+// container. Same idea as Home's metric strip: the number carries the
+// weight, the label stays quiet, nothing is boxed.
 //
-// The mock's left column carries Skills and "Projects & Experience". Neither
-// exists in this data model — `profiles` has name and bio and nothing else —
-// so rather than invent fields the app can't save, those two cards are used
-// for the real equivalents in the same shape: Interests (picked at sign-up,
-// same pill treatment) and Communities You Run (creator-owned communities,
-// same titled-entry-with-description treatment). The card that has no real
-// counterpart is hidden rather than filled with placeholder text.
+// Tabs are a centred row of uppercase labels with a top rule on the active
+// one, which is how the reference marks them — no pill, no underline sweep.
 
-function Card({ className, children }) {
-  return <div className={cx("bg-surface-container rounded-xl p-md shadow-sm", className)}>{children}</div>;
-}
+const compact = (n) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : `${n}`);
 
-function StatBlock({ value, label }) {
+function Stat({ value, label, tint }) {
   return (
-    <div className="flex flex-col items-center">
-      <span className="text-headline-sm font-semibold text-primary tabular-nums">{value}</span>
-      <span className="text-label-sm text-on-surface-variant uppercase tracking-wider">{label}</span>
-    </div>
+    <span className="inline-flex items-baseline gap-1.5">
+      <span className={cx("text-lg font-bold tabular-nums", tint)}>{compact(value)}</span>
+      <span className="text-base text-ink-2">{label}</span>
+    </span>
   );
 }
-
-/* ------------------------------------------------------------ Activity */
-
-function ActivityPost({ post, community, name, onOpen }) {
-  return (
-    <Card>
-      <div className="flex items-start gap-sm mb-sm">
-        <p className="text-label-md text-on-surface">
-          {name}
-          <span className="text-on-surface-variant font-normal text-xs ml-1">
-            posted in {community?.name || "a community"} • {post.time}
-          </span>
-        </p>
-      </div>
-      {post.text && <p className="text-body-md text-on-surface">{post.text}</p>}
-      {post.imageUrl && (
-        <img
-          src={post.imageUrl}
-          alt=""
-          loading="lazy"
-          className="mt-sm w-full max-h-64 object-cover rounded-lg border border-outline-variant/20"
-        />
-      )}
-      <div className="mt-sm flex gap-md">
-        <span className="text-on-surface-variant flex items-center gap-xs text-label-sm">
-          <Icon name="thumb_up" size={16} className="text-icon-blue" />
-          <span className="tabular-nums">{post.sparks}</span>
-        </span>
-        <button
-          onClick={() => community && onOpen(community)}
-          className="text-on-surface-variant hover:text-primary flex items-center gap-xs text-label-sm transition-colors"
-        >
-          <Icon name="chat_bubble" size={16} className="text-icon-teal" />
-          Open
-        </button>
-      </div>
-    </Card>
-  );
-}
-
-function ActivityRegistration({ event, name }) {
-  return (
-    <Card>
-      <div className="flex items-start gap-sm mb-sm">
-        <p className="text-label-md text-on-surface">
-          {name}
-          <span className="text-on-surface-variant font-normal text-xs ml-1">
-            registered for {event.title}
-          </span>
-        </p>
-      </div>
-      <div className="border border-outline-variant/30 rounded-lg p-sm flex items-center gap-sm bg-surface-container-lowest">
-        <span className="w-12 h-12 bg-primary-container/20 rounded grid place-items-center shrink-0">
-          <Icon name="event" size={22} className="text-primary" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-label-md text-on-surface truncate">{event.title}</p>
-          <p className="text-body-sm text-on-surface-variant truncate">{event.when}</p>
-        </div>
-      </div>
-    </Card>
-  );
-}
-
-/* --------------------------------------------------------- Communities */
-
-function CommunityTile({ c, onOpen }) {
-  const cat = CATEGORIES.find((x) => x.name === c.category);
-  return (
-    <article className="bg-surface-container rounded-xl p-md shadow-sm hover:shadow-md transition-shadow group flex flex-col items-center text-center">
-      <span className="w-20 h-20 rounded-full bg-secondary-container grid place-items-center shrink-0 mb-sm overflow-hidden">
-        {c.avatarUrl
-          ? <img src={c.avatarUrl} alt="" className="w-full h-full object-cover" />
-          : cat && <Icon name={cat.msr} size={36} className={cat.tint} />}
-      </span>
-      <h3 className="text-headline-sm font-semibold text-on-surface group-hover:text-primary transition-colors">
-        {c.name}
-      </h3>
-      <p className="text-body-sm text-on-surface-variant mt-xs">
-        {c.category} • {c.members} members
-      </p>
-      <button
-        onClick={() => onOpen(c)}
-        className="mt-sm px-sm py-1 border border-outline rounded-full text-label-sm text-on-surface hover:bg-surface-container-high transition-colors"
-      >
-        View
-      </button>
-    </article>
-  );
-}
-
-/* -------------------------------------------------------------- Events */
-
-// The mock's date chip splits a date into day + month. Event `when` is a
-// free-text string in this schema ("Fri 6 PM", "Oct 24 • 2:00 PM"), so there
-// is nothing reliable to split — the chip shows a calendar glyph instead of
-// parsing a format the data doesn't guarantee.
-function EventRow({ e, onOpen }) {
-  return (
-    <div className="bg-surface-container rounded-xl overflow-hidden shadow-sm flex items-center p-md gap-md">
-      <span className="w-16 h-16 bg-primary-container/10 rounded-lg grid place-items-center shrink-0 border border-primary/20">
-        <Icon name="event" size={26} className="text-primary" />
-      </span>
-      <div className="flex-1 min-w-0">
-        <p className="text-label-sm text-on-surface-variant mb-xs">{e.when}</p>
-        <h3 className="text-headline-sm font-semibold text-on-surface truncate">{e.title}</h3>
-        <p className="text-body-sm text-on-surface-variant line-clamp-1">
-          {e.where}{e.desc ? ` • ${e.desc}` : ""}
-        </p>
-      </div>
-      <button
-        onClick={() => onOpen?.(e)}
-        aria-label="Open event"
-        className="p-2 text-on-surface-variant hover:text-primary transition-colors shrink-0"
-      >
-        <Icon name="bookmark" size={22} className="text-icon-amber" />
-      </button>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------- Screen */
 
 const TABS = [
-  { key: "activity", label: "Recent Activity" },
-  { key: "communities", label: "Communities" },
-  { key: "events", label: "My Events" },
+  { key: "posts", label: "Posts", icon: "grid_on" },
+  { key: "communities", label: "Communities", icon: "groups" },
+  { key: "events", label: "Events", icon: "confirmation_number" },
 ];
 
 export function ProfileScreen({
@@ -160,248 +33,231 @@ export function ProfileScreen({
   onOpenCommunity, onComingSoon,
   authUserId, myPosts = [], registeredEvents = [], allCommunities = [], onOpenEvent,
 }) {
+  const [tab, setTab] = useState("posts");
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(user.name);
   const [draftBio, setDraftBio] = useState(user.bio || "");
-  const [tab, setTab] = useState("activity");
 
-  const bio = user.bio || "";
   const interests = user.interests || [];
+  const owned = useMemo(
+    () => (authUserId ? allCommunities.filter((c) => c.creatorId === authUserId) : []),
+    [allCommunities, authUserId]
+  );
 
-  const startEdit = () => { setDraftName(user.name); setDraftBio(bio); setEditing(true); };
   const save = () => {
     if (!draftName.trim()) return;
     onSaveProfile(draftName.trim(), draftBio.trim());
     setEditing(false);
   };
 
-  // Communities this user created — the real stand-in for the mock's
-  // "Projects & Experience", same titled-entry shape.
-  const owned = useMemo(
-    () => (authUserId ? allCommunities.filter((c) => c.creatorId === authUserId) : []),
-    [allCommunities, authUserId]
-  );
-
-  const activity = useMemo(() => {
-    const posts = myPosts.map((p) => ({ kind: "post", key: `p-${p.id}`, post: p }));
-    const regs = registeredEvents.map((e) => ({ kind: "event", key: `e-${e.id}`, event: e }));
-    return [...posts, ...regs];
-  }, [myPosts, registeredEvents]);
-
   if (!user.verified) {
     return (
-      <div className="flex-1 min-h-0 overflow-y-auto bg-surface">
-        <div className="px-md lg:px-margin-desktop py-xl max-w-max-width mx-auto">
-          <EmptyState
-            title="Sign in to see your profile"
-            subtitle="Your communities, events and activity live here once you have an account."
-            action={
-              <button
-                onClick={onVerifyGuest}
-                className="bg-primary text-on-primary text-label-md font-medium px-lg py-sm rounded-lg hover:bg-on-primary-fixed-variant transition-colors shadow-sm"
-              >
-                Sign in
-              </button>
-            }
-          />
-        </div>
-      </div>
+      <Screen>
+        <Empty
+          icon="account_circle"
+          title="Sign in to see your profile"
+          body="Your communities, events and posts live here once you have an account."
+          action={<Button variant="primary" size="lg" onClick={onVerifyGuest}>Sign in</Button>}
+        />
+      </Screen>
     );
   }
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto bg-surface">
-      <div className="px-md lg:px-margin-desktop py-xl">
-        <div className="max-w-max-width w-full mx-auto grid grid-cols-12 gap-gutter">
+    <Screen>
+      <Column className="max-w-3xl pt-8 pb-16">
+        {/* Header */}
+        <header className="flex flex-col sm:flex-row items-center sm:items-start gap-6 sm:gap-12 pb-8">
+          <Avatar name={user.name} size={128} ring className="shrink-0" />
 
-          {/* Identity column */}
-          <section className="col-span-12 lg:col-span-4 space-y-md">
-            <Card>
-              <div className="flex flex-col items-center text-center space-y-md">
-                <div className="relative w-32 h-32 rounded-full overflow-hidden shadow-md bg-primary-container grid place-items-center shrink-0">
-                  <span className="text-on-primary-container text-headline-xl font-bold">
-                    {(user.name || "?").trim().charAt(0).toUpperCase()}
-                  </span>
-                </div>
-
-                {editing ? (
-                  <div className="w-full space-y-md text-left">
-                    <Field label="Display name" htmlFor="pf-name">
-                      <Input id="pf-name" value={draftName} maxLength={60} onChange={(e) => setDraftName(e.target.value)} />
-                    </Field>
-                    <Field label="Bio" htmlFor="pf-bio" hint="Optional">
-                      <Textarea id="pf-bio" rows={3} maxLength={300} value={draftBio} onChange={(e) => setDraftBio(e.target.value)} />
-                    </Field>
-                    <div className="flex gap-sm">
-                      <button
-                        onClick={save}
-                        disabled={!draftName.trim()}
-                        className="flex-1 py-sm bg-primary text-on-primary rounded-lg text-label-md font-medium hover:bg-on-primary-fixed-variant transition-colors shadow-sm disabled:opacity-45"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={() => setEditing(false)}
-                        className="px-lg py-sm rounded-lg text-label-md font-medium text-on-surface-variant hover:bg-surface-container-high transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div>
-                      <h1 className="text-headline-lg font-bold text-on-surface">{user.name}</h1>
-                      <p className="text-body-md text-on-surface-variant mt-xs">
-                        {interests.length > 0 ? `${interests.length} interests • Orbit member` : "Orbit member"}
-                      </p>
-                    </div>
-
-                    {bio && <p className="text-body-sm text-on-surface text-balance">{bio}</p>}
-
-                    <div className="flex w-full justify-around pt-sm">
-                      <StatBlock value={joinedCommunities.length} label="Communities" />
-                      <StatBlock value={registeredEvents.length} label="Events" />
-                    </div>
-
-                    <button
-                      onClick={startEdit}
-                      className="w-full py-sm bg-primary text-on-primary rounded-lg text-label-md font-medium hover:bg-on-primary-fixed-variant transition-colors shadow-sm"
-                    >
-                      Edit Profile
-                    </button>
-                  </>
-                )}
+          <div className="flex-1 min-w-0 text-center sm:text-left">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+              <h1 className="text-xl font-normal text-ink truncate">{user.name}</h1>
+              <div className="flex items-center justify-center gap-2">
+                <Button variant="soft" size="sm" onClick={() => { setDraftName(user.name); setDraftBio(user.bio || ""); setEditing(true); }}>
+                  Edit profile
+                </Button>
+                <Button variant="soft" size="sm" onClick={onOpenSettings}>Settings</Button>
               </div>
-            </Card>
-
-            {/* Interests — the mock's Skills card, with the field this app has */}
-            {interests.length > 0 && (
-              <Card>
-                <h2 className="text-headline-sm font-semibold text-on-surface mb-sm">Interests</h2>
-                <div className="flex flex-wrap gap-xs">
-                  {interests.map((name) => {
-                    const cat = CATEGORIES.find((c) => c.name === name);
-                    return (
-                      <span
-                        key={name}
-                        className="inline-flex items-center gap-1.5 px-sm py-1 bg-surface-container-high text-on-surface rounded-full text-label-sm font-medium"
-                      >
-                        {cat && <Icon name={cat.msr} size={14} className={cat.tint} />}
-                        {name}
-                      </span>
-                    );
-                  })}
-                </div>
-              </Card>
-            )}
-
-            {/* Communities you run — the mock's Projects & Experience shape */}
-            {owned.length > 0 && (
-              <Card>
-                <h2 className="text-headline-sm font-semibold text-on-surface mb-sm">Communities You Run</h2>
-                <div className="space-y-sm">
-                  {owned.map((c) => (
-                    <div key={c.id} className="border-b border-outline-variant/30 pb-sm last:border-0 last:pb-0">
-                      <button onClick={() => onOpenCommunity(c)} className="text-left w-full group">
-                        <h3 className="text-label-md text-on-surface font-bold group-hover:text-primary transition-colors">
-                          {c.name}
-                        </h3>
-                        <p className="text-body-sm text-on-surface-variant">
-                          {c.category} • {c.members} members
-                        </p>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-            )}
-
-            <button
-              onClick={onOpenSettings}
-              className="w-full flex items-center justify-center gap-xs py-sm rounded-lg text-label-md font-medium text-on-surface-variant hover:bg-surface-container transition-colors"
-            >
-              <Icon name="settings" size={18} className="text-icon-violet" />
-              Settings
-            </button>
-          </section>
-
-          {/* Tabbed content */}
-          <section className="col-span-12 lg:col-span-8 flex flex-col space-y-lg">
-            <nav className="flex gap-sm bg-surface-container-low rounded-xl px-lg py-sm shadow-sm overflow-x-auto no-scrollbar">
-              {TABS.map((t) => (
-                <button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
-                  aria-current={tab === t.key ? "page" : undefined}
-                  className={cx(
-                    "text-label-md font-medium px-md py-xs rounded-full transition-colors whitespace-nowrap",
-                    tab === t.key
-                      ? "text-primary bg-primary/10"
-                      : "text-on-surface-variant hover:text-primary hover:bg-primary/5"
-                  )}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </nav>
-
-            <div className="space-y-md">
-              {tab === "activity" && (
-                activity.length === 0 ? (
-                  <EmptyState
-                    title="No activity yet"
-                    subtitle="Posts you write and events you register for will show up here."
-                    compact
-                  />
-                ) : (
-                  activity.map((item) =>
-                    item.kind === "post" ? (
-                      <ActivityPost
-                        key={item.key}
-                        post={item.post}
-                        name={user.name}
-                        community={allCommunities.find((c) => c.id === item.post.communityId)}
-                        onOpen={onOpenCommunity}
-                      />
-                    ) : (
-                      <ActivityRegistration key={item.key} event={item.event} name={user.name} />
-                    )
-                  )
-                )
-              )}
-
-              {tab === "communities" && (
-                joinedCommunities.length === 0 ? (
-                  <EmptyState
-                    title="You haven't joined anything yet"
-                    subtitle="Find clubs and communities in Explore."
-                    compact
-                  />
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
-                    {joinedCommunities.map((c) => (
-                      <CommunityTile key={c.id} c={c} onOpen={onOpenCommunity} />
-                    ))}
-                  </div>
-                )
-              )}
-
-              {tab === "events" && (
-                registeredEvents.length === 0 ? (
-                  <EmptyState
-                    title="No events yet"
-                    subtitle="Events you register for from the Events page will be listed here."
-                    compact
-                  />
-                ) : (
-                  registeredEvents.map((e) => <EventRow key={e.id} e={e} onOpen={onOpenEvent} />)
-                )
-              )}
             </div>
-          </section>
+
+            {/* the inline stat row — no cards */}
+            <div className="flex items-center justify-center sm:justify-start gap-7 mt-5">
+              <Stat value={myPosts.length} label="posts" tint="text-c-blue" />
+              <Stat value={joinedCommunities.length} label="communities" tint="text-c-violet" />
+              <Stat value={registeredEvents.length} label="events" tint="text-c-orange" />
+            </div>
+
+            {user.bio && <p className="text-base text-ink mt-5 leading-normal whitespace-pre-wrap">{user.bio}</p>}
+
+            {interests.length > 0 && (
+              <div className="flex flex-wrap justify-center sm:justify-start gap-1.5 mt-4">
+                {interests.map((n) => {
+                  const c = CATEGORIES.find((x) => x.name === n);
+                  return (
+                    <span key={n} className="inline-flex items-center gap-1.5 text-xs font-semibold text-ink-2">
+                      {c && <Icon name={c.msr} size={15} className={c.tint} />}
+                      {n}
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+
+            {owned.length > 0 && (
+              <p className="text-xs text-ink-2 mt-4">
+                Runs{" "}
+                {owned.map((c, i) => (
+                  <span key={c.id}>
+                    <button onClick={() => onOpenCommunity(c)} className="font-semibold text-accent hover:opacity-70">
+                      {c.name.split(" — ")[0]}
+                    </button>
+                    {i < owned.length - 1 && ", "}
+                  </span>
+                ))}
+              </p>
+            )}
+          </div>
+        </header>
+
+        {/* Tabs */}
+        <nav className="flex items-center justify-center gap-12 border-t border-line">
+          {TABS.map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              aria-current={tab === t.key ? "page" : undefined}
+              className={cx(
+                "inline-flex items-center gap-1.5 -mt-px pt-4 pb-3 border-t-2 text-2xs font-semibold uppercase tracking-wider transition-colors",
+                tab === t.key ? "border-ink text-ink" : "border-transparent text-ink-3 hover:text-ink-2"
+              )}
+            >
+              <Icon name={t.icon} size={14} className={tab === t.key ? "text-ink" : "text-ink-3"} />
+              {t.label}
+            </button>
+          ))}
+        </nav>
+
+        <div className="pt-6">
+          {tab === "posts" && (
+            myPosts.length === 0 ? (
+              <Empty icon="photo_camera" title="No posts yet" body="Posts you write in your communities will show up here." />
+            ) : (
+              <div className="grid grid-cols-3 gap-1 sm:gap-2">
+                {myPosts.map((p) => {
+                  const c = allCommunities.find((x) => x.id === p.communityId);
+                  const cat = c && CATEGORIES.find((x) => x.name === c.category);
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => c && onOpenCommunity(c)}
+                      className="group relative aspect-square overflow-hidden bg-bg-sunken"
+                    >
+                      {p.imageUrl ? (
+                        <img src={p.imageUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="w-full h-full grid place-items-center p-3">
+                          <span className="text-xs text-ink-2 line-clamp-4 text-left">{p.text}</span>
+                        </span>
+                      )}
+                      <span className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity grid place-items-center">
+                        <span className="inline-flex items-center gap-1.5 text-white text-base font-semibold">
+                          <Icon name="favorite" size={18} />{p.sparks}
+                        </span>
+                      </span>
+                      {cat && !p.imageUrl && (
+                        <span className="absolute top-2 left-2">
+                          <Icon name={cat.msr} size={16} className={cat.tint} />
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            )
+          )}
+
+          {tab === "communities" && (
+            joinedCommunities.length === 0 ? (
+              <Empty icon="groups" title="Nothing joined yet" body="Find clubs and communities in Explore." />
+            ) : (
+              <div>
+                {joinedCommunities.map((c) => {
+                  const cat = CATEGORIES.find((x) => x.name === c.category);
+                  return (
+                    <div key={c.id} className="flex items-center gap-3 py-3 border-b border-line last:border-0">
+                      <button onClick={() => onOpenCommunity(c)} className="shrink-0">
+                        {c.avatarUrl ? (
+                          <Avatar src={c.avatarUrl} name={c.name} size={44} />
+                        ) : (
+                          <span className="grid place-items-center w-11 h-11 rounded-full bg-bg-sunken ring-1 ring-line">
+                            <Icon name={cat?.msr || "groups"} size={22} className={cat?.tint} />
+                          </span>
+                        )}
+                      </button>
+                      <button onClick={() => onOpenCommunity(c)} className="min-w-0 flex-1 text-left leading-tight">
+                        <span className="block text-base font-semibold text-ink truncate hover:opacity-70">{c.name}</span>
+                        <span className="block text-xs text-ink-2 truncate">
+                          {c.category} · {compact(c.members)} members
+                        </span>
+                      </button>
+                      <Button variant="outline" size="sm" onClick={() => onOpenCommunity(c)}>Open</Button>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          )}
+
+          {tab === "events" && (
+            registeredEvents.length === 0 ? (
+              <Empty icon="confirmation_number" title="No events yet" body="Events you register for will be listed here." />
+            ) : (
+              <div>
+                {registeredEvents.map((e) => {
+                  const cat = CATEGORIES.find((x) => x.name === e.category);
+                  return (
+                    <div key={e.id} className="flex items-center gap-3 py-3 border-b border-line last:border-0">
+                      <span className="grid place-items-center w-11 h-11 rounded-full bg-bg-sunken ring-1 ring-line shrink-0">
+                        <Icon name={cat?.msr || "confirmation_number"} size={22} className={cat?.tint || "text-c-orange"} />
+                      </span>
+                      <button onClick={() => onOpenEvent?.(e)} className="min-w-0 flex-1 text-left leading-tight">
+                        <span className="block text-base font-semibold text-ink truncate hover:opacity-70">{e.title}</span>
+                        <span className="block text-xs text-ink-2 truncate">{e.when} · {e.where}</span>
+                      </button>
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-c-green shrink-0">
+                        <Icon name="check_circle" size={16} />Going
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            )
+          )}
         </div>
-      </div>
-    </div>
+      </Column>
+
+      {editing && (
+        <Modal
+          title="Edit profile"
+          onClose={() => setEditing(false)}
+          footer={
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
+              <Button variant="primary" onClick={save} disabled={!draftName.trim()}>Save</Button>
+            </div>
+          }
+        >
+          <div className="space-y-4">
+            <Field label="Name" htmlFor="pf-name">
+              <Input id="pf-name" value={draftName} maxLength={60} onChange={(e) => setDraftName(e.target.value)} />
+            </Field>
+            <Field label="Bio" htmlFor="pf-bio" hint={`${draftBio.length}/300`}>
+              <Textarea id="pf-bio" rows={4} maxLength={300} value={draftBio} onChange={(e) => setDraftBio(e.target.value)} />
+            </Field>
+          </div>
+        </Modal>
+      )}
+    </Screen>
   );
 }

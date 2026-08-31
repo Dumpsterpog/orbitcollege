@@ -1,28 +1,21 @@
-import { cx } from "./ui/Primitives.jsx";
+import { Empty } from "./ui/Layout.jsx";
 
-// Consistent empty/error moment: icon chip + title + subtitle + optional
-// action. Tightened for the dense rebuild — the old version reserved 56px of
-// vertical padding and a 64px icon tile, which pushed the actual message
-// below the fold inside short panels like the search results list.
-
-export function EmptyState({ icon: Icon, title, subtitle, action, tone = "neutral", compact = false }) {
+// Compatibility surface. `Empty` in ui/Layout.jsx is the real component;
+// this maps the older prop names (icon as a component, title/subtitle) onto
+// it so screens that still use them keep rendering. New code should import
+// Empty directly.
+export function EmptyState({ icon, title, subtitle, action, compact = false, className }) {
+  // The old API passed a lucide component; the new one takes a Material
+  // Symbols ligature. A component can't be converted to a ligature, so it is
+  // dropped rather than rendered as "[object Object]".
+  const glyph = typeof icon === "string" ? icon : undefined;
   return (
-    <div className={cx("animate-fade-in flex flex-col items-center text-center px-6", compact ? "py-8" : "py-14")}>
-      {Icon && (
-        <div
-          className={cx(
-            "w-10 h-10 rounded-lg border grid place-items-center mb-3",
-            tone === "error"
-              ? "border-danger/25 bg-danger-subtle"
-              : "border-line bg-surface-inset"
-          )}
-        >
-          <Icon size={17} className={tone === "error" ? "text-danger" : "text-content-faint"} />
-        </div>
-      )}
-      <p className="text-sm font-medium text-content">{title}</p>
-      {subtitle && <p className="text-xs text-content-muted mt-1.5 max-w-xs leading-relaxed">{subtitle}</p>}
-      {action && <div className="mt-4">{action}</div>}
-    </div>
+    <Empty
+      icon={glyph}
+      title={title}
+      body={subtitle}
+      action={action}
+      className={compact ? "py-10" : className}
+    />
   );
 }

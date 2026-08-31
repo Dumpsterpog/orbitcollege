@@ -1,12 +1,49 @@
 import { useEffect } from "react";
-import { ChevronLeft, X } from "lucide-react";
-import { IconButton, cx } from "./Primitives.jsx";
+import { Icon, IconButton, cx } from "./Primitives.jsx";
 
-// Centred dialog. `fixed`, not `absolute`: the old modals were positioned
-// against the phone-frame card, and with that frame gone an absolute overlay
-// would only cover its nearest positioned ancestor instead of the viewport.
-// Escape closes, and body scroll is locked while open.
-export function Modal({ title, onClose, children, footer, max = "max-w-sm" }) {
+// Layout scaffolding.
+//
+// `Screen` is a plain scroll container with no chrome of its own — the
+// previous version wrapped every page in a bordered panel, which is what
+// made the app read as boxes inside boxes. Any structure a page needs it
+// declares itself.
+
+export function Screen({ children, className }) {
+  return <div className={cx("flex-1 min-h-0 overflow-y-auto bg-bg", className)}>{children}</div>;
+}
+
+// Centred column. `feed` is the 470px reading measure; `wide` is the full
+// shell for directory and grid pages.
+export function Column({ width = "wide", className, children }) {
+  const w = width === "feed" ? "max-w-feed" : width === "prose" ? "max-w-prose" : "max-w-shell";
+  return <div className={cx("w-full mx-auto px-4 sm:px-6", w, className)}>{children}</div>;
+}
+
+// Page title block. Sticky so the title stays put while a long list scrolls,
+// with a hairline that only appears once content is under it.
+export function PageHeader({ title, subtitle, onBack, actions, sticky = true, className }) {
+  return (
+    <header
+      className={cx(
+        "bg-bg/85 backdrop-blur-md border-b border-line",
+        sticky && "sticky top-0 z-20",
+        className
+      )}
+    >
+      <div className="max-w-shell mx-auto px-4 sm:px-6 h-14 flex items-center gap-3">
+        {onBack && <IconButton icon="arrow_back" label="Back" size={20} onClick={onBack} className="-ml-2" />}
+        <div className="min-w-0 flex-1">
+          <h1 className="text-lg font-semibold text-ink truncate leading-tight">{title}</h1>
+          {subtitle && <p className="text-xs text-ink-2 truncate">{subtitle}</p>}
+        </div>
+        {actions && <div className="flex items-center gap-1.5 shrink-0">{actions}</div>}
+      </div>
+    </header>
+  );
+}
+
+// Centred dialog. Escape closes, body scroll locks, backdrop click dismisses.
+export function Modal({ title, onClose, children, footer, width = "max-w-sm" }) {
   useEffect(() => {
     const onKey = (e) => { if (e.key === "Escape") onClose?.(); };
     window.addEventListener("keydown", onKey);
@@ -20,7 +57,7 @@ export function Modal({ title, onClose, children, footer, max = "max-w-sm" }) {
 
   return (
     <div
-      className="fixed inset-0 z-[60] bg-black/50 backdrop-blur-[2px] flex items-center justify-center p-4 animate-fade-in"
+      className="fixed inset-0 z-[80] bg-black/70 flex items-center justify-center p-4 animate-fade-in"
       onClick={onClose}
       role="presentation"
     >
@@ -29,124 +66,34 @@ export function Modal({ title, onClose, children, footer, max = "max-w-sm" }) {
         aria-modal="true"
         aria-label={title}
         onClick={(e) => e.stopPropagation()}
-        className={cx(
-          "w-full bg-surface-elevated border border-line rounded-lg shadow-2xl overflow-hidden animate-pop-in",
-          max
-        )}
+        className={cx("w-full bg-bg-raised rounded-lg overflow-hidden animate-pop shadow-pop", width)}
       >
-        <div className="flex items-center gap-3 h-11 px-4 border-b border-line">
-          <h2 className="text-sm font-semibold text-content flex-1 min-w-0 truncate">{title}</h2>
-          <IconButton icon={X} label="Close" size="sm" onClick={onClose} className="-mr-1.5" />
-        </div>
-        <div className="p-4">{children}</div>
-        {footer && <div className="px-4 py-3 border-t border-line bg-surface-subtle">{footer}</div>}
-      </div>
-    </div>
-  );
-}
-
-// Page frame shared by every rebuilt screen.
-//
-// Each old screen re-declared its own scroll container and header padding
-// inline, so headers sat at slightly different heights and some scrolled away
-// with the content while others didn't. Screen owns the flex/overflow
-// contract and PageHeader is a non-shrinking sticky bar, so every page lines
-// up and the header stays put while only the body scrolls.
-
-export function Screen({ className, children }) {
-  return (
-    <div className={cx("flex-1 min-h-0 flex flex-col bg-surface", className)}>
-      {children}
-    </div>
-  );
-}
-
-export function PageHeader({ title, subtitle, actions, onBack, className }) {
-  return (
-    <header
-      className={cx(
-        "shrink-0 h-12 flex items-center gap-3 px-5 lg:px-8 border-b border-line bg-surface/85 backdrop-blur-sm",
-        className
-      )}
-    >
-      {onBack && <IconButton icon={ChevronLeft} label="Back" size="sm" onClick={onBack} className="-ml-1.5" />}
-      <div className="min-w-0 flex-1">
-        <h1 className="text-sm font-semibold text-content truncate leading-tight">{title}</h1>
-        {subtitle && <p className="text-2xs text-content-muted truncate leading-tight mt-0.5">{subtitle}</p>}
-      </div>
-      {actions && <div className="flex items-center gap-1.5 shrink-0">{actions}</div>}
-    </header>
-  );
-}
-
-// Constrained reading column — text-heavy screens (Settings, Profile) use
-// this so lines don't stretch edge to edge on a wide monitor.
-export function PageBody({ max = "3xl", className, children }) {
-  const widths = { md: "max-w-md", xl: "max-w-xl", "2xl": "max-w-2xl", "3xl": "max-w-3xl", "5xl": "max-w-5xl" };
-  return (
-    <div className="flex-1 min-h-0 overflow-y-auto">
-      <div className={cx("w-full mx-auto px-5 lg:px-8 py-6", widths[max], className)}>{children}</div>
-    </div>
-  );
-}
-
-// Titled block used down Settings. The divider belongs to the group, not to
-// each row, so a group's last row never draws a trailing line.
-export function SettingsGroup({ title, description, children }) {
-  return (
-    <section className="space-y-2.5">
-      <div>
-        <h2 className="text-xs font-semibold text-content">{title}</h2>
-        {description && <p className="text-2xs text-content-muted mt-0.5">{description}</p>}
-      </div>
-      <div className="bg-surface-elevated border border-line rounded-lg divide-y divide-line overflow-hidden">
-        {children}
-      </div>
-    </section>
-  );
-}
-
-export function SettingsRow({ label, description, control, onClick, danger = false }) {
-  const Tag = onClick ? "button" : "div";
-  return (
-    <Tag
-      {...(onClick ? { onClick, type: "button" } : {})}
-      className={cx(
-        "w-full flex items-center gap-4 px-3.5 py-3 text-left",
-        onClick && "transition-colors hover:bg-surface-inset focus-visible:outline-none focus-visible:bg-surface-inset"
-      )}
-    >
-      <div className="min-w-0 flex-1">
-        <p className={cx("text-sm font-medium", danger ? "text-danger" : "text-content")}>{label}</p>
-        {description && <p className="text-2xs text-content-muted mt-0.5 leading-relaxed">{description}</p>}
-      </div>
-      {control && <div className="shrink-0">{control}</div>}
-    </Tag>
-  );
-}
-
-// Accessible switch — a real button with aria-checked rather than a styled
-// checkbox, so it announces correctly and is keyboard-operable.
-export function Switch({ checked, onChange, label }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      onClick={() => onChange(!checked)}
-      className={cx(
-        "relative h-5 w-9 rounded-full transition-colors shrink-0",
-        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-content/25 focus-visible:ring-offset-2 focus-visible:ring-offset-surface",
-        checked ? "bg-solid" : "bg-surface-inset border border-line"
-      )}
-    >
-      <span
-        className={cx(
-          "absolute top-0.5 h-4 w-4 rounded-full transition-transform",
-          checked ? "translate-x-[18px] bg-solid-fg" : "translate-x-0.5 bg-content-faint"
+        {title && (
+          <div className="h-12 px-2 flex items-center border-b border-line">
+            <h2 className="flex-1 text-center text-base font-semibold text-ink px-8 truncate">{title}</h2>
+            <IconButton icon="close" label="Close" size={20} onClick={onClose} />
+          </div>
         )}
-      />
-    </button>
+        <div className="p-4">{children}</div>
+        {footer && <div className="px-4 py-3 border-t border-line">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+// Full-bleed empty state. Thin glyph here on purpose — a filled icon at
+// 40px+ reads as a solid blob rather than as an illustration.
+export function Empty({ icon, title, body, action, className }) {
+  return (
+    <div className={cx("flex flex-col items-center text-center py-16 px-6", className)}>
+      {icon && (
+        <span className="grid place-items-center w-16 h-16 rounded-full border-2 border-ink mb-4">
+          <Icon name={icon} size={30} thin className="text-ink" />
+        </span>
+      )}
+      <p className="text-xl font-semibold text-ink">{title}</p>
+      {body && <p className="text-base text-ink-2 mt-2 max-w-xs leading-relaxed">{body}</p>}
+      {action && <div className="mt-5">{action}</div>}
+    </div>
   );
 }

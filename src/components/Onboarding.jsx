@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Check, ChevronLeft, ArrowRight } from "lucide-react";
 import { CATEGORIES } from "../data/constants.js";
-import { Button, Input, Field, Logo, Badge, SectionLabel, cx } from "./ui/Primitives.jsx";
+import { Icon, Button, Input, Field, cx } from "./ui/Primitives.jsx";
+import { Logo } from "./Common.jsx";
 import { signInWithGoogle, saveProfile, fetchProfile } from "../lib/authService.js";
 import { auth } from "../lib/firebase.js";
 
@@ -84,25 +84,25 @@ export function Onboarding({ onDone, onGuest }) {
   };
 
   return (
-    <div className="flex-1 min-h-0 flex bg-surface">
+    <div className="flex-1 min-h-0 flex bg-bg">
       {/* Brand column — desktop only. Deliberately static and quiet: it's
           context, not something competing with the form for attention. */}
-      <aside className="hidden lg:flex flex-col justify-between w-[44%] max-w-lg shrink-0 border-r border-line bg-surface-subtle p-10">
+      <aside className="hidden lg:flex flex-col justify-between w-[44%] max-w-lg shrink-0 border-r border-line bg-bg-sunken p-10">
         <Logo size={22} />
         <div className="space-y-5">
-          <h1 className="text-3xl font-semibold text-content" style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
+          <h1 className="text-3xl font-semibold text-ink" style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
             Every club.<br />Every community.<br />One platform.
           </h1>
           <ul className="space-y-2.5">
             {HIGHLIGHTS.map((h) => (
-              <li key={h} className="flex items-start gap-2.5 text-sm text-content-secondary">
-                <Check size={14} className="text-accent mt-0.5 shrink-0" />
+              <li key={h} className="flex items-start gap-2.5 text-sm text-ink-2">
+                <Icon name="check" size={14} className="text-accent mt-0.5 shrink-0" />
                 {h}
               </li>
             ))}
           </ul>
         </div>
-        <p className="text-2xs text-content-faint">Built for Manipal University Jaipur.</p>
+        <p className="text-2xs text-ink-3">Built for Manipal University Jaipur.</p>
       </aside>
 
       {/* Form column */}
@@ -110,16 +110,16 @@ export function Onboarding({ onDone, onGuest }) {
         <header className="flex items-center justify-between px-6 lg:px-10 py-5 shrink-0">
           <div className="lg:hidden"><Logo size={20} /></div>
           <div className="hidden lg:block" />
-          <Badge tone="neutral">Testing phase</Badge>
+          <span className="inline-flex items-center h-6 px-3 rounded-full bg-bg-sunken text-2xs font-semibold text-ink-2">Testing phase</span>
         </header>
 
         <div className="flex-1 flex flex-col justify-center px-6 lg:px-10 pb-10 max-w-md w-full mx-auto">
           {step === "signin" && (
             <div className="animate-fade-in-up">
-              <h2 className="text-2xl font-semibold text-content" style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
+              <h2 className="text-2xl font-semibold text-ink" style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
                 Sign in to Orbit
               </h2>
-              <p className="text-sm text-content-muted mt-2 mb-7">
+              <p className="text-sm text-ink-2 mt-2 mb-7">
                 Continue with Google — your first sign-in creates the account, so there's no separate registration.
               </p>
 
@@ -132,22 +132,22 @@ export function Onboarding({ onDone, onGuest }) {
 
               <div className="flex items-center gap-3 my-6">
                 <div className="h-px flex-1 bg-line" />
-                <span className="text-2xs text-content-faint uppercase tracking-wider">or</span>
+                <span className="text-2xs text-ink-3 uppercase tracking-wider">or</span>
                 <div className="h-px flex-1 bg-line" />
               </div>
 
               <Button variant="ghost" size="md" onClick={onGuest} className="w-full">
                 Browse as guest
               </Button>
-              <p className="text-2xs text-content-faint text-center mt-2.5">
+              <p className="text-2xs text-ink-3 text-center mt-2.5">
                 You can look around, but joining, posting and chat need an account.
               </p>
 
-              <p className="text-2xs text-content-faint mt-8 text-center">
+              <p className="text-2xs text-ink-3 mt-8 text-center">
                 By continuing you agree to our{" "}
-                <a href="/terms" className="text-content-secondary underline underline-offset-2 hover:text-content">Terms</a>
+                <a href="/terms" className="text-ink-2 underline underline-offset-2 hover:text-ink">Terms</a>
                 {" "}and{" "}
-                <a href="/privacy" className="text-content-secondary underline underline-offset-2 hover:text-content">Privacy Policy</a>.
+                <a href="/privacy" className="text-ink-2 underline underline-offset-2 hover:text-ink">Privacy Policy</a>.
               </p>
             </div>
           )}
@@ -160,15 +160,15 @@ export function Onboarding({ onDone, onGuest }) {
               <button
                 type="button"
                 onClick={() => setStep("signin")}
-                className="inline-flex items-center gap-1 text-xs text-content-muted hover:text-content mb-4 transition-colors"
+                className="inline-flex items-center gap-1 text-xs text-ink-2 hover:text-ink mb-4 transition-colors"
               >
-                <ChevronLeft size={13} />Back
+                <Icon name="chevron_left" size={13} className="text-ink-2" />Back
               </button>
 
-              <h2 className="text-2xl font-semibold text-content" style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
+              <h2 className="text-2xl font-semibold text-ink" style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
                 Set up your profile
               </h2>
-              <p className="text-sm text-content-muted mt-2 mb-6">Two quick things, then you're in.</p>
+              <p className="text-sm text-ink-2 mt-2 mb-6">Two quick things, then you're in.</p>
 
               <Field label="Display name" htmlFor="ob-name">
                 <Input
@@ -182,25 +182,24 @@ export function Onboarding({ onDone, onGuest }) {
               </Field>
 
               <div className="flex items-baseline justify-between mt-6 mb-1">
-                <SectionLabel>What are you into?</SectionLabel>
+                <p className="text-2xs font-semibold text-ink-2 uppercase tracking-wider">What are you into?</p>
                 <button
                   type="button"
                   onClick={() => finishProfile(name.trim(), [])}
                   disabled={!name.trim() || loading}
-                  className="text-2xs text-content-muted hover:text-content disabled:opacity-40 transition-colors"
+                  className="text-2xs text-ink-2 hover:text-ink disabled:opacity-40 transition-colors"
                 >
                   Skip
                 </button>
               </div>
-              <p className="text-2xs text-content-faint mb-3">
+              <p className="text-2xs text-ink-3 mb-3">
                 Personalizes your feed. Skip to see everything instead.
               </p>
 
               <div className="grid grid-cols-2 gap-1.5">
                 {CATEGORIES.map((cat) => {
                   const selected = interests.includes(cat.name);
-                  const Icon = cat.icon;
-                  return (
+                                    return (
                     <button
                       type="button"
                       key={cat.name}
@@ -209,13 +208,13 @@ export function Onboarding({ onDone, onGuest }) {
                       className={cx(
                         "flex items-center gap-2 h-9 px-2.5 rounded border text-left transition-colors",
                         selected
-                          ? "border-line-strong bg-surface-inset text-content"
-                          : "border-line text-content-secondary hover:border-line-strong hover:text-content"
+                          ? "border-line-strong bg-bg-sunken text-ink"
+                          : "border-line text-ink-2 hover:border-line-strong hover:text-ink"
                       )}
                     >
-                      <Icon size={14} className={cx("shrink-0", selected ? "text-accent" : "text-content-faint")} />
+                      <Icon name={cat.msr} size={16} className={cat.tint} />
                       <span className="text-xs font-medium truncate">{cat.name}</span>
-                      {selected && <Check size={12} className="ml-auto shrink-0 text-accent" />}
+                      {selected && <Icon name="check" size={12} className="ml-auto shrink-0 text-accent" />}
                     </button>
                   );
                 })}
@@ -224,7 +223,7 @@ export function Onboarding({ onDone, onGuest }) {
               {errorMsg && <p className="text-xs text-danger mt-3">{errorMsg}</p>}
 
               <Button type="submit" variant="primary" size="lg" disabled={!name.trim()} loading={loading} className="w-full mt-6">
-                Enter Orbit <ArrowRight size={15} />
+                Enter Orbit <Icon name="arrow_forward" size={15} className="text-ink" />
               </Button>
             </form>
           )}

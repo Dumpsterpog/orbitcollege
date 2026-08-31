@@ -1,135 +1,106 @@
 import { useState, useMemo } from "react";
 import { CATEGORIES } from "../data/constants.js";
 import { communityTrendScore } from "../utils/helpers.js";
-import { EmptyState } from "./EmptyState.jsx";
-import { Icon, cx } from "./ui/Primitives.jsx";
+import { Icon, Avatar, Button, Input, Tag, cx } from "./ui/Primitives.jsx";
+import { Screen, Column, Empty } from "./ui/Layout.jsx";
 
-// Explore, rebuilt to the Stitch explore.html mock: headline + pill filter
-// row, a "Featured This Week" section, and the mock's community card —
-// h-48 cover with a gradient scrim, title + type chip, clamped description,
-// then a member pill and a Join button on a hairline footer.
+// Explore — a discovery grid, not a directory of bordered cards.
 //
-// The mock stops after three featured cards. A directory that only ever
-// shows three entries isn't usable once there are sixty communities, so the
-// full listing continues below in the same card language, with the search
-// and category filter the old Explore had. Everything the mock specifies is
-// matched; the rest is the mock's own system extended.
-//
-// Filter pills are All / Clubs / Communities. The mock's "Societies" and
-// "Sports" aren't types in this data model — `official` splits clubs from
-// student-run communities, and Sports is one of the sixteen categories — so
-// those two live in the category row rather than being faked as types.
+// The reference's explore is a dense tile mosaic: no borders, no gaps of
+// dead space, tiles butted up against each other so the images form the
+// layout. That only works when every tile has an image. Communities here
+// often don't, so a tile falls back to its category glyph on a tinted wash
+// — still full-bleed, still no border, and the colour keeps the mosaic from
+// going grey when covers are missing.
 
-const FILTERS = [
-  { key: "all", label: "All" },
-  { key: "clubs", label: "Clubs" },
-  { key: "communities", label: "Communities" },
-];
+const compact = (n) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : `${n}`);
 
-function PillButton({ active, onClick, children, className }) {
+// Category hue → a soft wash for the coverless tiles. Kept as full class
+// strings so Tailwind's scanner can see them.
+const WASH = {
+  "text-c-blue": "from-c-blue/15 to-c-blue/5",
+  "text-c-violet": "from-c-violet/15 to-c-violet/5",
+  "text-c-pink": "from-c-pink/15 to-c-pink/5",
+  "text-c-orange": "from-c-orange/15 to-c-orange/5",
+  "text-c-amber": "from-c-amber/15 to-c-amber/5",
+  "text-c-green": "from-c-green/15 to-c-green/5",
+  "text-c-teal": "from-c-teal/15 to-c-teal/5",
+  "text-c-red": "from-c-red/15 to-c-red/5",
+};
+
+function Tile({ c, joined, onOpen, onJoin, tall = false }) {
+  const cat = CATEGORIES.find((x) => x.name === c.category);
+  const wash = WASH[cat?.tint] || WASH["text-c-blue"];
+
   return (
     <button
-      onClick={onClick}
-      aria-pressed={active}
+      onClick={() => onOpen(c)}
       className={cx(
-        "px-5 py-2 rounded-full text-label-md font-medium transition-all whitespace-nowrap",
-        active
-          ? "bg-primary text-on-primary shadow-sm"
-          : "bg-surface-container border border-outline-variant/40 text-on-surface-variant hover:bg-surface-container-high",
-        className
+        "group relative overflow-hidden bg-bg-sunken text-left",
+        tall ? "row-span-2 aspect-[1/2.02]" : "aspect-square"
       )}
     >
-      {children}
-    </button>
-  );
-}
+      {c.avatarUrl ? (
+        <img src={c.avatarUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
+      ) : (
+        <span className={cx("w-full h-full grid place-items-center bg-gradient-to-br", wash)}>
+          <Icon name={cat?.msr || "groups"} size={tall ? 72 : 44} className={cx(cat?.tint, "opacity-80")} />
+        </span>
+      )}
 
-function CommunityCard({ c, joined, featured, onOpen, onJoin }) {
-  const cat = CATEGORIES.find((x) => x.name === c.category);
-  const typeLabel = c.official ? "Club" : "Community";
+      {/* Always-on label strip. The reference hides everything until hover,
+          which works when the image is the content; here the name IS the
+          content, so it stays legible at rest and the overlay only adds
+          the secondary detail. */}
+      <span className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/75 via-black/35 to-transparent">
+        <span className="block text-base font-semibold text-white truncate drop-shadow-sm">
+          {c.name.split(" — ")[0]}
+        </span>
+        <span className="block text-xs text-white/80 truncate">{compact(c.members)} members</span>
+      </span>
 
-  return (
-    <div className="bg-surface-container-lowest rounded-xl shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden relative group border border-outline-variant/20">
-      {/* Cover */}
-      <button onClick={() => onOpen(c)} className="h-48 w-full bg-surface-container-high relative block text-left">
-        {c.avatarUrl ? (
-          <img src={c.avatarUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
-        ) : (
-          // No cover uploaded — the category glyph on a tinted field, rather
-          // than a stock photo standing in for a real community's identity.
-          <span className="w-full h-full grid place-items-center bg-gradient-to-br from-surface-container-high to-surface-variant">
-            {cat && <Icon name={cat.msr} size={56} className={cx(cat.tint, "opacity-60")} />}
-          </span>
-        )}
-        <span className="absolute inset-0 bg-gradient-to-t from-surface/80 to-transparent pointer-events-none" />
-        {featured && (
-          <span className="absolute bottom-4 left-4 bg-primary text-on-primary px-3 py-1 rounded-full text-label-sm font-medium flex items-center gap-1 shadow-sm">
-            <Icon name="stars" size={16} />Featured
-          </span>
-        )}
-      </button>
+      {c.official && (
+        <span className="absolute top-2.5 right-2.5">
+          <Icon name="verified" size={20} className="text-white drop-shadow" />
+        </span>
+      )}
 
-      {/* Body */}
-      <div className="p-5 flex flex-col flex-1">
-        <div className="flex justify-between items-start gap-2 mb-2">
-          <button onClick={() => onOpen(c)} className="text-left min-w-0">
-            <h3 className="text-headline-sm font-semibold text-on-surface group-hover:text-primary transition-colors">
-              {c.name}
-            </h3>
-          </button>
-          <span className="bg-surface-container-low text-on-surface-variant px-2 py-1 rounded text-label-sm font-medium shrink-0">
-            {typeLabel}
-          </span>
-        </div>
-
-        <p className="text-body-sm text-on-surface-variant line-clamp-2 mb-4 flex-1">{c.desc}</p>
-
-        <div className="flex items-center justify-between gap-2 pt-4 border-t border-outline-variant/20">
-          <span className="flex items-center gap-2 bg-surface-container-low px-3 py-1.5 rounded-full">
-            <Icon name="group" size={18} className="text-icon-blue" />
-            <span className="text-label-md font-medium text-on-surface-variant tabular-nums">{c.members}</span>
-          </span>
-          <button
-            onClick={() => onJoin(c.id)}
+      <span
+        className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity duration-200
+          grid place-items-center gap-2 p-4"
+      >
+        <span className="text-center">
+          <span className="block text-base font-semibold text-white line-clamp-2">{c.name}</span>
+          <span className="block text-xs text-white/75 mt-1 line-clamp-2">{c.desc}</span>
+          <span
+            role="button"
+            tabIndex={-1}
+            onClick={(e) => { e.stopPropagation(); onJoin(c.id); }}
             className={cx(
-              "px-5 py-2 rounded-full text-label-md font-medium transition-all shrink-0",
-              joined
-                ? "bg-surface-container text-on-surface-variant hover:bg-surface-container-high"
-                : "bg-primary-container text-on-primary-container hover:bg-primary hover:text-on-primary"
+              "inline-flex items-center justify-center h-8 px-4 mt-3 rounded-full text-xs font-semibold transition-colors",
+              joined ? "bg-white/15 text-white ring-1 ring-white/40" : "bg-white text-black hover:bg-white/90"
             )}
           >
             {joined ? "Joined" : "Join"}
-          </button>
-        </div>
-      </div>
-    </div>
+          </span>
+        </span>
+      </span>
+    </button>
   );
 }
 
 export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, joinedIds = [], onJoinToggle }) {
   const [query, setQuery] = useState("");
-  const [filterCat, setFilterCat] = useState(null);
+  const [scope, setScope] = useState("all");
+  const [cat, setCat] = useState(null);
 
   const all = useMemo(() => [...clubs, ...communities], [clubs, communities]);
 
-  // subTab is owned by App.jsx ("clubs" | "communities"); the All pill is
-  // local so the shared state keeps meaning for anything else reading it.
-  const [scope, setScope] = useState("all");
+  const scoped = scope === "clubs" ? clubs : scope === "communities" ? communities : all;
 
-  const scoped = useMemo(() => {
-    if (scope === "clubs") return clubs;
-    if (scope === "communities") return communities;
-    return all;
-  }, [scope, clubs, communities, all]);
-
-  const featured = useMemo(
-    () => [...all].sort((a, b) => communityTrendScore(b) - communityTrendScore(a)).slice(0, 3),
-    [all]
-  );
-
-  const filtered = useMemo(() => {
+  const results = useMemo(() => {
     let items = scoped;
-    if (filterCat) items = items.filter((c) => c.category === filterCat);
+    if (cat) items = items.filter((c) => c.category === cat);
     const q = query.trim().toLowerCase();
     if (q) {
       items = items.filter(
@@ -139,142 +110,128 @@ export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, j
           (c.desc || "").toLowerCase().includes(q)
       );
     }
-    return items;
-  }, [scoped, filterCat, query]);
+    return [...items].sort((a, b) => communityTrendScore(b) - communityTrendScore(a));
+  }, [scoped, cat, query]);
 
-  const join = (id) => onJoinToggle?.(id);
+  const counts = useMemo(() => {
+    const m = {};
+    scoped.forEach((c) => { m[c.category] = (m[c.category] || 0) + 1; });
+    return m;
+  }, [scoped]);
+
+  const SCOPES = [
+    { key: "all", label: "All", n: all.length },
+    { key: "clubs", label: "Clubs", n: clubs.length },
+    { key: "communities", label: "Communities", n: communities.length },
+  ];
 
   return (
-    <div className="flex-1 min-h-0 overflow-y-auto bg-surface">
-      <div className="px-md lg:px-margin-desktop py-xl">
-        <div className="max-w-max-width w-full mx-auto space-y-6 lg:space-y-10">
+    <Screen>
+      <Column className="pt-8 pb-16">
+        {/* Search is the primary control on a discovery page, so it leads —
+            large, centred, and the only element above the fold that has any
+            fill to it. */}
+        <div className="max-w-xl mx-auto">
+          <h1 className="text-3xl font-bold text-ink text-center">
+            Find your{" "}
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-c-violet via-c-pink to-c-orange">
+              people
+            </span>
+          </h1>
+          <p className="text-base text-ink-2 text-center mt-2">
+            Every club and student community on campus.
+          </p>
 
-          {/* Header + filters */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-4 lg:mb-8">
-            <div>
-              <h1 className="text-headline-xl font-bold text-on-surface mb-2">Explore Communities</h1>
-              <p className="text-body-lg text-on-surface-variant max-w-2xl">
-                Discover student organizations, clubs, and groups to join and enrich your campus experience.
-              </p>
-            </div>
-            <div className="flex gap-2 flex-wrap">
-              {FILTERS.map((f) => (
-                <PillButton
-                  key={f.key}
-                  active={scope === f.key}
-                  onClick={() => {
-                    setScope(f.key);
-                    if (f.key !== "all") setSubTab(f.key);
-                  }}
-                >
-                  {f.label}
-                </PillButton>
-              ))}
-            </div>
-          </div>
-
-          {/* Featured */}
-          {featured.length > 0 && !query && !filterCat && scope === "all" && (
-            <section aria-labelledby="featured-communities-heading">
-              <h2 id="featured-communities-heading" className="text-headline-md font-semibold text-on-surface mb-6">
-                Featured This Week
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {featured.map((c, i) => (
-                  <CommunityCard
-                    key={c.id}
-                    c={c}
-                    featured={i === 0}
-                    joined={joinedIds.includes(c.id)}
-                    onOpen={onOpen}
-                    onJoin={join}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Full directory */}
-          <section aria-labelledby="all-communities-heading">
-            <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-6">
-              <h2 id="all-communities-heading" className="text-headline-md font-semibold text-on-surface">
-                {scope === "clubs" ? "All Clubs" : scope === "communities" ? "All Communities" : "Browse Everything"}
-              </h2>
-              <div className="relative w-full lg:w-80">
-                <Icon
-                  name="search"
-                  size={20}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none"
-                />
-                <input
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  placeholder="Search communities"
-                  className="w-full bg-surface-container-low border border-outline-variant rounded-full py-2 pl-11 pr-10 text-body-sm text-on-surface placeholder:text-on-surface-variant focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all"
-                />
-                {query && (
-                  <button
-                    onClick={() => setQuery("")}
-                    aria-label="Clear search"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-on-surface"
-                  >
-                    <Icon name="close" size={18} />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Category pills — same pill language as the header filters. */}
-            <div className="flex gap-2 flex-wrap mb-6">
-              <PillButton active={!filterCat} onClick={() => setFilterCat(null)} className="!px-4 !py-1.5">
-                All categories
-              </PillButton>
-              {CATEGORIES.map((cat) => (
-                <PillButton
-                  key={cat.name}
-                  active={filterCat === cat.name}
-                  onClick={() => setFilterCat(filterCat === cat.name ? null : cat.name)}
-                  className="!px-4 !py-1.5"
-                >
-                  <span className="inline-flex items-center gap-1.5">
-                    <Icon
-                      name={cat.msr}
-                      size={16}
-                      className={filterCat === cat.name ? "text-on-primary" : cat.tint}
-                    />
-                    {cat.name}
-                  </span>
-                </PillButton>
-              ))}
-            </div>
-
-            <p className="text-body-sm text-on-surface-variant mb-6 tabular-nums">
-              {filtered.length} {filtered.length === 1 ? "result" : "results"}
-              {filterCat && ` in ${filterCat}`}
-            </p>
-
-            {filtered.length === 0 ? (
-              <EmptyState
-                title="Nothing matches that"
-                subtitle="Try a different search term, or clear the category filter."
-                compact
-              />
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filtered.map((c) => (
-                  <CommunityCard
-                    key={c.id}
-                    c={c}
-                    joined={joinedIds.includes(c.id)}
-                    onOpen={onOpen}
-                    onJoin={join}
-                  />
-                ))}
-              </div>
+          <div className="relative mt-6">
+            <Icon name="search" size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none" />
+            <Input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search communities, clubs or interests"
+              className="h-12 pl-12 pr-11 rounded-full text-md"
+            />
+            {query && (
+              <button
+                onClick={() => setQuery("")}
+                aria-label="Clear"
+                className="absolute right-3.5 top-1/2 -translate-y-1/2 grid place-items-center w-6 h-6 rounded-full bg-ink-3/25 text-ink hover:bg-ink-3/40"
+              >
+                <Icon name="close" size={14} />
+              </button>
             )}
-          </section>
+          </div>
         </div>
-      </div>
-    </div>
+
+        {/* Scope + category filters. Pills only — no segmented control with
+            a box around it. */}
+        <div className="flex flex-wrap items-center gap-2 mt-8">
+          {SCOPES.map((s) => (
+            <button
+              key={s.key}
+              onClick={() => { setScope(s.key); setSubTab(s.key === "all" ? subTab : s.key); }}
+              className={cx(
+                "h-8 px-4 rounded-full text-xs font-semibold transition-colors",
+                scope === s.key ? "bg-solid text-solid-ink" : "text-ink-2 hover:bg-bg-sunken hover:text-ink"
+              )}
+            >
+              {s.label}
+              <span className={cx("ml-1.5 tabular-nums", scope === s.key ? "opacity-60" : "text-ink-3")}>{s.n}</span>
+            </button>
+          ))}
+          <span className="w-px h-5 bg-line mx-1" />
+          <button
+            onClick={() => setCat(null)}
+            className={cx(
+              "h-8 px-3.5 rounded-full text-xs font-semibold transition-colors",
+              !cat ? "bg-bg-sunken text-ink" : "text-ink-2 hover:bg-bg-sunken hover:text-ink"
+            )}
+          >
+            All topics
+          </button>
+          {CATEGORIES.filter((c) => counts[c.name]).map((c) => (
+            <button
+              key={c.name}
+              onClick={() => setCat(cat === c.name ? null : c.name)}
+              className={cx(
+                "inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-xs font-semibold transition-colors",
+                cat === c.name ? "bg-bg-sunken text-ink ring-1 ring-line-strong" : "text-ink-2 hover:bg-bg-sunken hover:text-ink"
+              )}
+            >
+              <Icon name={c.msr} size={15} className={c.tint} />
+              {c.name}
+            </button>
+          ))}
+        </div>
+
+        <p className="text-xs text-ink-2 mt-6 mb-3 tabular-nums">
+          {results.length} {results.length === 1 ? "result" : "results"}
+          {cat && <> in <span className="font-semibold text-ink">{cat}</span></>}
+        </p>
+
+        {results.length === 0 ? (
+          <Empty
+            icon="search_off"
+            title="Nothing found"
+            body="Try a different search, or clear the topic filter."
+            action={<Button variant="soft" onClick={() => { setQuery(""); setCat(null); }}>Clear filters</Button>}
+          />
+        ) : (
+          // Mosaic: every third tile is double-height, which breaks the grid
+          // out of a flat checkerboard without needing per-item art direction.
+          <div className="grid grid-cols-2 md:grid-cols-3 auto-rows-[minmax(0,1fr)] gap-1 sm:gap-2">
+            {results.map((c, i) => (
+              <Tile
+                key={c.id}
+                c={c}
+                joined={joinedIds.includes(c.id)}
+                onOpen={onOpen}
+                onJoin={onJoinToggle}
+                tall={i % 7 === 0}
+              />
+            ))}
+          </div>
+        )}
+      </Column>
+    </Screen>
   );
 }

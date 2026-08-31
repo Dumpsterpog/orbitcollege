@@ -1,41 +1,37 @@
-import { Home, Compass, CalendarDays, User } from "lucide-react";
-import { cx } from "./ui/Primitives.jsx";
+import { Icon, Avatar, cx } from "./ui/Primitives.jsx";
 
-// Mobile tab bar (below lg). Labels are always visible now — the old version
-// showed a label only under the active tab, so the bar's height and the
-// icons' baseline shifted every time you switched tabs.
-
-const ITEMS = [
-  { key: "home", label: "Home", icon: Home },
-  { key: "explore", label: "Explore", icon: Compass },
-  { key: "events", label: "Events", icon: CalendarDays },
-  { key: "profile", label: "Profile", icon: User },
+// Mobile tab bar. Five destinations, no labels — at this size the glyph plus
+// its colour is the label, and dropping the text buys back vertical space
+// for the feed.
+const TABS = [
+  { key: "home", icon: "home", label: "Home", tint: "text-c-blue" },
+  { key: "explore", icon: "explore", label: "Explore", tint: "text-c-violet" },
+  { key: "create", icon: "add_circle", label: "Create", tint: "text-accent", action: true },
+  { key: "events", icon: "confirmation_number", label: "Events", tint: "text-c-orange" },
+  { key: "profile", icon: "account_circle", label: "Profile", tint: "text-c-green" },
 ];
 
-export function BottomNav({ active, setActive }) {
+export function BottomNav({ active, setActive, onCreateClick, user }) {
   return (
     <nav
-      className="flex items-stretch bg-surface border-t border-line"
-      style={{ paddingBottom: "max(0.25rem, env(safe-area-inset-bottom))" }}
+      className="lg:hidden shrink-0 flex items-stretch h-14 bg-bg/90 backdrop-blur-md border-t border-line"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      {ITEMS.map((it) => {
-        const Icon = it.icon;
-        const isActive = active === it.key || (it.key === "profile" && active === "settings");
+      {TABS.map((t) => {
+        const on = active === t.key;
         return (
           <button
-            key={it.key}
-            onClick={() => setActive(it.key)}
-            aria-current={isActive ? "page" : undefined}
-            className="flex-1 flex flex-col items-center justify-center gap-1 pt-2 pb-1.5 transition-colors"
+            key={t.key}
+            aria-label={t.label}
+            aria-current={on ? "page" : undefined}
+            onClick={() => (t.action ? onCreateClick() : setActive(t.key))}
+            className="flex-1 grid place-items-center active:scale-90 transition-transform duration-150"
           >
-            <Icon
-              size={19}
-              strokeWidth={isActive ? 2.3 : 1.8}
-              className={cx("shrink-0 transition-colors", isActive ? "text-content" : "text-content-muted")}
-            />
-            <span className={cx("text-[10px] font-medium leading-none", isActive ? "text-content" : "text-content-muted")}>
-              {it.label}
-            </span>
+            {t.key === "profile" ? (
+              <Avatar name={user?.name || "Guest"} size={26} ring={on} />
+            ) : (
+              <Icon name={t.icon} size={27} className={cx(on || t.action ? t.tint : "text-ink")} />
+            )}
           </button>
         );
       })}
