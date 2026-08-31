@@ -399,12 +399,6 @@ export function HomeScreen({
               </button>
             </section>
 
-            <p className="text-2xs text-ink-3 leading-relaxed px-1">
-              <a href="/terms" className="hover:underline">Terms</a>
-              <span className="mx-1.5">·</span>
-              <a href="/privacy" className="hover:underline">Privacy</a>
-              <br />Built for Manipal University Jaipur · © 2026 Orbit
-            </p>
           </div>
         </aside>
       </div>

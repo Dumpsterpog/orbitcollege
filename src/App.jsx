@@ -778,7 +778,8 @@ export default function App() {
         active={activeTab} setActive={goToTab}
         onTeaClick={openTea} onSearchClick={openSearch} onCreateClick={openCreate}
         onOpenSettings={() => goToTab("settings")}
-        verified={user.verified} user={user} theme={theme} onToggleTheme={toggleTheme} />
+        verified={user.verified} user={user} theme={theme} onToggleTheme={toggleTheme}
+        joinedCount={joinedIds.length} />
       <div className="flex-1 flex flex-col overflow-hidden lg:h-full min-w-0">
       {!showingSubPage && (
         <TopBar notifOpen={notifOpen} setNotifOpen={setNotifOpen}
