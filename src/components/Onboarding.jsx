@@ -4,16 +4,32 @@ import { Icon, Input, cx } from "./ui/Primitives.jsx";
 import { signInWithGoogle, saveProfile, fetchProfile } from "../lib/authService.js";
 import { auth } from "../lib/firebase.js";
 
-// Onboarding, built to the reference layout: a two-pane card floating on a
-// neutral field. The left pane is a fixed context column — brand, then
-// hairline-separated blocks of "here's how to reach a human", with social
-// links pinned to its base. The right pane is the only thing that changes
-// between steps: mark, headline, sub, the question, then Go back / Continue.
+// Onboarding — two-pane card, five steps, sign-in last.
 //
-// The reference's second question is a slider ("how large is your company").
-// There's no equivalent field on the Orbit profile — the schema stores a
-// name and interests, nothing numeric — so rather than invent a question to
-// justify a control, that slot is left out. Everything else is 1:1.
+// Sign-in moving to the end changes the shape of the flow: there's no uid
+// while the questions are being answered, so everything is held in local
+// state and written in a single saveProfile once Google returns. Nothing is
+// persisted before then, which is also the honest behaviour — abandon it
+// halfway and you've left nothing behind.
+//
+// The cost of asking first is returning users, who shouldn't re-answer four
+// screens to get back in. Step one carries a "Sign in" shortcut that jumps
+// straight to the last step; if that account already has a profile it goes
+// through, and if it doesn't they land back at step one to fill it.
+//
+// saveProfile is setDoc(merge) on Firestore, so university / year / phone
+// are new fields on the existing profile doc — no migration needed.
+
+const STEPS = ["name", "study", "interests", "phone", "signin"];
+
+const UNIVERSITIES = [
+  "Manipal University Jaipur",
+  "MIT Manipal",
+  "Manipal Academy of Higher Education",
+  "Other",
+];
+
+const YEARS = ["1st year", "2nd year", "3rd year", "4th year", "5th year+", "Faculty / Staff"];
 
 /* --------------------------------------------------------------- pieces */
 
@@ -28,7 +44,6 @@ function GoogleMark({ size = 18 }) {
   );
 }
 
-// The app mark, at the size the reference uses for its rounded-square logo.
 function Mark({ size = 44, radius = "rounded-[12px]" }) {
   return (
     <span
@@ -44,8 +59,6 @@ function Mark({ size = 44, radius = "rounded-[12px]" }) {
   );
 }
 
-// Left-pane block: title, one line of copy, then the action. Divided by a
-// hairline from the next, exactly as in the reference.
 function InfoBlock({ title, body, children, last }) {
   return (
     <div className={cx("py-5", !last && "border-b border-line")}>
@@ -56,19 +69,6 @@ function InfoBlock({ title, body, children, last }) {
   );
 }
 
-function InfoLink({ href, children }) {
-  return (
-    <a
-      href={href}
-      className="block text-base font-medium text-ink underline underline-offset-[3px] decoration-line
-        hover:decoration-ink transition-colors"
-    >
-      {children}
-    </a>
-  );
-}
-
-// The reference's chip: small, pill, quiet fill, and a dark ring when picked.
 function Chip({ selected, onClick, children }) {
   return (
     <button
@@ -77,9 +77,9 @@ function Chip({ selected, onClick, children }) {
       aria-pressed={selected}
       className={cx(
         "inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-base font-medium",
-        "transition-[background-color,box-shadow,color] duration-150 active:scale-[0.97]",
+        "transition-[background-color,color] duration-150 active:scale-[0.97]",
         selected
-          ? "bg-ink text-bg shadow-[inset_0_0_0_1px_rgb(var(--ink))]"
+          ? "bg-ink text-bg"
           : "bg-bg-sunken text-ink hover:bg-black/[0.07] dark:hover:bg-white/[0.12]"
       )}
     >
@@ -117,6 +117,40 @@ function Continue({ onClick, disabled, loading, children = "Continue", type = "b
   );
 }
 
+function SkipLink({ onClick, children = "Skip", disabled }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      className="h-11 px-4 rounded-full text-base font-semibold text-ink-2 hover:text-ink
+        hover:bg-bg-sunken transition-colors disabled:opacity-40"
+    >
+      {children}
+    </button>
+  );
+}
+
+// Progress. Filled track, in the shape of the reference's slider.
+function Progress({ index }) {
+  const pct = ((index + 1) / STEPS.length) * 100;
+  return (
+    <div className="mb-8">
+      <div className="flex items-baseline justify-between mb-2.5">
+        <p className="text-base font-semibold text-ink-2">
+          Step <span className="text-ink tabular-nums">{index + 1}</span> of {STEPS.length}
+        </p>
+      </div>
+      <div className="h-1.5 rounded-full bg-bg-sunken overflow-hidden">
+        <div
+          className="h-full rounded-full bg-ink transition-[width] duration-300 ease-out"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
 const SOCIALS = [
   { label: "Instagram", icon: "photo_camera", href: "#" },
   { label: "X", icon: "tag", href: "#" },
@@ -128,63 +162,77 @@ const SOCIALS = [
 /* ----------------------------------------------------------------- flow */
 
 export function Onboarding({ onDone, onGuest }) {
-  const [step, setStep] = useState("signin"); // signin → name → interests
+  const [step, setStep] = useState("name");
+  const [returning, setReturning] = useState(false); // jumped straight to sign-in
+
   const [name, setName] = useState("");
+  const [university, setUniversity] = useState(UNIVERSITIES[0]);
+  const [otherUni, setOtherUni] = useState("");
+  const [year, setYear] = useState("");
   const [interests, setInterests] = useState([]);
+  const [phone, setPhone] = useState("");
+
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
+  const index = STEPS.indexOf(step);
+  const go = (s) => { setErrorMsg(""); setStep(s); };
   const toggle = (n) =>
     setInterests((cur) => (cur.includes(n) ? cur.filter((x) => x !== n) : [...cur, n]));
 
-  const handleGoogle = async () => {
+  const resolvedUni = university === "Other" ? otherUni.trim() : university;
+  const uniValid = university !== "Other" || !!otherUni.trim();
+  // Optional, but if something's been typed it should look like a number.
+  const phoneValid = !phone.trim() || /^[0-9+\-\s()]{7,20}$/.test(phone.trim());
+
+  const finish = async () => {
     setLoading(true);
     setErrorMsg("");
     try {
       const user = await signInWithGoogle();
       if (!user) { setLoading(false); return; } // popup dismissed / redirect handoff
+
       const existing = await fetchProfile(user.uid);
-      if (existing?.name && existing.interests?.length) {
+
+      // Came in via the "Sign in" shortcut: nothing was filled, so use what
+      // the account already has. If it has nothing, send them to step one.
+      if (returning) {
+        if (existing?.name) {
+          setLoading(false);
+          onDone(existing.name, existing.interests || []);
+          return;
+        }
         setLoading(false);
-        onDone(existing.name, existing.interests);
+        setName(user.displayName || "");
+        setReturning(false);
+        go("name");
         return;
       }
-      setName(existing?.name || user.displayName || "");
-      setInterests(existing?.interests || []);
+
+      const finalName = name.trim() || user.displayName || "";
+      await saveProfile(user.uid, {
+        name: finalName,
+        interests,
+        university: resolvedUni,
+        year: year || null,
+        phone: phone.trim() || null,
+      });
+
       setLoading(false);
-      setStep("name");
+      onDone(finalName, interests);
     } catch (err) {
       setLoading(false);
       setErrorMsg(err?.message || "Couldn't sign in with Google. Try again.");
     }
   };
 
-  const finish = async (finalInterests) => {
-    setLoading(true);
-    setErrorMsg("");
-    const uid = auth?.currentUser?.uid;
-    if (uid) {
-      try {
-        await saveProfile(uid, { name: name.trim(), interests: finalInterests });
-      } catch (err) {
-        setLoading(false);
-        setErrorMsg(err?.message || "Couldn't save your profile. Try again.");
-        return;
-      }
-    }
-    setLoading(false);
-    onDone(name.trim(), finalInterests);
-  };
-
   return (
     <div className="flex-1 min-h-0 overflow-y-auto bg-bg-sunken">
       <div className="min-h-full w-full flex items-center justify-center p-4 sm:p-8">
-        {/* The card. Two panes, one radius, one shadow. */}
         <div className="w-full max-w-[1040px] bg-bg rounded-[20px] shadow-pop overflow-hidden flex flex-col lg:flex-row">
 
           {/* ---------------- Left: context ---------------- */}
-          <div className="lg:w-[350px] shrink-0 bg-bg-sunken lg:bg-bg border-b lg:border-b-0 lg:border-r border-line
-            p-6 sm:p-8 flex flex-col">
+          <div className="lg:w-[350px] shrink-0 bg-bg-sunken lg:bg-bg border-b lg:border-b-0 lg:border-r border-line p-6 sm:p-8 flex flex-col">
             <div className="flex items-center gap-3">
               <Mark size={36} radius="rounded-[10px]" />
               <span className="text-xl font-bold text-ink tracking-tight">Orbit</span>
@@ -199,22 +247,21 @@ export function Onboarding({ onDone, onGuest }) {
                 title="Made by students"
                 body="Built at MUJ, for MUJ. Tell us what's broken and we'll fix it."
               >
-                <InfoLink href="mailto:atharvat2006@gmail.com?subject=Orbit%20feedback">
+                <a
+                  href="mailto:atharvat2006@gmail.com?subject=Orbit%20feedback"
+                  className="block text-base font-medium text-ink underline underline-offset-[3px] decoration-line hover:decoration-ink transition-colors"
+                >
                   atharvat2006@gmail.com
-                </InfoLink>
+                </a>
               </InfoBlock>
               <InfoBlock
                 title="Your data"
-                body="We store your name and interests. Nothing else, and nothing is sold."
+                body="Nothing is saved until you finish. Nothing is sold, ever."
               >
                 <span className="inline-flex items-center gap-2 text-base font-medium text-ink">
-                  <a href="/privacy" className="underline underline-offset-[3px] decoration-line hover:decoration-ink transition-colors">
-                    Privacy
-                  </a>
+                  <a href="/privacy" className="underline underline-offset-[3px] decoration-line hover:decoration-ink transition-colors">Privacy</a>
                   <span className="text-ink-3">·</span>
-                  <a href="/terms" className="underline underline-offset-[3px] decoration-line hover:decoration-ink transition-colors">
-                    Terms
-                  </a>
+                  <a href="/terms" className="underline underline-offset-[3px] decoration-line hover:decoration-ink transition-colors">Terms</a>
                 </span>
               </InfoBlock>
               <InfoBlock
@@ -224,8 +271,7 @@ export function Onboarding({ onDone, onGuest }) {
               >
                 <button
                   onClick={onGuest}
-                  className="inline-flex items-center gap-1.5 text-base font-semibold text-ink
-                    underline underline-offset-[3px] decoration-line hover:decoration-ink transition-colors"
+                  className="inline-flex items-center gap-1.5 text-base font-semibold text-ink underline underline-offset-[3px] decoration-line hover:decoration-ink transition-colors"
                 >
                   Continue as guest<Icon name="arrow_forward" size={16} />
                 </button>
@@ -246,17 +292,212 @@ export function Onboarding({ onDone, onGuest }) {
           <div className="flex-1 min-w-0 p-6 sm:p-10 lg:p-12 flex flex-col">
             <Mark size={44} />
 
-            {step === "signin" && (
-              <div className="mt-6 animate-rise">
-                <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">
-                  Welcome to Orbit
-                </h1>
+            <div className="mt-8">
+              <Progress index={index} />
+            </div>
+
+            {/* 1 — Name */}
+            {step === "name" && (
+              <form className="animate-rise flex flex-col flex-1"
+                    onSubmit={(e) => { e.preventDefault(); if (name.trim()) go("study"); }}>
+                <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">What should we call you?</h1>
                 <p className="text-md text-ink-2 mt-2 max-w-md">
-                  Sign in with Google — the first sign-in creates your account, so there's nothing separate to register.
+                  This is the name on your posts and in community chats.
                 </p>
 
+                <div className="mt-8 max-w-md">
+                  <label htmlFor="ob-name" className="block text-base font-semibold text-ink mb-2">Display name</label>
+                  <Input
+                    id="ob-name" autoFocus value={name} maxLength={60}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Atharva T"
+                    className="h-12 rounded-full px-5 text-md ring-1 ring-line bg-bg focus:ring-ink border-transparent"
+                  />
+                </div>
+
+                <div className="flex items-center justify-between gap-3 mt-10 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => { setReturning(true); go("signin"); }}
+                    className="text-base font-semibold text-ink-2 hover:text-ink underline underline-offset-[3px] decoration-line hover:decoration-ink transition-colors"
+                  >
+                    Already have an account?
+                  </button>
+                  <Continue type="submit" disabled={!name.trim()} />
+                </div>
+              </form>
+            )}
+
+            {/* 2 — Study */}
+            {step === "study" && (
+              <form className="animate-rise flex flex-col flex-1"
+                    onSubmit={(e) => { e.preventDefault(); if (uniValid) go("interests"); }}>
+                <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">Where do you study?</h1>
+                <p className="text-md text-ink-2 mt-2 max-w-md">
+                  Orbit is built for Manipal University Jaipur, so campus communities are matched to it.
+                </p>
+
+                <div className="mt-8">
+                  <p className="text-base font-semibold text-ink mb-3">University</p>
+                  <div className="flex flex-wrap gap-2.5 max-w-2xl">
+                    {UNIVERSITIES.map((u) => (
+                      <Chip key={u} selected={university === u} onClick={() => setUniversity(u)}>
+                        {university === u && <Icon name="check" size={16} />}
+                        {u}
+                      </Chip>
+                    ))}
+                  </div>
+                  {university === "Other" && (
+                    <div className="mt-3 max-w-md animate-rise">
+                      <Input
+                        autoFocus value={otherUni} maxLength={80}
+                        onChange={(e) => setOtherUni(e.target.value)}
+                        placeholder="Which one?"
+                        className="h-12 rounded-full px-5 text-md ring-1 ring-line bg-bg focus:ring-ink border-transparent"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div className="mt-8">
+                  <p className="text-base font-semibold text-ink mb-1">
+                    Year <span className="font-normal text-ink-2">· optional</span>
+                  </p>
+                  <p className="text-base text-ink-2 mb-3">Helps put you with people at the same stage.</p>
+                  <div className="flex flex-wrap gap-2.5 max-w-2xl">
+                    {YEARS.map((y) => (
+                      <Chip key={y} selected={year === y} onClick={() => setYear(year === y ? "" : y)}>
+                        {y}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between gap-3 mt-10 pt-2">
+                  <GoBack onClick={() => go("name")} />
+                  <Continue type="submit" disabled={!uniValid} />
+                </div>
+              </form>
+            )}
+
+            {/* 3 — Interests */}
+            {step === "interests" && (
+              <div className="animate-rise flex flex-col flex-1">
+                <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">What are you into?</h1>
+                <p className="text-md text-ink-2 mt-2 max-w-lg">
+                  We'll use it to pick which communities show up first. Nothing is hidden from you either way.
+                </p>
+
+                <div className="mt-8">
+                  <div className="flex flex-wrap gap-2.5 max-w-2xl">
+                    {CATEGORIES.map((cat) => {
+                      const on = interests.includes(cat.name);
+                      return (
+                        <Chip key={cat.name} selected={on} onClick={() => toggle(cat.name)}>
+                          <Icon name={cat.msr} size={16} className={on ? "" : cat.tint} />
+                          {cat.name}
+                        </Chip>
+                      );
+                    })}
+                  </div>
+                  <p className="text-base text-ink-2 mt-4">
+                    {interests.length === 0
+                      ? "Pick as many as you like."
+                      : <><span className="font-semibold text-ink tabular-nums">{interests.length}</span> selected</>}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between gap-3 mt-10 pt-2">
+                  <GoBack onClick={() => go("study")} />
+                  <div className="flex items-center gap-2">
+                    <SkipLink onClick={() => { setInterests([]); go("phone"); }} />
+                    <Continue onClick={() => go("phone")} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 4 — Phone (optional) */}
+            {step === "phone" && (
+              <form className="animate-rise flex flex-col flex-1"
+                    onSubmit={(e) => { e.preventDefault(); if (phoneValid) go("signin"); }}>
+                <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">
+                  Add a phone number?
+                </h1>
+                <p className="text-md text-ink-2 mt-2 max-w-md">
+                  Entirely optional. It's only used if a community organiser needs to reach you about
+                  an event you registered for — it is never shown on your profile.
+                </p>
+
+                <div className="mt-8 max-w-md">
+                  <label htmlFor="ob-phone" className="block text-base font-semibold text-ink mb-2">
+                    Phone <span className="font-normal text-ink-2">· optional</span>
+                  </label>
+                  <Input
+                    id="ob-phone" autoFocus type="tel" inputMode="tel" value={phone} maxLength={20}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className={cx(
+                      "h-12 rounded-full px-5 text-md ring-1 bg-bg border-transparent",
+                      phoneValid ? "ring-line focus:ring-ink" : "ring-danger focus:ring-danger"
+                    )}
+                  />
+                  {!phoneValid && (
+                    <p className="text-base text-danger mt-2">That doesn't look like a phone number.</p>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between gap-3 mt-10 pt-2">
+                  <GoBack onClick={() => go("interests")} />
+                  <div className="flex items-center gap-2">
+                    <SkipLink onClick={() => { setPhone(""); go("signin"); }} />
+                    <Continue type="submit" disabled={!phoneValid} />
+                  </div>
+                </div>
+              </form>
+            )}
+
+            {/* 5 — Sign in */}
+            {step === "signin" && (
+              <div className="animate-rise flex flex-col flex-1">
+                <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">
+                  {returning ? "Welcome back" : "Last thing — sign in"}
+                </h1>
+                <p className="text-md text-ink-2 mt-2 max-w-md">
+                  {returning
+                    ? "Sign in with Google and we'll pick up where you left off."
+                    : "Sign in with Google to save your profile. Nothing has been stored until now."}
+                </p>
+
+                {/* What's about to be saved. Shown because this is the moment
+                    it actually gets written, and it's the last chance to go
+                    back and change any of it. */}
+                {!returning && (
+                  <dl className="mt-7 max-w-md rounded-[14px] ring-1 ring-line divide-y divide-line">
+                    {[
+                      { k: "Name", v: name.trim() || "—", step: "name" },
+                      { k: "University", v: resolvedUni || "—", step: "study" },
+                      { k: "Year", v: year || "Not set", step: "study" },
+                      { k: "Interests", v: interests.length ? `${interests.length} selected` : "None", step: "interests" },
+                      { k: "Phone", v: phone.trim() || "Not set", step: "phone" },
+                    ].map((row) => (
+                      <div key={row.k} className="flex items-center gap-3 px-4 py-3">
+                        <dt className="text-base text-ink-2 w-24 shrink-0">{row.k}</dt>
+                        <dd className="text-base font-medium text-ink flex-1 min-w-0 truncate">{row.v}</dd>
+                        <button
+                          type="button"
+                          onClick={() => go(row.step)}
+                          className="text-base font-semibold text-ink-2 hover:text-ink shrink-0"
+                        >
+                          Edit
+                        </button>
+                      </div>
+                    ))}
+                  </dl>
+                )}
+
                 <button
-                  onClick={handleGoogle}
+                  onClick={finish}
                   disabled={loading}
                   className="mt-8 inline-flex items-center justify-center gap-3 h-12 px-6 rounded-full
                     text-base font-semibold text-ink ring-1 ring-line bg-bg
@@ -271,99 +512,15 @@ export function Onboarding({ onDone, onGuest }) {
 
                 {errorMsg && <p className="text-base text-danger mt-4">{errorMsg}</p>}
 
-                <p className="text-base text-ink-2 mt-8 max-w-md leading-relaxed">
+                <p className="text-base text-ink-2 mt-7 max-w-md leading-relaxed">
                   By continuing you agree to our{" "}
                   <a href="/terms" className="text-ink font-medium underline underline-offset-[3px] decoration-line hover:decoration-ink">Terms</a>
                   {" "}and{" "}
                   <a href="/privacy" className="text-ink font-medium underline underline-offset-[3px] decoration-line hover:decoration-ink">Privacy Policy</a>.
                 </p>
-              </div>
-            )}
 
-            {step === "name" && (
-              <form
-                className="mt-6 animate-rise flex flex-col flex-1"
-                onSubmit={(e) => { e.preventDefault(); if (name.trim()) setStep("interests"); }}
-              >
-                <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">
-                  What should we call you?
-                </h1>
-                <p className="text-md text-ink-2 mt-2 max-w-md">
-                  This is the name on your posts and in community chats.
-                </p>
-
-                <div className="mt-8 max-w-md">
-                  <label htmlFor="ob-name" className="block text-base font-semibold text-ink mb-2">
-                    Display name
-                  </label>
-                  <Input
-                    id="ob-name"
-                    autoFocus
-                    value={name}
-                    maxLength={60}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. Atharva T"
-                    className="h-12 rounded-full px-5 text-md ring-1 ring-line bg-bg focus:ring-ink border-transparent"
-                  />
-                  <p className="text-base text-ink-2 mt-2">You can change this later in Settings.</p>
-                </div>
-
-                {errorMsg && <p className="text-base text-danger mt-4">{errorMsg}</p>}
-
-                <div className="flex items-center justify-between gap-3 mt-10 pt-2">
-                  <GoBack onClick={() => setStep("signin")} />
-                  <Continue type="submit" disabled={!name.trim()} />
-                </div>
-              </form>
-            )}
-
-            {step === "interests" && (
-              <div className="mt-6 animate-rise flex flex-col flex-1">
-                <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">
-                  Can you tell us what you're into?
-                </h1>
-                <p className="text-md text-ink-2 mt-2 max-w-lg">
-                  We'll use it to pick which communities show up first. Nothing is hidden from you either way.
-                </p>
-
-                <div className="mt-9">
-                  <p className="text-base font-semibold text-ink mb-3">What are you interested in?</p>
-                  <div className="flex flex-wrap gap-2.5 max-w-2xl">
-                    {CATEGORIES.map((cat) => {
-                      const on = interests.includes(cat.name);
-                      return (
-                        <Chip key={cat.name} selected={on} onClick={() => toggle(cat.name)}>
-                          <Icon name={cat.msr} size={16} className={on ? "" : cat.tint} />
-                          {cat.name}
-                        </Chip>
-                      );
-                    })}
-                  </div>
-                  <p className="text-base text-ink-2 mt-4">
-                    {interests.length === 0
-                      ? "Pick as many as you like — or skip and see everything."
-                      : <><span className="font-semibold text-ink tabular-nums">{interests.length}</span> selected</>}
-                  </p>
-                </div>
-
-                {errorMsg && <p className="text-base text-danger mt-4">{errorMsg}</p>}
-
-                <div className="flex items-center justify-between gap-3 mt-10 pt-2">
-                  <GoBack onClick={() => setStep("name")} />
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => finish([])}
-                      disabled={loading}
-                      className="h-11 px-4 rounded-full text-base font-semibold text-ink-2 hover:text-ink
-                        hover:bg-bg-sunken transition-colors disabled:opacity-40"
-                    >
-                      Skip
-                    </button>
-                    <Continue onClick={() => finish(interests)} loading={loading}>
-                      {interests.length ? "Enter Orbit" : "Continue"}
-                    </Continue>
-                  </div>
+                <div className="mt-8 pt-2">
+                  <GoBack onClick={() => { if (returning) { setReturning(false); go("name"); } else go("phone"); }} />
                 </div>
               </div>
             )}
