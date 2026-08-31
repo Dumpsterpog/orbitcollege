@@ -159,3 +159,24 @@
 .media {
   background: rgb(var(--bg-sunken));
 }
+
+/* Card surface. One definition so every card in the app shares the same
+   edge, radius and lift — the thing that stops a screen of containers from
+   looking like it was assembled by accident. The ring (not a border) means
+   the edge does not take part in layout, so a card can sit flush against a
+   gradient band without a seam. */
+.card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: rgb(var(--bg));
+  box-shadow: 0 0 0 1px rgb(var(--line));
+  transition: box-shadow .18s ease, transform .18s ease;
+}
+.card:hover {
+  box-shadow: 0 0 0 1px rgb(var(--line-strong)), 0 6px 20px rgb(0 0 0 / .07);
+  transform: translateY(-2px);
+}
+.dark .card:hover {
+  box-shadow: 0 0 0 1px rgb(var(--line-strong)), 0 6px 24px rgb(0 0 0 / .5);
+}

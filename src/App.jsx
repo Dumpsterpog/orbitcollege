@@ -806,7 +806,6 @@ export default function App() {
           onGoToEvents={() => goToTab("events")}
           onGoToTea={openTea}
           user={user}
-          onOpenProfile={() => goToTab("profile")}
           onGoToExplore={() => goToTab("explore")}
         />
       ) : activeTab === "explore" ? (

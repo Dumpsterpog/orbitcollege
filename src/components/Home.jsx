@@ -33,25 +33,29 @@ const greeting = () => {
   return "Good evening";
 };
 
-// Category hue → soft gradient wash, as whole class strings so Tailwind's
-// scanner can find them.
-const WASH = {
-  "text-c-blue": "from-c-blue/20 to-c-blue/5",
-  "text-c-violet": "from-c-violet/20 to-c-violet/5",
-  "text-c-pink": "from-c-pink/20 to-c-pink/5",
-  "text-c-orange": "from-c-orange/20 to-c-orange/5",
-  "text-c-amber": "from-c-amber/20 to-c-amber/5",
-  "text-c-green": "from-c-green/20 to-c-green/5",
-  "text-c-teal": "from-c-teal/20 to-c-teal/5",
-  "text-c-red": "from-c-red/20 to-c-red/5",
+// Per-category mark tint, as whole class strings so Tailwind's scanner sees
+// them. Colour is confined to the mark and the metadata glyphs — the card
+// surface itself stays neutral. A tinted gradient banner across the top of
+// every card was the thing that made the grid read as generated: it put the
+// loudest element on the least informative part of the card.
+const SKIN = {
+  "text-c-blue":   { mark: "bg-c-blue/10" },
+  "text-c-violet": { mark: "bg-c-violet/10" },
+  "text-c-pink":   { mark: "bg-c-pink/10" },
+  "text-c-orange": { mark: "bg-c-orange/10" },
+  "text-c-amber":  { mark: "bg-c-amber/10" },
+  "text-c-green":  { mark: "bg-c-green/10" },
+  "text-c-teal":   { mark: "bg-c-teal/10" },
+  "text-c-red":    { mark: "bg-c-red/10" },
 };
+const skinOf = (tint) => SKIN[tint] || SKIN["text-c-blue"];
 
-function CommunityMark({ c, size = 44 }) {
+function CommunityMark({ c, size = 44, ring = true }) {
   const cat = CATEGORIES.find((x) => x.name === c.category);
   if (c.avatarUrl) return <Avatar src={c.avatarUrl} name={c.name} size={size} />;
   return (
     <span
-      className={cx("grid place-items-center rounded-full shrink-0 bg-gradient-to-br ring-1 ring-line", WASH[cat?.tint] || WASH["text-c-blue"])}
+      className={cx("grid place-items-center rounded-full shrink-0", skinOf(cat?.tint).mark, ring && "ring-1 ring-line")}
       style={{ width: size, height: size }}
     >
       <Icon name={cat?.msr || "groups"} size={Math.round(size * 0.46)} className={cat?.tint} />
@@ -64,50 +68,78 @@ function CommunityMark({ c, size = 44 }) {
 // A join target you can actually read: mark, name, one line of description,
 // members, and the action. Two across, so the primary column carries the
 // weight instead of the rail.
-function JoinRow({ c, joined, onOpen, onJoin }) {
+function JoinCard({ c, joined, onOpen, onJoin }) {
+  const cat = CATEGORIES.find((x) => x.name === c.category);
   return (
-    <div className="flex items-center gap-3.5 py-3.5 border-b border-line last:border-0">
+    <article className="card p-4 flex gap-3.5">
       <button onClick={() => onOpen(c)} className="shrink-0">
-        <CommunityMark c={c} size={48} />
+        <CommunityMark c={c} size={44} />
       </button>
-      <button onClick={() => onOpen(c)} className="min-w-0 flex-1 text-left">
-        <span className="flex items-center gap-1.5">
-          <span className="text-base font-semibold text-ink truncate hover:opacity-70">
+
+      <div className="min-w-0 flex-1 flex flex-col">
+        <button onClick={() => onOpen(c)} className="text-left min-w-0">
+          <h3 className="text-base font-bold text-ink truncate hover:opacity-70 transition-opacity">
             {c.name.split(" — ")[0]}
+            {c.official && <Icon name="verified" size={15} className="text-c-blue inline-block ml-1 -mt-0.5" />}
+          </h3>
+        </button>
+
+        <p className="text-xs text-ink-2 leading-normal line-clamp-2 mt-1">{c.desc}</p>
+
+        <div className="flex items-center justify-between gap-2 mt-3">
+          <span className="inline-flex items-center gap-1.5 min-w-0 text-xs">
+            <Icon name={cat?.msr || "groups"} size={14} className={cat?.tint} />
+            <span className={cx("font-semibold truncate", cat?.tint)}>{c.category}</span>
+            <span className="text-ink-3">·</span>
+            <span className="text-ink-2 tabular-nums shrink-0">{compact(c.members)}</span>
           </span>
-          {c.official && <Icon name="verified" size={15} className="text-c-blue shrink-0" />}
-        </span>
-        <span className="block text-xs text-ink-2 truncate mt-0.5">{c.desc}</span>
-        <span className="block text-2xs text-ink-3 mt-1">
-          {compact(c.members)} members · {c.category}
-        </span>
-      </button>
-      <Button
-        variant={joined ? "outline" : "primary"}
-        size="sm"
-        onClick={() => onJoin(c.id)}
-        className="shrink-0"
-      >
-        {joined ? "Joined" : "Join"}
-      </Button>
-    </div>
+          <Button
+            variant={joined ? "outline" : "primary"}
+            size="sm"
+            onClick={() => onJoin(c.id)}
+            className="shrink-0"
+          >
+            {joined ? "Joined" : "Join"}
+          </Button>
+        </div>
+      </div>
+    </article>
   );
 }
 
-function EventRow({ e, onOpen }) {
+function EventCard({ e, onOpen }) {
   const cat = CATEGORIES.find((x) => x.name === e.category);
-  const [head, ...rest] = String(e.when || "").split(/[\s,]+/).filter(Boolean);
+  const parts = String(e.when || "").split(/[\s,]+/).filter(Boolean);
+  const day = parts[0];
+  const num = parts[1];
   return (
-    <button onClick={onOpen} className="w-full flex items-center gap-3.5 py-3.5 border-b border-line last:border-0 text-left group">
-      <span className="w-12 shrink-0 text-center leading-none">
-        <span className={cx("block text-lg font-bold tabular-nums", cat?.tint || "text-c-orange")}>{head || "TBA"}</span>
-        <span className="block text-2xs font-semibold text-ink-3 uppercase mt-1 truncate">{rest.slice(0, 1).join(" ")}</span>
+    <button onClick={onOpen} className="card group w-full p-4 flex items-center gap-4 text-left">
+      {/* Date. Plain type on the card surface — a tinted well here was doing
+          nothing except adding a second background colour to the row. */}
+      <span className="w-11 shrink-0 text-center leading-none">
+        <span className="block text-2xs font-semibold text-ink-2 uppercase tracking-wide">{day || "TBA"}</span>
+        <span className="block text-xl font-bold text-ink tabular-nums mt-1">{num || "—"}</span>
       </span>
+
+      <span className="w-px self-stretch bg-line shrink-0" />
+
       <span className="min-w-0 flex-1">
-        <span className="block text-base font-semibold text-ink truncate group-hover:opacity-70">{e.title}</span>
-        <span className="block text-xs text-ink-2 truncate mt-0.5">{e.when} · {e.where}</span>
+        <span className="block text-base font-bold text-ink truncate group-hover:opacity-70 transition-opacity">
+          {e.title}
+        </span>
+        <span className="flex items-center gap-3 mt-1.5 text-xs text-ink-2">
+          <span className="inline-flex items-center gap-1 min-w-0">
+            <Icon name={cat?.msr || "confirmation_number"} size={13} className={cat?.tint} />
+            <span className={cx("truncate font-semibold", cat?.tint)}>{e.category}</span>
+          </span>
+          <span className="inline-flex items-center gap-1 min-w-0">
+            <Icon name="location_on" size={13} className="text-c-pink" />
+            <span className="truncate">{e.where}</span>
+          </span>
+        </span>
       </span>
-      <Icon name="chevron_right" size={20} className="text-ink-3 shrink-0" />
+
+      <Icon name="chevron_right" size={20} className="text-ink-3 group-hover:text-ink transition-colors shrink-0" />
     </button>
   );
 }
@@ -232,28 +264,13 @@ function Post({ post, community, liked, onLike, onOpen }) {
   );
 }
 
-/* ----------------------------------------------------------------- Rail */
-
-function Metrics({ items }) {
-  return (
-    <div className="flex items-start">
-      {items.map((m, i) => (
-        <div key={m.label} className={cx("flex-1 min-w-0", i > 0 && "pl-4")}>
-          <p className={cx("text-2xl font-bold tabular-nums leading-none", m.tint)}>{m.value}</p>
-          <p className="text-2xs font-semibold text-ink-2 uppercase tracking-wide mt-1.5 truncate">{m.label}</p>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 /* --------------------------------------------------------------- Screen */
 
 export function HomeScreen({
   communities, joinedIds, onOpen, onCreateClick, interests,
   feedPosts, feedSparkIds, onSparkPost, onAdClick,
   events = [], userName, user, onJoinToggle, onGoToEvents, onGoToTea,
-  onOpenProfile, onGoToExplore,
+  onGoToExplore,
 }) {
   const [loading, setLoading] = useState(true);
   useEffect(() => {
@@ -281,27 +298,11 @@ export function HomeScreen({
   // apology for having nothing in it.
   const discoverMode = !loading && posts.length === 0;
 
+  // Identity and the count strip both live on the profile page now. A rail
+  // that opens with "who you are" is telling you something you already know;
+  // it should only carry what is elsewhere in the product.
   const rail = (
     <div className="sticky top-8 space-y-7">
-      <button onClick={onOpenProfile} className="flex items-center gap-3 w-full text-left group">
-        <Avatar name={userName || "Guest"} size={44} ring />
-        <span className="min-w-0 leading-tight">
-          <span className="block text-base font-semibold text-ink truncate group-hover:opacity-70">
-            {userName || "Guest"}
-          </span>
-          <span className="block text-xs text-ink-2 truncate">
-            {isGuest ? "Browsing as a guest" : "View profile"}
-          </span>
-        </span>
-      </button>
-
-      <Metrics
-        items={[
-          { label: "Communities", value: joined.length, tint: "text-c-violet" },
-          { label: "Events", value: events.length, tint: "text-c-orange" },
-          { label: "Posts", value: posts.length, tint: "text-c-blue" },
-        ]}
-      />
 
       {/* In discover mode the main column already lists suggestions, so the
           rail doesn't repeat them. */}
@@ -347,7 +348,11 @@ export function HomeScreen({
 
   return (
     <Screen>
-      <div className={cx("mx-auto flex gap-8 xl:gap-14 px-4 sm:px-6 lg:px-10", discoverMode ? "max-w-shell" : "max-w-[1100px]")}>
+      {/* Discover runs full-bleed — it's a browsing surface, so holding it to
+          1160px on a wide monitor wasted most of the screen. The feed keeps
+          its reading measure (a 1600px-wide line of caption text is
+          unreadable) but the page around it is no longer capped. */}
+      <div className={cx("w-full flex gap-8 xl:gap-14 px-5 sm:px-8 lg:px-12 xl:px-16", !discoverMode && "max-w-[1100px] mx-auto")}>
         <div className={cx("w-full min-w-0 pb-16", discoverMode ? "" : "max-w-feed mx-auto xl:mx-0")}>
 
           {/* Greeting. Present in both states — it is the thing that tells you
@@ -411,7 +416,7 @@ export function HomeScreen({
 
               {suggested.length > 0 && (
                 <section>
-                  <div className="flex items-baseline justify-between mb-1 pb-2 border-b-2 border-ink">
+                  <div className="flex items-baseline justify-between">
                     <h2 className="text-lg font-bold text-ink">
                       {interests?.length ? "Picked for your interests" : "Popular right now"}
                     </h2>
@@ -419,9 +424,9 @@ export function HomeScreen({
                       Browse all
                     </button>
                   </div>
-                  <div className="grid md:grid-cols-2 md:gap-x-10">
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-4 mt-4">
                     {suggested.slice(0, 8).map((c) => (
-                      <JoinRow
+                      <JoinCard
                         key={c.id}
                         c={c}
                         joined={joinedIds.includes(c.id)}
@@ -435,15 +440,15 @@ export function HomeScreen({
 
               {events.length > 0 && (
                 <section>
-                  <div className="flex items-baseline justify-between mb-1 pb-2 border-b-2 border-ink">
+                  <div className="flex items-baseline justify-between">
                     <h2 className="text-lg font-bold text-ink">Happening soon</h2>
                     <button onClick={onGoToEvents} className="text-xs font-semibold text-accent hover:opacity-70 shrink-0">
                       All events
                     </button>
                   </div>
-                  <div className="grid md:grid-cols-2 md:gap-x-10">
+                  <div className="grid md:grid-cols-2 2xl:grid-cols-3 gap-3 mt-4">
                     {events.slice(0, 6).map((e) => (
-                      <EventRow key={e.id} e={e} onOpen={onGoToEvents} />
+                      <EventCard key={e.id} e={e} onOpen={onGoToEvents} />
                     ))}
                   </div>
                 </section>
