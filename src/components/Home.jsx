@@ -6,40 +6,39 @@ import { Screen, Modal } from "./ui/Layout.jsx";
 
 // Home.
 //
-// Rebuilt after a design review that found the previous version was showing
-// the same two lists twice on one screen, and dressing communities up in the
-// icon-in-a-tinted-circle + coloured-chip + full-width-fill pattern that any
-// generator produces. Four decisions came out of it:
+// The card grid read as generated, and the plain table that replaced it read
+// as unfinished. This is the third pass and it takes the useful half of each:
+// the ranked-list structure, given editorial weight.
 //
-//   Communities are a roster, not a gallery. A table with a key row, names
-//   at reading size and right-aligned monospace counts. No glyph, no chip, no
-//   filled button per row. Eight fit where five cards did.
+//   It's a chart. Communities are numbered 01..08 in large light monospace.
+//   Ranking is a real editorial form with a long history, it uses data that
+//   already exists (trend score), and it gives the eye something to travel
+//   down. A numeral is not an icon-in-a-circle.
 //
-//   Nothing appears twice. Discovery lives in the main column when the feed
-//   is empty, and in the rail when it isn't. Never both.
+//   The top entry gets a lede. Rank 1 shows its description at reading size;
+//   the rest are single lines. That asymmetry is what a template cannot
+//   produce, and it stops the section from being a flat wall of rows.
 //
-//   Two states, two layouts. Nothing to read means one 720px column and no
-//   rail — a rail of secondary content beside a column of secondary content
-//   has no primary. A populated feed means the two-column grid.
+//   The empty state is a two-column page, not a column of leftovers.
+//   Communities on the left, what's on this week down the right. Different
+//   content in each, so nothing is listed twice.
 //
-//   Colour means something or it goes. Decorative tints on headings, on post
-//   actions and on stat numbers are gone; what's left is the category label
-//   and the spark state.
+//   Colour stays scarce and meaningful: the rank numeral of anything active
+//   in the last half hour, and the spark you pressed. Nothing else.
 
 const compact = (n) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : `${n}`);
 
-// Community names carry a human-written subtitle after an em dash
-// ("DSA Grinders — 6AM Batch"). It was being thrown away at five call sites;
-// it's free copy, so it gets shown.
+// Names carry a human-written subtitle after an em dash ("DSA Grinders — 6AM
+// Batch"). Free copy, so it gets used rather than discarded.
 const splitName = (name = "") => {
   const [head, ...rest] = name.split(" — ");
   return { head, tail: rest.join(" — ") || null };
 };
 
 const since = (m) =>
-  m == null ? null : m < 60 ? `${m}m` : m < 1440 ? `${Math.floor(m / 60)}h` : `${Math.floor(m / 1440)}d`;
+  m == null ? null : m < 60 ? `${m}m ago` : m < 1440 ? `${Math.floor(m / 60)}h ago` : `${Math.floor(m / 1440)}d ago`;
 
-const REAL_DESC = (d) => d && d !== "No description yet." && d.trim().length > 12;
+const hasDesc = (d) => d && d !== "No description yet." && d.trim().length > 12;
 
 /* ------------------------------------------------------------ Skeletons */
 
@@ -62,124 +61,168 @@ function PostSkeleton() {
   );
 }
 
-/* -------------------------------------------------------------- Roster */
-
-// The replacement for the community card grid. A key row plus hairline-
-// separated lines: name and subtitle on the left, member count and last
-// activity right-aligned in monospace, Join as a quiet outline pill. The one
-// piece of colour is a left edge bar on rows active in the last half hour.
-function Roster({ communities, joinedIds, onOpen, onJoin, showKey = true }) {
-  // Counts are only worth a column once they mean something. On a young app
-  // a column of 1 / 3 / 6 is noise, so the emphasis flips to recency.
-  const peak = Math.max(...communities.map((c) => c.members || 0), 0);
-  const countsMatter = peak >= 25;
-
+function RankSkeleton({ lede }) {
   return (
-    <div>
-      {showKey && (
-        <div className="grid grid-cols-[1fr_84px_76px] items-baseline gap-3 px-1 pb-2 border-b border-line">
-          <span className="text-2xs font-semibold uppercase tracking-[0.09em] text-ink-3">Community</span>
-          <span className="text-2xs font-semibold uppercase tracking-[0.09em] text-ink-3 text-right">
-            {countsMatter ? "Members" : "Active"}
-          </span>
-          <span />
-        </div>
-      )}
-
-      <div className="divide-y divide-line">
-        {communities.map((c) => {
-          const { head, tail } = splitName(c.name);
-          const joined = joinedIds.includes(c.id);
-          const live = c.lastActive <= 30;
-          const sub = tail || (REAL_DESC(c.desc) ? c.desc : c.creator ? `Started by ${c.creator}` : null);
-
-          return (
-            <div
-              key={c.id}
-              className="relative grid grid-cols-[1fr_84px_76px] items-center gap-3 py-3 px-1 group"
-            >
-              {live && <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-r-full bg-accent" />}
-
-              <button onClick={() => onOpen(c)} className="min-w-0 text-left">
-                <span className="block text-md font-semibold text-ink truncate leading-tight group-hover:opacity-70 transition-opacity">
-                  {head}
-                </span>
-                <span className="flex items-center mt-1 min-w-0 text-2xs">
-                  <span className="uppercase tracking-[0.07em] font-semibold text-ink-3 shrink-0">
-                    {c.category}
-                  </span>
-                  {c.official && (
-                    <>
-                      <span className="inline-block w-px h-2.5 bg-line mx-2 shrink-0" />
-                      <span className="uppercase tracking-[0.1em] font-semibold text-ink-3 shrink-0">Official</span>
-                    </>
-                  )}
-                  {sub && (
-                    <>
-                      <span className="inline-block w-px h-2.5 bg-line mx-2 shrink-0" />
-                      <span className="text-ink-2 truncate">{sub}</span>
-                    </>
-                  )}
-                </span>
-              </button>
-
-              <span className="text-right leading-tight">
-                <span className="block font-mono text-sm tabular-nums text-ink">
-                  {countsMatter ? (c.members || 0).toLocaleString() : since(c.lastActive)}
-                </span>
-                <span className="block font-mono text-2xs text-ink-3">
-                  {countsMatter ? since(c.lastActive) : `${c.members || 0} in`}
-                </span>
-              </span>
-
-              <Button
-                variant={joined ? "outline" : "outline"}
-                size="xs"
-                onClick={() => onJoin(c.id)}
-                className="w-full"
-                disabled={joined}
-              >
-                {joined ? "Joined" : "Join"}
-              </Button>
-            </div>
-          );
-        })}
-      </div>
+    <div className={cx("flex items-start gap-4 animate-pulse", lede ? "py-5" : "py-3.5")}>
+      <span className="w-8 h-6 rounded bg-bg-sunken shrink-0" />
+      <span className="min-w-0 flex-1 space-y-2">
+        <span className="block h-4 w-48 rounded-full bg-bg-sunken" />
+        <span className="block h-3 w-32 rounded-full bg-bg-sunken" />
+        {lede && <span className="block h-3 w-full rounded-full bg-bg-sunken" />}
+      </span>
+      <span className="h-7 w-16 rounded-full bg-bg-sunken shrink-0" />
     </div>
   );
 }
 
-/* ------------------------------------------------------------ Event list */
+/* ------------------------------------------------------------ Rank list */
 
-function EventList({ events, onRegister, onOpen }) {
+// One entry. `lede` gives rank 1 the description and a larger name, which is
+// what turns a list into a page with a top.
+function RankRow({ c, rank, joined, onOpen, onJoin, lede }) {
+  const { head, tail } = splitName(c.name);
+  const live = c.lastActive <= 30;
+  const sub = tail || (c.creator ? `Started by ${c.creator}` : null);
+
   return (
-    <div className="divide-y divide-line">
-      {events.map((e) => {
-        const [head, ...rest] = String(e.when || "").split(/[\s,]+/).filter(Boolean);
-        return (
-          <div key={e.id} className="flex items-center gap-4 py-3 px-1 group">
-            <span className="w-12 shrink-0 text-center leading-none">
-              <span className="block font-mono text-base font-semibold tabular-nums text-ink">{head || "TBA"}</span>
-              <span className="block text-2xs font-semibold uppercase tracking-wide text-ink-3 mt-1 truncate">
-                {rest.slice(0, 1).join(" ")}
-              </span>
-            </span>
-            <button onClick={onOpen} className="min-w-0 flex-1 text-left">
-              <span className="block text-md font-semibold text-ink truncate leading-tight group-hover:opacity-70 transition-opacity">
-                {e.title}
-              </span>
-              <span className="block text-2xs text-ink-2 truncate mt-1">
-                <span className="uppercase tracking-[0.07em] font-semibold text-ink-3">{e.category}</span>
-                <span className="inline-block w-px h-2.5 bg-line mx-2 align-middle" />
-                {e.where}
-              </span>
-            </button>
-            <Button variant="outline" size="xs" onClick={() => onRegister?.(e)} className="shrink-0">
-              Register
-            </Button>
-          </div>
-        );
-      })}
+    <div
+      className={cx(
+        "group flex items-start gap-4 border-b border-line last:border-0",
+        lede ? "py-5" : "py-3.5"
+      )}
+    >
+      {/* The numeral. Light, monospace, tabular so the column stays true. */}
+      <span
+        className={cx(
+          "font-mono tabular-nums shrink-0 leading-none pt-0.5 select-none",
+          lede ? "text-2xl" : "text-lg",
+          live ? "text-accent" : "text-ink-3"
+        )}
+        style={{ width: lede ? 40 : 32 }}
+      >
+        {String(rank).padStart(2, "0")}
+      </span>
+
+      <div className="min-w-0 flex-1">
+        <button onClick={() => onOpen(c)} className="text-left block w-full min-w-0">
+          <span
+            className={cx(
+              "block font-bold text-ink leading-snug group-hover:opacity-70 transition-opacity",
+              lede ? "text-xl" : "text-md truncate"
+            )}
+          >
+            {head}
+          </span>
+        </button>
+
+        <div className="flex items-center flex-wrap gap-x-2 mt-1 text-2xs">
+          <span className="uppercase tracking-[0.08em] font-semibold text-ink-3">{c.category}</span>
+          {c.official && (
+            <>
+              <span className="inline-block w-px h-2.5 bg-line" />
+              <span className="uppercase tracking-[0.1em] font-semibold text-ink-3">Official</span>
+            </>
+          )}
+          <span className="inline-block w-px h-2.5 bg-line" />
+          <span className="font-mono tabular-nums text-ink-2">{compact(c.members || 0)} members</span>
+          {live && (
+            <>
+              <span className="inline-block w-px h-2.5 bg-line" />
+              <span className="font-semibold text-accent">Active now</span>
+            </>
+          )}
+        </div>
+
+        {lede && hasDesc(c.desc) && (
+          <p className="text-base text-ink-2 leading-relaxed mt-2.5 max-w-[52ch] line-clamp-2">{c.desc}</p>
+        )}
+        {!lede && sub && <p className="text-xs text-ink-2 truncate mt-1">{sub}</p>}
+      </div>
+
+      <Button
+        variant="outline"
+        size={lede ? "sm" : "xs"}
+        onClick={() => onJoin(c.id)}
+        disabled={joined}
+        className="shrink-0 mt-0.5"
+      >
+        {joined ? "Joined" : "Join"}
+      </Button>
+    </div>
+  );
+}
+
+function RankList({ communities, joinedIds, onOpen, onJoin, lede = true }) {
+  return (
+    <div>
+      {communities.map((c, i) => (
+        <RankRow
+          key={c.id}
+          c={c}
+          rank={i + 1}
+          joined={joinedIds.includes(c.id)}
+          onOpen={onOpen}
+          onJoin={onJoin}
+          lede={lede && i === 0}
+        />
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------- Section */
+
+// One heading treatment, used everywhere. A rule under the title gives each
+// section a top edge without wrapping it in a box.
+function SectionHead({ title, count, action, onAction, actionLabel }) {
+  return (
+    <div className="flex items-baseline gap-3 pb-2.5 mb-1 border-b-2 border-ink">
+      <h2 className="text-base font-bold text-ink">{title}</h2>
+      {count != null && <span className="font-mono text-xs tabular-nums text-ink-3">{count}</span>}
+      {actionLabel && (
+        <button onClick={onAction} className="ml-auto text-xs font-semibold text-accent hover:opacity-70 shrink-0">
+          {actionLabel}
+        </button>
+      )}
+      {action}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------- Event list */
+
+function EventRow({ e, onRegister, onOpen, compactMode }) {
+  const [head, ...rest] = String(e.when || "").split(/[\s,]+/).filter(Boolean);
+  return (
+    <div className="group flex items-start gap-3.5 py-3.5 border-b border-line last:border-0">
+      <span className="shrink-0 text-center leading-none pt-0.5" style={{ width: 44 }}>
+        <span className="block font-mono text-lg font-semibold tabular-nums text-ink">{head || "TBA"}</span>
+        <span className="block text-2xs font-semibold uppercase tracking-wide text-ink-3 mt-1 truncate">
+          {rest.slice(0, 1).join(" ")}
+        </span>
+      </span>
+      <div className="min-w-0 flex-1">
+        <button onClick={onOpen} className="text-left block w-full min-w-0">
+          <span className="block text-md font-semibold text-ink leading-snug group-hover:opacity-70 transition-opacity line-clamp-2">
+            {e.title}
+          </span>
+        </button>
+        <p className="text-2xs text-ink-2 truncate mt-1">
+          <span className="uppercase tracking-[0.08em] font-semibold text-ink-3">{e.category}</span>
+          <span className="inline-block w-px h-2.5 bg-line mx-2 align-middle" />
+          {e.where}
+        </p>
+        {!compactMode && (
+          <Button variant="outline" size="xs" onClick={() => onRegister?.(e)} className="mt-2.5">
+            Register
+          </Button>
+        )}
+      </div>
+      {compactMode && (
+        <Button variant="outline" size="xs" onClick={() => onRegister?.(e)} className="shrink-0 mt-0.5">
+          Register
+        </Button>
+      )}
     </div>
   );
 }
@@ -197,9 +240,7 @@ function ComposerBar({ user, onOpen }) {
       >
         {`What's happening, ${(user?.name || "").split(" ")[0] || "there"}?`}
       </button>
-      <Button tone="blue" size="sm" onClick={onOpen} className="shrink-0 hidden sm:inline-flex">
-        Post
-      </Button>
+      <Button tone="blue" size="sm" onClick={onOpen} className="shrink-0 hidden sm:inline-flex">Post</Button>
     </div>
   );
 }
@@ -272,9 +313,7 @@ function Post({ post, community, liked, onLike, onOpen }) {
     <article className="card card-interactive p-4">
       <div className="flex items-center gap-3">
         <button onClick={() => community && onOpen(community)} className="shrink-0">
-          {community?.avatarUrl
-            ? <Avatar src={community.avatarUrl} name={head} size={40} />
-            : <Avatar name={head} size={40} />}
+          <Avatar src={community?.avatarUrl} name={head} size={40} />
         </button>
         <div className="min-w-0 flex-1 leading-tight">
           <button
@@ -308,8 +347,6 @@ function Post({ post, community, liked, onLike, onOpen }) {
           className={cx(
             "inline-flex items-center gap-2 h-9 px-3 rounded-full text-base font-semibold transition-colors",
             "hover:bg-black/[0.05] dark:hover:bg-white/[0.08] active:scale-[0.97]",
-            // The only coloured icon in the bar, so the colour means "you did
-            // this" rather than decorating a row of equal-rank actions.
             liked ? "text-c-orange" : "text-ink-2"
           )}
         >
@@ -343,9 +380,6 @@ export function HomeScreen({
   userName, user, onJoinToggle, onGoToExplore,
   events = [], registeredEventIds = [], onRegisterEvent, onGoToEvents,
 }) {
-  // Only fake a load when there is genuinely nothing in memory. Firing it on
-  // every mount meant tabbing back to Home flashed skeletons over data that
-  // was already there, then collapsed the layout by ~1000px.
   const [loading, setLoading] = useState(() => !(feedPosts || []).length);
   const [composing, setComposing] = useState(false);
   const [scope, setScope] = useState("all");
@@ -383,6 +417,7 @@ export function HomeScreen({
     [allPosts, joinedIds]
   );
 
+  const liveCount = useMemo(() => communities.filter((c) => c.lastActive <= 60).length, [communities]);
   const canPost = !!user?.verified && joined.length > 0;
   const openComposer = () => {
     if (!user?.verified) { onJoinToggle?.(null); return; }
@@ -393,56 +428,83 @@ export function HomeScreen({
   const first = (userName || "").split(" ")[0];
 
   /* ---------------- State A: nothing to read ---------------- */
-  // One column, no rail. A rail of secondary content beside a column of
-  // secondary content has no primary, and the two would list the same things.
   if (!loading && allPosts.length === 0) {
     return (
       <Screen>
-        <div className="w-full max-w-[720px] mx-auto px-4 sm:px-6 pt-10 pb-16 space-y-10">
-          <header>
-            <h1 className="text-3xl font-bold text-ink">
-              {first ? `Welcome back, ${first}` : "Welcome to Orbit"}
-            </h1>
-            <p className="text-md text-ink-2 mt-1.5">
-              Every club, community and event at MUJ, in one feed. Join a few and this page fills up.
+        <div className="w-full max-w-[1100px] mx-auto px-5 sm:px-8 lg:px-10 pt-10 pb-20">
+          {/* Masthead. Gives the page a top edge and a name, and states the
+              one live number worth stating. */}
+          <header className="pb-7 mb-9 border-b-2 border-ink">
+            <p className="font-mono text-2xs uppercase tracking-[0.14em] text-ink-3 mb-3">
+              Manipal University Jaipur
             </p>
+            <h1 className="text-4xl font-bold text-ink leading-[1.05] max-w-[18ch]">
+              {first ? `Welcome back, ${first}.` : "Every club, in one feed."}
+            </h1>
+            <div className="flex items-center flex-wrap gap-x-3 gap-y-1 mt-4 text-base text-ink-2">
+              <span>
+                <span className="font-mono font-semibold text-ink tabular-nums">{communities.length}</span> communities
+              </span>
+              <span className="inline-block w-px h-3 bg-line" />
+              <span>
+                <span className="font-mono font-semibold text-ink tabular-nums">{events.length}</span> events listed
+              </span>
+              {liveCount > 0 && (
+                <>
+                  <span className="inline-block w-px h-3 bg-line" />
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-accent" />
+                    <span className="font-mono font-semibold text-ink tabular-nums">{liveCount}</span> active today
+                  </span>
+                </>
+              )}
+            </div>
           </header>
 
-          {suggested.length > 0 && (
-            <section>
-              <div className="flex items-baseline justify-between mb-3">
-                <h2 className="text-base font-bold text-ink">
-                  {interests?.length ? "Matched to your interests" : "Most active right now"}
-                </h2>
-                <button onClick={onGoToExplore} className="text-xs font-semibold text-accent hover:opacity-70">
-                  Browse all
-                </button>
-              </div>
-              <Roster
-                communities={suggested.slice(0, 8)}
-                joinedIds={joinedIds}
-                onOpen={onOpen}
-                onJoin={onJoinToggle}
+          {/* Two columns of different content, not a rail of the same. */}
+          <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_300px] gap-10 lg:gap-14 items-start">
+            <div className="min-w-0">
+              <SectionHead
+                title={interests?.length ? "Matched to your interests" : "Most active right now"}
+                count={suggested.length}
+                actionLabel="Browse all"
+                onAction={onGoToExplore}
               />
-            </section>
-          )}
+              {suggested.length === 0 ? (
+                <p className="text-base text-ink-2 py-8">
+                  No communities yet. Be the one who starts the first.
+                </p>
+              ) : (
+                <RankList
+                  communities={suggested.slice(0, 7)}
+                  joinedIds={joinedIds}
+                  onOpen={onOpen}
+                  onJoin={onJoinToggle}
+                />
+              )}
 
-          {openEvents.length > 0 && (
-            <section>
-              <div className="flex items-baseline justify-between mb-3">
-                <h2 className="text-base font-bold text-ink">Happening soon</h2>
-                <button onClick={onGoToEvents} className="text-xs font-semibold text-accent hover:opacity-70">
-                  All events
-                </button>
+              <div className="flex flex-wrap gap-2.5 mt-8">
+                <Button tone="violet" size="md" icon="add" onClick={onCreateClick}>Start a community</Button>
+                <Button variant="outline" size="md" onClick={onGoToExplore}>Explore everything</Button>
               </div>
-              <EventList events={openEvents.slice(0, 4)} onRegister={onRegisterEvent} onOpen={onGoToEvents} />
-            </section>
-          )}
+            </div>
 
-          <section className="flex flex-wrap gap-2.5 pt-2">
-            <Button tone="violet" size="md" icon="add" onClick={onCreateClick}>Start a community</Button>
-            <Button variant="outline" size="md" onClick={onGoToExplore}>Explore everything</Button>
-          </section>
+            <div className="min-w-0 lg:sticky lg:top-6">
+              <SectionHead
+                title="This week"
+                count={openEvents.length}
+                actionLabel="All"
+                onAction={onGoToEvents}
+              />
+              {openEvents.length === 0 ? (
+                <p className="text-base text-ink-2 py-8">Nothing scheduled yet.</p>
+              ) : (
+                openEvents.slice(0, 5).map((e) => (
+                  <EventRow key={e.id} e={e} onRegister={onRegisterEvent} onOpen={onGoToEvents} compactMode />
+                ))
+              )}
+            </div>
+          </div>
         </div>
       </Screen>
     );
@@ -451,10 +513,8 @@ export function HomeScreen({
   /* ---------------- State B: populated feed ---------------- */
   return (
     <Screen>
-      <div className="w-full max-w-[1040px] mx-auto px-4 sm:px-6 grid justify-center gap-8 grid-cols-1 lg:grid-cols-[minmax(0,640px)_320px]">
-        {/* Feed */}
-        <div className="min-w-0 pt-6 pb-16">
-          {/* Cluster: the things that are about you, tight together. */}
+      <div className="w-full max-w-[1060px] mx-auto px-5 sm:px-6 grid justify-center gap-8 xl:gap-10 grid-cols-1 lg:grid-cols-[minmax(0,620px)_320px]">
+        <div className="min-w-0 pt-6 pb-20">
           <div className="space-y-3">
             {canPost && <ComposerBar user={{ ...user, name: userName }} onOpen={openComposer} />}
 
@@ -463,10 +523,9 @@ export function HomeScreen({
                 <div className="flex gap-3.5 overflow-x-auto no-scrollbar">
                   {joined.map((c) => {
                     const { head } = splitName(c.name);
-                    const live = c.lastActive <= 30;
                     return (
                       <button key={c.id} onClick={() => onOpen(c)} className="flex flex-col items-center gap-1.5 w-[68px] shrink-0 group">
-                        <Avatar src={c.avatarUrl} name={head} size={48} ring={live} />
+                        <Avatar src={c.avatarUrl} name={head} size={48} ring={c.lastActive <= 30} />
                         <span className="text-2xs text-ink truncate max-w-full group-hover:opacity-70">{head}</span>
                       </button>
                     );
@@ -476,8 +535,7 @@ export function HomeScreen({
             )}
           </div>
 
-          {/* Spine: sticky scope, full-bleed past the container padding. */}
-          <div className="sticky top-0 z-10 -mx-4 sm:-mx-6 mt-8 mb-4 px-4 sm:px-6 py-2 bg-bg/85 backdrop-blur-md flex items-center gap-1">
+          <div className="sticky top-0 z-10 -mx-5 sm:-mx-6 mt-8 mb-4 px-5 sm:px-6 py-2 bg-bg/85 backdrop-blur-md flex items-center gap-1">
             {[
               { key: "all", label: "All posts", n: allPosts.length },
               { key: "following", label: "Your communities", n: followingCount },
@@ -491,12 +549,10 @@ export function HomeScreen({
                 )}
               >
                 {t.label}
-                <span className={cx("tabular-nums", scope === t.key ? "opacity-60" : "text-ink-3")}>{t.n}</span>
+                <span className={cx("font-mono tabular-nums", scope === t.key ? "opacity-60" : "text-ink-3")}>{t.n}</span>
               </button>
             ))}
-            {joined.length === 0 && (
-              <span className="ml-auto text-2xs text-ink-3">Showing all of campus</span>
-            )}
+            {joined.length === 0 && <span className="ml-auto text-2xs text-ink-3">Showing all of campus</span>}
           </div>
 
           <div className="space-y-4">
@@ -527,42 +583,31 @@ export function HomeScreen({
           </div>
         </div>
 
-        {/* Rail: two panels, height-capped so nothing sits below the fold
-            permanently unreachable. */}
-        <aside className="hidden lg:block pt-6 pb-16">
-          <div className="sticky top-6 space-y-4 max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar">
+        <aside className="hidden lg:block pt-6 pb-20">
+          <div className="sticky top-6 space-y-9 max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar pr-1">
             {openEvents.length > 0 && (
-              <section className="card p-4">
-                <div className="flex items-baseline justify-between mb-1">
-                  <h2 className="text-base font-bold text-ink">Registration open</h2>
-                  <span className="text-2xs font-semibold text-ink-3 tabular-nums">{openEvents.length}</span>
-                </div>
-                <EventList events={openEvents.slice(0, 3)} onRegister={onRegisterEvent} onOpen={onGoToEvents} />
-                <button
-                  onClick={onGoToEvents}
-                  className="w-full text-center text-xs font-semibold text-accent hover:opacity-70 pt-3 mt-1 border-t border-line"
-                >
-                  All events
-                </button>
+              <section>
+                <SectionHead title="This week" count={openEvents.length} actionLabel="All" onAction={onGoToEvents} />
+                {openEvents.slice(0, 3).map((e) => (
+                  <EventRow key={e.id} e={e} onRegister={onRegisterEvent} onOpen={onGoToEvents} compactMode />
+                ))}
               </section>
             )}
 
             {suggested.length > 0 && (
-              <section className="card p-4">
-                <h2 className="text-base font-bold text-ink mb-2">Suggested communities</h2>
-                <Roster
-                  communities={suggested.slice(0, 3)}
-                  joinedIds={joinedIds}
-                  onOpen={onOpen}
-                  onJoin={onJoinToggle}
-                  showKey={false}
-                />
-                <button
-                  onClick={onGoToExplore}
-                  className="w-full text-center text-xs font-semibold text-accent hover:opacity-70 pt-3 mt-1 border-t border-line"
-                >
-                  Browse all communities
-                </button>
+              <section>
+                <SectionHead title="Worth joining" count={suggested.length} actionLabel="Browse" onAction={onGoToExplore} />
+                {loading ? (
+                  <><RankSkeleton /><RankSkeleton /><RankSkeleton /></>
+                ) : (
+                  <RankList
+                    communities={suggested.slice(0, 4)}
+                    joinedIds={joinedIds}
+                    onOpen={onOpen}
+                    onJoin={onJoinToggle}
+                    lede={false}
+                  />
+                )}
               </section>
             )}
           </div>
