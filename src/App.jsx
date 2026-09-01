@@ -119,6 +119,9 @@ function saveIdSet(key, set) {
 // full-width Home dashboard as a guest, skipping the phone-frame OTP card.
 // Unset it (or set false) and the normal onboarding flow comes back untouched.
 const SKIP_AUTH = import.meta.env.VITE_SKIP_AUTH === "true";
+// Reveals the Admin nav entry without a session. Data access is unaffected:
+// the panel's reads and writes are gated by RLS either way.
+const ADMIN_PREVIEW = import.meta.env.VITE_ADMIN_PREVIEW === "true";
 
 export default function App() {
   useViewportHeight(); // keyboard-float fix — see utils/useViewportHeight.js
@@ -160,6 +163,13 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    // Dev escape hatch. Shows the Admin nav entry without a session so the
+    // panel can be worked on before the Firebase/Supabase auth bridge exists.
+    // It only reveals the entry — every query inside the panel is still
+    // governed by RLS, so with this on and no session you see the interface
+    // and "Request refused" where data would be. It is a build-time flag, so
+    // it cannot be turned on in a deployed build without a rebuild.
+    if (ADMIN_PREVIEW) { setIsAdmin(true); return; }
     if (!authUser) { setIsAdmin(false); return; }
     let alive = true;
     (async () => {
