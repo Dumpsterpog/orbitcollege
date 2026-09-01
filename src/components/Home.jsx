@@ -42,6 +42,34 @@ function PostSkeleton() {
   );
 }
 
+/* --------------------------------------------------------------- Search */
+
+// Opens the real search surface rather than filtering in place. Typing into
+// a field that then throws the keystrokes away on navigation would be worse
+// than not looking like a field, so it hands off on the first key.
+function SearchBar({ onOpen }) {
+  return (
+    <div className="relative">
+      <Icon
+        name="search"
+        size={20}
+        className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none"
+      />
+      <input
+        readOnly
+        onFocus={onOpen}
+        onClick={onOpen}
+        onKeyDown={(e) => { if (e.key !== "Tab") onOpen(); }}
+        placeholder="Search communities, clubs or events"
+        className="w-full h-11 pl-12 pr-4 rounded-full bg-bg-sunken text-ink placeholder:text-ink-3 text-base
+          border border-transparent cursor-pointer transition-colors
+          hover:bg-black/[0.06] dark:hover:bg-white/[0.10]
+          focus:outline-none focus:border-line-strong focus:bg-bg"
+      />
+    </div>
+  );
+}
+
 /* ------------------------------------------------------------- Composer */
 
 function ComposerBar({ user, onOpen }) {
@@ -219,7 +247,7 @@ function EventRow({ e, onRegister, onOpen }) {
 export function HomeScreen({
   communities, joinedIds, onOpen, onCreateClick,
   feedPosts, feedSparkIds, onSparkPost, onCreatePost,
-  userName, user, onJoinToggle, onGoToExplore,
+  userName, user, onJoinToggle, onGoToExplore, onSearchClick,
   events = [], registeredEventIds = [], onRegisterEvent, onGoToEvents,
 }) {
   const [loading, setLoading] = useState(() => !(feedPosts || []).length);
@@ -261,7 +289,7 @@ export function HomeScreen({
 
   const first = (userName || "").split(" ")[0];
   const showScope = allPosts.length > 0 && joined.length > 0;
-  const showRail = !loading && allPosts.length > 0 && openEvents.length > 0;
+  const showRail = openEvents.length > 0;
 
   return (
     <Screen>
@@ -274,6 +302,8 @@ export function HomeScreen({
         {/* Feed */}
         <div className="min-w-0 pt-6 pb-20">
           <div className="space-y-3">
+            <SearchBar onOpen={onSearchClick} />
+
             {canPost && <ComposerBar user={{ ...user, name: userName }} onOpen={openComposer} />}
 
             {joined.length > 0 && (

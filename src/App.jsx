@@ -835,6 +835,7 @@ export default function App() {
           onJoinToggle={(id) => { if (!id) { handleBlocked(); return; } if (!user.verified) { handleBlocked(); return; } handleJoinToggle(id); }}
           user={user}
           onGoToExplore={() => goToTab("explore")}
+          onSearchClick={openSearch}
           events={events}
           registeredEventIds={registeredEventIds}
           onRegisterEvent={handleRegisterEvent}
