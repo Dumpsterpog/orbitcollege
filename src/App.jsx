@@ -827,7 +827,7 @@ export default function App() {
       ) : activeTab === "home" ? (
         <HomeScreen
           communities={allGroups} joinedIds={joinedIds}
-          onOpen={setSelectedCommunity} interests={user.interests}
+          onOpen={setSelectedCommunity}
           feedPosts={feedPosts} feedSparkIds={feedSparkIds} onSparkPost={handleSparkPost}
           onCreatePost={handleCreatePost}
           onCreateClick={openCreate}
