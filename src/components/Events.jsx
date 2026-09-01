@@ -33,7 +33,7 @@ function DateBlock({ when, tint }) {
 function EventCard({ e, registered, onRegister, onOpen, interested }) {
   const cat = CATEGORIES.find((x) => x.name === e.category);
   return (
-    <article className="card group flex flex-col overflow-hidden">
+    <article className="card card-interactive group flex flex-col overflow-hidden">
       {e.imageUrl && (
         <button onClick={() => onOpen(e)} className="block w-full media">
           <img src={e.imageUrl} alt="" loading="lazy" className="w-full h-40 object-cover" />

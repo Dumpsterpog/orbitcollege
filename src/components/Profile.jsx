@@ -49,7 +49,7 @@ function Stat({ value, label, tint, onClick }) {
 function CommunityCard({ c, onOpen, badge }) {
   const cat = CATEGORIES.find((x) => x.name === c.category);
   return (
-    <button onClick={() => onOpen(c)} className="card group p-4 flex items-center gap-3.5 text-left">
+    <button onClick={() => onOpen(c)} className="card card-interactive group p-4 flex items-center gap-3.5 text-left">
       <CommunityMark c={c} size={44} />
       <span className="min-w-0 flex-1">
         <span className="flex items-center gap-1.5 min-w-0">
@@ -304,7 +304,7 @@ export function ProfileScreen({
                 const cat = CATEGORIES.find((x) => x.name === e.category);
                 const [head, ...rest] = String(e.when || "").split(/[\s,]+/).filter(Boolean);
                 return (
-                  <button key={e.id} onClick={() => onOpenEvent?.(e)} className="card group p-4 flex gap-4 text-left">
+                  <button key={e.id} onClick={() => onOpenEvent?.(e)} className="card card-interactive group p-4 flex gap-4 text-left">
                     <span className="w-11 shrink-0 text-center leading-none">
                       <span className={cx("block text-xl font-bold tabular-nums", cat?.tint || "text-c-orange")}>
                         {head || "TBA"}

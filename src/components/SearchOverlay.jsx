@@ -116,7 +116,7 @@ export function SearchOverlay({ communities, onOpen, onClose }) {
                       <button
                         key={c.id}
                         onClick={() => choose(c)}
-                        className="card group p-3 flex flex-col items-start gap-2 text-left"
+                        className="card card-interactive group p-3 flex flex-col items-start gap-2 text-left"
                       >
                         {c.avatarUrl ? (
                           <Avatar src={c.avatarUrl} name={c.name} size={40} />

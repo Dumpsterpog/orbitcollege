@@ -719,7 +719,7 @@ export default function App() {
   // content and each screen owns its own measure.
   const shellClass = "w-full h-[var(--app-height,100dvh)] bg-bg text-ink overflow-hidden relative flex flex-col";
   const shellClassAuth = shellClass;
-  const shellClassApp = `${shellClass} lg:flex-row`;
+  const shellClassApp = `${shellClass} lg:flex-row lg:justify-center`;
 
   if (loadingSession) {
     return (
@@ -781,7 +781,7 @@ export default function App() {
         verified={user.verified} user={user} theme={theme} onToggleTheme={toggleTheme}
         joinedCount={joinedIds.length}
         onUnbuilt={(m) => showToast(m)} />
-      <div className="flex-1 flex flex-col overflow-hidden lg:h-full min-w-0">
+      <div className="flex-1 lg:max-w-shell flex flex-col overflow-hidden lg:h-full min-w-0">
       {!showingSubPage && (
         <TopBar notifOpen={notifOpen} setNotifOpen={setNotifOpen}
           onTeaClick={openTea}

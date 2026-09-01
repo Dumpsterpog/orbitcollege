@@ -164,11 +164,11 @@
   box-shadow: 0 0 0 1px rgb(var(--line));
   transition: box-shadow .18s ease, transform .18s ease;
 }
-.card:hover {
+.card-interactive:hover {
   box-shadow: 0 0 0 1px rgb(var(--line-strong)), 0 6px 20px rgb(0 0 0 / .07);
   transform: translateY(-2px);
 }
-.dark .card:hover {
+.dark .card-interactive:hover {
   box-shadow: 0 0 0 1px rgb(var(--line-strong)), 0 6px 24px rgb(0 0 0 / .5);
 }
 
