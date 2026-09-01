@@ -214,13 +214,18 @@ export default function App() {
 
   // Home dashboard's "Latest posts" feed — every community's posts, newest
   // first, across the whole app (not just joined ones), Instagram-style.
-  // RLS on community_posts is "to authenticated using (true)" (see
-  // schema_content.sql), so this only ever returns rows for a signed-in
-  // user, same as the rest of the app's guest-gating.
+  // Readable signed out as well as signed in: schema_public_feed.sql adds a
+  // `to anon` select policy on community_posts plus a column-scoped grant on
+  // profiles.name for the bylines. Guests could already see that communities
+  // and events existed but not a word anyone had said, which left the front
+  // door of the app permanently blank.
+  //
+  // Sparks stay signed-in only — which of these you personally sparked is a
+  // question that needs a "you".
+  //
   // Also subscribed to Realtime below — a post from any community (or a
   // spark landing on one) shows up in the feed live, no manual refresh.
   useEffect(() => {
-    if (!authUser) { setFeedPosts([]); setFeedSparkIds([]); return; }
     (async () => {
       const { data, error } = await supabase
         .from("community_posts")
@@ -228,6 +233,8 @@ export default function App() {
         .order("created_at", { ascending: false })
         .limit(40);
       if (!error && data) setFeedPosts(data.map(mapFeedPostRow));
+
+      if (!authUser) { setFeedSparkIds([]); return; }
       const { data: myRows } = await supabase
         .from("community_post_sparks")
         .select("post_id")
