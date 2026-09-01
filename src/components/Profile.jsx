@@ -351,7 +351,7 @@ export function ProfileScreen({
             </div>
             <div className="px-4 py-3 border-t border-line flex justify-end gap-2">
               <Button variant="ghost" size="md" onClick={() => setEditing(false)}>Cancel</Button>
-              <Button tone="green" size="md" onClick={save} disabled={!draftName.trim()}>Save</Button>
+              <Button tone="blue" size="md" onClick={save} disabled={!draftName.trim()}>Save</Button>
             </div>
           </div>
         </div>

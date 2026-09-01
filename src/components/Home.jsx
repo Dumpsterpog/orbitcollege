@@ -259,6 +259,7 @@ export function HomeScreen({
     setComposing(true);
   };
 
+  const first = (userName || "").split(" ")[0];
   const showScope = allPosts.length > 0 && joined.length > 0;
   const showRail = !loading && allPosts.length > 0 && openEvents.length > 0;
 
@@ -322,24 +323,88 @@ export function HomeScreen({
             {loading ? (
               <><PostSkeleton /><PostSkeleton /></>
             ) : posts.length === 0 ? (
-              // One line, one way out. Nothing else.
-              <div className="py-24 text-center">
-                <p className="text-lg font-bold text-ink">
-                  {scope === "following" ? "Nothing from your communities" : "Your feed is empty"}
-                </p>
-                <p className="text-base text-ink-2 mt-2 max-w-[34ch] mx-auto leading-relaxed">
-                  {scope === "following"
-                    ? "Switch to All posts to see the rest of campus."
-                    : "Join a few communities and everything they post shows up here."}
-                </p>
-                <div className="mt-6">
-                  {scope === "following" ? (
-                    <Button variant="outline" size="md" onClick={() => setScope("all")}>Show all posts</Button>
-                  ) : (
-                    <Button tone="blue" size="md" onClick={onGoToExplore}>Explore communities</Button>
-                  )}
+              scope === "following" ? (
+                <div className="py-24 text-center">
+                  <p className="text-lg font-bold text-ink">Nothing from your communities</p>
+                  <p className="text-base text-ink-2 mt-2 max-w-[34ch] mx-auto leading-relaxed">
+                    Switch to All posts to see the rest of campus.
+                  </p>
+                  <Button variant="outline" size="md" onClick={() => setScope("all")} className="mt-6">
+                    Show all posts
+                  </Button>
                 </div>
-              </div>
+              ) : (
+                // A first visit is the one moment the page has to explain
+                // itself. Not a directory of communities, which is Explore's
+                // job and read as filler three redesigns running, but the
+                // three things this app actually does, in order, with the
+                // first one live as a button.
+                <div className="py-10">
+                  <h1 className="text-3xl font-bold text-ink leading-tight">
+                    {first ? `Welcome to Orbit, ${first}.` : "Welcome to Orbit."}
+                  </h1>
+                  <p className="text-md text-ink-2 mt-2.5 max-w-[46ch] leading-relaxed">
+                    Every club, community and event at Manipal University Jaipur, in one place.
+                    Here is how it works.
+                  </p>
+
+                  <ol className="mt-9 space-y-7">
+                    {[
+                      {
+                        n: 1,
+                        title: "Join a few communities",
+                        body: "Pick the ones that sound like you. Everything they post lands in this feed.",
+                        cta: "Browse communities",
+                        onClick: onGoToExplore,
+                        primary: true,
+                      },
+                      {
+                        n: 2,
+                        title: "Post something",
+                        body: "Once you have joined one, the box at the top of this page is yours.",
+                      },
+                      {
+                        n: 3,
+                        title: "Register for events",
+                        body: "Registering puts you in that event's group chat automatically.",
+                        cta: "See events",
+                        onClick: onGoToEvents,
+                      },
+                    ].map((step) => (
+                      <li key={step.n} className="flex gap-5">
+                        <span className="font-mono text-lg tabular-nums text-ink-3 leading-none pt-1 shrink-0 select-none">
+                          {String(step.n).padStart(2, "0")}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="text-lg font-bold text-ink leading-snug">{step.title}</p>
+                          <p className="text-base text-ink-2 mt-1.5 max-w-[48ch] leading-relaxed">{step.body}</p>
+                          {step.cta && (
+                            <Button
+                              tone={step.primary ? "blue" : undefined}
+                              variant={step.primary ? undefined : "outline"}
+                              size="md"
+                              onClick={step.onClick}
+                              className="mt-3.5"
+                            >
+                              {step.cta}
+                            </Button>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+
+                  <div className="mt-10 pt-6 border-t border-line">
+                    <p className="text-base text-ink-2">
+                      Cannot find your club?{" "}
+                      <button onClick={onCreateClick} className="font-semibold text-accent hover:opacity-70">
+                        Start it yourself
+                      </button>
+                      .
+                    </p>
+                  </div>
+                </div>
+              )
             ) : (
               posts.map((p) => (
                 <Post

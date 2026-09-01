@@ -185,8 +185,8 @@ export function Sidebar({
           onClick={onCreateClick}
           title="Create a community"
           className="w-full mt-5 flex items-center justify-center xl:justify-start gap-3 rounded-full
-            px-3 py-3 bg-c-violet text-bg font-bold text-base shadow-lift
-            hover:opacity-90 active:scale-[0.98] transition-[background-color,transform] duration-150"
+            px-3 py-3 bg-accent text-accent-ink font-bold text-base shadow-lift
+            hover:bg-accent-press active:scale-[0.98] transition-[background-color,transform] duration-150"
         >
           <Icon name="add" size={22} />
           <span className="hidden xl:inline">Create</span>

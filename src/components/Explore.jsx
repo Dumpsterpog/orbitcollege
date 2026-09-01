@@ -230,7 +230,7 @@ export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, j
             icon="search_off"
             title="Nothing found"
             body="Try a different search, or clear the topic filter."
-            action={<Button tone="teal" onClick={() => { setQuery(""); setCat(null); }}>Clear filters</Button>}
+            action={<Button tone="blue" onClick={() => { setQuery(""); setCat(null); }}>Clear filters</Button>}
           />
         ) : (
           // Mosaic: every third tile is double-height, which breaks the grid

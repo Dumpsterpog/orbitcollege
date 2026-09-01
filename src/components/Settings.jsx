@@ -202,7 +202,7 @@ export function SettingsScreen({
                       <p className="text-lg font-bold text-ink truncate">{user.name}</p>
                       <p className="text-base text-ink-2 truncate">{user.email || "Browsing as a guest"}</p>
                     </div>
-                    <Button tone="violet" size="md" icon="edit" onClick={onEditProfile} className="shrink-0">
+                    <Button tone="blue" size="md" icon="edit" onClick={onEditProfile} className="shrink-0">
                       Edit
                     </Button>
                   </div>
@@ -228,7 +228,7 @@ export function SettingsScreen({
               <>
                 <Card title="Public details" subtitle="What other students see on your profile.">
                   <Row icon="badge" tint="text-c-violet" title="Display name" body={user.name}>
-                    <Button tone="violet" size="sm" onClick={onEditProfile} className="shrink-0">Change</Button>
+                    <Button tone="blue" size="sm" onClick={onEditProfile} className="shrink-0">Change</Button>
                   </Row>
                   <Row icon="notes" tint="text-c-blue" title="Bio" body={user.bio || "Nothing written yet."} last>
                     <Button tone="blue" size="sm" onClick={onEditProfile} className="shrink-0">Edit</Button>
@@ -262,7 +262,7 @@ export function SettingsScreen({
                 {joinedCommunities.length === 0 ? (
                   <div className="text-center py-6">
                     <p className="text-base text-ink-2 mb-4">Nothing joined yet.</p>
-                    <Button tone="teal" size="md" icon="explore" onClick={onGoToExplore}>Find communities</Button>
+                    <Button tone="blue" size="md" icon="explore" onClick={onGoToExplore}>Find communities</Button>
                   </div>
                 ) : (
                   <>
@@ -283,7 +283,7 @@ export function SettingsScreen({
                       );
                     })}
                     <div className="pt-4">
-                      <Button tone="teal" size="md" icon="explore" onClick={onGoToExplore}>Browse all</Button>
+                      <Button tone="blue" size="md" icon="explore" onClick={onGoToExplore}>Browse all</Button>
                     </div>
                   </>
                 )}
