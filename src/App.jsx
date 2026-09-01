@@ -21,6 +21,7 @@ import { ProfileScreen } from "./components/Profile.jsx";
 import { SettingsScreen } from "./components/Settings.jsx";
 import { Onboarding } from "./components/Onboarding.jsx";
 import { ReportModal } from "./components/ReportModal.jsx";
+import { AdminPanel } from "./components/Admin.jsx";
 
 // ---- Supabase row -> app-shape mappers -------------------------------
 // The app's components were built against the original mock shape
@@ -153,6 +154,20 @@ export default function App() {
   const [toastMsg, setToastMsg] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  // Whether the signed-in account is an Orbit admin. Asked of the database,
+  // never inferred here — the panel's reads and writes are gated by RLS
+  // regardless, so this only decides whether the nav entry is shown.
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (!authUser) { setIsAdmin(false); return; }
+    let alive = true;
+    (async () => {
+      const { data } = await supabase.rpc("is_orbit_admin");
+      if (alive) setIsAdmin(data === true);
+    })();
+    return () => { alive = false; };
+  }, [authUser]);
 
   // "/" opens search, the way the sidebar's kbd hint advertises. Ignored while
   // the user is typing into a field or a contentEditable, otherwise the key
@@ -787,6 +802,7 @@ export default function App() {
         onOpenSettings={() => goToTab("settings")}
         verified={user.verified} user={user} theme={theme} onToggleTheme={toggleTheme}
         joinedCount={joinedIds.length}
+        isAdmin={isAdmin}
         onUnbuilt={(m) => showToast(m)} />
       <div className="flex-1 flex flex-col overflow-hidden lg:h-full min-w-0">
       {!showingSubPage && (
@@ -885,6 +901,12 @@ export default function App() {
             if (c) setSelectedCommunity(c);
             else goToTab("events");
           }}
+        />
+      ) : activeTab === "admin" ? (
+        <AdminPanel
+          user={user}
+          onBack={() => goToTab("home")}
+          onToast={showToast}
         />
       ) : activeTab === "settings" ? (
         <SettingsScreen

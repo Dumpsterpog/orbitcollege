@@ -110,7 +110,7 @@ function GroupLabel({ children }) {
 
 export function Sidebar({
   active, setActive, onTeaClick, onSearchClick, onCreateClick,
-  verified, user, theme, onToggleTheme, onOpenSettings, joinedCount = 0, onUnbuilt,
+  verified, user, theme, onToggleTheme, onOpenSettings, joinedCount = 0, onUnbuilt, isAdmin = false,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -191,6 +191,18 @@ export function Sidebar({
           <Icon name="add" size={22} />
           <span className="hidden xl:inline">Create</span>
         </button>
+
+        {isAdmin && (
+          <div className="mt-5 pt-4 border-t border-line">
+            <NavRow
+              icon="shield_person"
+              tint="text-c-red"
+              label="Admin"
+              active={active === "admin"}
+              onClick={() => setActive("admin")}
+            />
+          </div>
+        )}
 
         {joinedCount > 0 && (
           <p className="hidden xl:block px-4 pt-5 text-2xs text-ink-3 leading-relaxed">
