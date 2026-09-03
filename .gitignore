@@ -21,3 +21,6 @@ android/.idea
 
 .vercel
 .env*
+
+# JetBrains IDE config — machine-specific
+.idea/

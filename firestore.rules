@@ -1,0 +1,212 @@
+rules_version = '2';
+
+// Orbit — Firestore security rules.
+//
+// Paste into Firebase Console -> Firestore Database -> Rules -> Publish.
+//
+// These replace every RLS policy from the Supabase schema files. The model is
+// the same one the app always had:
+//
+//   Reading campus content is public. Communities, posts, events and
+//   Locali-Tea are readable signed out, because a student deciding whether to
+//   sign up should be able to see what is here first.
+//
+//   Writing needs an account. Every create/update/delete below requires a
+//   signed-in caller, and almost all of them require that caller to be the
+//   owner of the thing being changed.
+//
+//   Anonymity is structural. Firestore cannot hide one field of a readable
+//   document, so Locali-Tea ownership is kept in a separate collection that
+//   nobody can read at all. See the note above tea_authors.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn()      { return request.auth != null; }
+    function isSelf(uid)     { return signedIn() && request.auth.uid == uid; }
+    function isAdmin()       {
+      return signedIn()
+        && exists(/databases/$(database)/documents/profiles/$(request.auth.uid))
+        && get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.isAdmin == true;
+    }
+    // Fields a user must never be able to set on themselves.
+    function noPrivilegeEscalation() {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin']);
+    }
+
+    /* ------------------------------------------------------- profiles */
+
+    match /profiles/{uid} {
+      // Names are readable so posts can carry a byline. Email is in the same
+      // document, which is a real limitation of document databases: Firestore
+      // cannot grant per-field reads the way Postgres column grants could.
+      // Accepted because the app only ever renders name, and the alternative
+      // (a second public_profiles collection kept in sync) costs more than it
+      // buys at this size. If email must be private, that split is the fix.
+      allow read: if true;
+
+      allow create: if isSelf(uid);
+      // isAdmin is deliberately excluded, so nobody can promote themselves.
+      // Set it from the Firebase console or the admin tool.
+      allow update: if (isSelf(uid) && noPrivilegeEscalation()) || isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    /* ---------------------------------------------------- communities */
+
+    match /communities/{communityId} {
+      function isCreator() {
+        return signedIn() && resource.data.creatorId == request.auth.uid;
+      }
+      function isMember() {
+        return signedIn()
+          && exists(/databases/$(database)/documents/communities/$(communityId)/members/$(request.auth.uid));
+      }
+      function isCommunityAdmin() {
+        return signedIn()
+          && exists(/databases/$(database)/documents/communities/$(communityId)/members/$(request.auth.uid))
+          && get(/databases/$(database)/documents/communities/$(communityId)/members/$(request.auth.uid)).data.role == 'admin';
+      }
+
+      allow read: if true;
+      allow create: if signedIn() && request.resource.data.creatorId == request.auth.uid;
+      // memberCount and lastActiveAt are written by joins and posts from
+      // members, so an update is allowed for any member; only the creator can
+      // rename or recategorise. Splitting those apart properly needs the
+      // counters moved to a Cloud Function, which is the upgrade path if this
+      // ever gets abused.
+      allow update: if isCreator() || isCommunityAdmin() || isMember() || isAdmin();
+      allow delete: if isCreator() || isAdmin();
+
+      match /members/{memberId} {
+        allow read: if true;
+        // You add and remove yourself. Nobody adds you to anything.
+        allow create: if isSelf(memberId);
+        allow delete: if isSelf(memberId) || isCreator() || isAdmin();
+        // Only the community's creator promotes or demotes.
+        allow update: if isCreator() || isAdmin();
+      }
+
+      match /posts/{postId} {
+        allow read: if true;
+        allow create: if signedIn()
+          && request.resource.data.authorId == request.auth.uid
+          && isMember();
+        // sparkCount and pinned are the only reasons a non-author updates.
+        allow update: if signedIn();
+        allow delete: if (signedIn() && resource.data.authorId == request.auth.uid)
+          || isCreator() || isCommunityAdmin() || isAdmin();
+
+        match /sparks/{sparkUid} {
+          allow read: if true;
+          allow create, delete: if isSelf(sparkUid);
+        }
+      }
+
+      match /messages/{messageId} {
+        // Chat is members-only. A post is broadcast; a message is not.
+        allow read: if isMember() || isAdmin();
+        allow create: if signedIn()
+          && request.resource.data.authorId == request.auth.uid
+          && isMember();
+        allow update: if isMember();
+        allow delete: if (signedIn() && resource.data.authorId == request.auth.uid)
+          || isCreator() || isCommunityAdmin() || isAdmin();
+      }
+    }
+
+    /* --------------------------------------------------------- events */
+
+    match /events/{eventId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      // linkedCommunityId is stamped by the first registration, which is why
+      // a signed-in caller can update.
+      allow update: if signedIn();
+
+      match /registrations/{regUid} {
+        allow read: if true;
+        allow create, delete: if isSelf(regUid);
+      }
+    }
+
+    /* ----------------------------------------------------- Locali-Tea */
+
+    // Anonymity here is structural, not a matter of the client not asking.
+    //
+    // Firestore has no per-field read permission: if a document is readable,
+    // every field in it is readable. So an authorId stored on the tea post
+    // itself would be legible to anyone who opened the network tab, no matter
+    // what the app requests. Postgres could hide a column; this cannot.
+    //
+    // Ownership therefore lives in a separate tea_authors/{teaId} document
+    // that NOBODY can read — not the author, not an admin, not the client at
+    // all. Rules can still consult it, because get() inside a rule runs
+    // server-side and is not bound by the read permission it is evaluating.
+    // That is what lets "only the author may delete this" hold without the
+    // author ever being knowable.
+    match /tea_authors/{teaId} {
+      allow read: if false;
+      allow create: if signedIn() && request.resource.data.authorId == request.auth.uid;
+      allow update: if false;
+      allow delete: if signedIn() && resource.data.authorId == request.auth.uid;
+    }
+
+    match /tea_posts/{teaId} {
+      function isTeaAuthor() {
+        return signedIn()
+          && exists(/databases/$(database)/documents/tea_authors/$(teaId))
+          && get(/databases/$(database)/documents/tea_authors/$(teaId)).data.authorId == request.auth.uid;
+      }
+
+      allow read: if true;
+
+      // No authorId on the document itself. A create that tries to add one is
+      // refused, so the anonymity cannot be undone by a future client bug.
+      allow create: if signedIn()
+        && !('authorId' in request.resource.data.keys())
+        && request.resource.data.text is string
+        && request.resource.data.text.size() > 0
+        && request.resource.data.text.size() <= 2000;
+
+      // Vote and reaction counters.
+      allow update: if signedIn() && !('authorId' in request.resource.data.keys());
+      allow delete: if isTeaAuthor() || isAdmin();
+
+      match /comments/{commentId} {
+        function isCommentAuthor() {
+          return signedIn()
+            && exists(/databases/$(database)/documents/tea_authors/$(commentId))
+            && get(/databases/$(database)/documents/tea_authors/$(commentId)).data.authorId == request.auth.uid;
+        }
+        allow read: if true;
+        allow create: if signedIn() && !('authorId' in request.resource.data.keys());
+        allow delete: if isCommentAuthor() || isAdmin();
+      }
+      match /votes/{voteUid}     { allow read, create, update, delete: if isSelf(voteUid); }
+      match /reactions/{reactUid} { allow read, create, update, delete: if isSelf(reactUid); }
+    }
+
+    /* ------------------------------------------------ stickers, reports */
+
+    match /stickers/{stickerId} {
+      allow read: if true;
+      allow create: if signedIn() && request.resource.data.authorId == request.auth.uid;
+      allow delete: if (signedIn() && resource.data.authorId == request.auth.uid) || isAdmin();
+    }
+
+    match /reports/{reportId} {
+      // Write-only for users: you can file one, you cannot read the queue.
+      // Reading everyone's reports is a moderator capability.
+      allow read: if isAdmin();
+      allow create: if signedIn() && request.resource.data.reporterId == request.auth.uid;
+      allow update, delete: if isAdmin();
+    }
+
+    // Anything not named above is denied. New collections have to be added
+    // here deliberately rather than inheriting a permissive default.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

@@ -3,7 +3,7 @@ import { FONT_IMPORT } from "./data/constants.js";
 import { communityTrendScore, slugify, timeAgo } from "./utils/helpers.js";
 import { useViewportHeight } from "./utils/useViewportHeight.js";
 import { useTheme } from "./utils/useTheme.js";
-import { supabase } from "./lib/supabaseClient.js";
+import * as db from "./lib/db.js";
 import { onAuthChange, completeRedirectSignIn, fetchProfile, signOut as fbSignOut } from "./lib/authService.js";
 import { auth } from "./lib/firebase.js";
 import { TopBar } from "./components/TopBar.jsx";
@@ -21,80 +21,15 @@ import { ProfileScreen } from "./components/Profile.jsx";
 import { SettingsScreen } from "./components/Settings.jsx";
 import { Onboarding } from "./components/Onboarding.jsx";
 import { ReportModal } from "./components/ReportModal.jsx";
-import { AdminPanel } from "./components/Admin.jsx";
 
-// ---- Supabase row -> app-shape mappers -------------------------------
-// The app's components were built against the original mock shape
-// ({ members, creator, lastActive, desc, ... }); rather than touching every
-// component, live Supabase rows get converted to that exact shape here so
-// Home/Explore/Community/Events etc. don't know or care where the data
-// actually came from.
-function mapCommunityRow(row) {
-  const lastActive = Math.max(0, Math.floor((Date.now() - new Date(row.last_active_at).getTime()) / 60000));
-  return {
-    id: row.id,
-    name: row.name,
-    category: row.category,
-    tags: row.tags && row.tags.length ? row.tags : [row.category],
-    desc: row.description,
-    members: row.member_count,
-    creator: row.creator_label,
-    creatorId: row.creator_id,
-    official: row.official,
-    handle: row.handle,
-    avatarUrl: row.avatar_url,
-    postsAdminOnly: row.posts_admin_only,
-    lastActive,
-  };
-}
+// Firestore document -> app shape mapping now lives in lib/db.js, next to the
+// queries that produce it, so a collection and the shape it yields cannot
+// drift apart.
 // One row per post, across every community (not just joined ones) — powers
 // Home's Instagram-style "Latest posts" feed. Uses the same profiles!author_id
 // relationship hint as Community.jsx's mapPostRow (see the comment there —
 // plain profiles(name) returns an ambiguous-relationship HTTP 300 on this
 // table specifically).
-function mapFeedPostRow(row) {
-  return {
-    id: row.id,
-    communityId: row.community_id,
-    authorId: row.author_id,
-    who: row.profiles?.name || "Someone",
-    text: row.text,
-    time: timeAgo(row.created_at),
-    hasImage: row.has_image,
-    imageUrl: row.image_url,
-    sparks: row.spark_count,
-  };
-}
-function mapEventRow(row) {
-  return {
-    id: row.id,
-    title: row.title,
-    category: row.category,
-    tags: row.tags && row.tags.length ? row.tags : [row.category],
-    desc: row.description,
-    when: row.event_when,
-    where: row.event_where,
-    capacity: row.capacity,
-    imageUrl: row.image_url,
-    linkedCommunityId: row.linked_community_id,
-  };
-}
-function mapTeaRow(row) {
-  return {
-    id: row.id,
-    text: row.text,
-    category: row.category || "tea", // "tea" | "confession"
-    trueCount: row.true_count,
-    capCount: row.cap_count,
-    reactions: row.reactions || {},
-    commentCount: row.comment_count,
-    comments: null, // lazy-loaded per post when opened — see loadTeaComments()
-    createdAt: new Date(row.created_at).getTime(),
-  };
-}
-function mapTeaCommentRow(row) {
-  return { id: row.id, who: "Anonymous", text: row.text, time: "" };
-}
 
 // Tea/Confessions are deliberately anonymous server-side — author_id is
 // never selectable (see schema_tea.sql), so there's no way to ask the
@@ -119,21 +54,18 @@ function saveIdSet(key, set) {
 // full-width Home dashboard as a guest, skipping the phone-frame OTP card.
 // Unset it (or set false) and the normal onboarding flow comes back untouched.
 const SKIP_AUTH = import.meta.env.VITE_SKIP_AUTH === "true";
-// Reveals the Admin nav entry without a session. Data access is unaffected:
-// the panel's reads and writes are gated by RLS either way.
-const ADMIN_PREVIEW = import.meta.env.VITE_ADMIN_PREVIEW === "true";
 
 export default function App() {
   useViewportHeight(); // keyboard-float fix — see utils/useViewportHeight.js
   const { theme, mode: themeMode, toggleTheme, setThemeMode } = useTheme(); // dark/light — see utils/useTheme.js
   const [loadingSession, setLoadingSession] = useState(true);
   const [stage, setStage] = useState(SKIP_AUTH ? "app" : "onboarding");
-  const [authUser, setAuthUser] = useState(null); // { id, email } from Supabase, or null
+  const [authUser, setAuthUser] = useState(null); // { id, email } from Firebase Auth, or null
   const [user, setUser] = useState(
     SKIP_AUTH ? { name: "Guest", verified: false, interests: [] }
               : { name: "", verified: false, interests: [] });
 
-  // Live data (Supabase) — core flow: auth, communities/clubs, join/leave, events.
+  // Live data (Firestore) — core flow: auth, communities/clubs, join/leave, events.
   const [dbCommunities, setDbCommunities] = useState([]);
   const [events, setEvents] = useState([]);
   const [joinedIds, setJoinedIds] = useState([]);
@@ -157,28 +89,6 @@ export default function App() {
   const [toastMsg, setToastMsg] = useState("");
   const [showCreate, setShowCreate] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
-  // Whether the signed-in account is an Orbit admin. Asked of the database,
-  // never inferred here — the panel's reads and writes are gated by RLS
-  // regardless, so this only decides whether the nav entry is shown.
-  const [isAdmin, setIsAdmin] = useState(false);
-
-  useEffect(() => {
-    // Dev escape hatch. Shows the Admin nav entry without a session so the
-    // panel can be worked on before the Firebase/Supabase auth bridge exists.
-    // It only reveals the entry — every query inside the panel is still
-    // governed by RLS, so with this on and no session you see the interface
-    // and "Request refused" where data would be. It is a build-time flag, so
-    // it cannot be turned on in a deployed build without a rebuild.
-    if (ADMIN_PREVIEW) { setIsAdmin(true); return; }
-    if (!authUser) { setIsAdmin(false); return; }
-    let alive = true;
-    (async () => {
-      const { data } = await supabase.rpc("is_orbit_admin");
-      if (alive) setIsAdmin(data === true);
-    })();
-    return () => { alive = false; };
-  }, [authUser]);
-
   // "/" opens search, the way the sidebar's kbd hint advertises. Ignored while
   // the user is typing into a field or a contentEditable, otherwise the key
   // would be unusable in every text input in the app.
@@ -195,7 +105,7 @@ export default function App() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
   const [teaOpen, setTeaOpen] = useState(false);
-  const [teaPosts, setTeaPosts] = useState([]); // real, Supabase-backed — see fetchTea()
+  const [teaPosts, setTeaPosts] = useState([]); // real, Firestore-backed — see fetchTea()
   const [myTeaVotes, setMyTeaVotes] = useState({}); // Tea tab: postId -> "true" | "cap"
   const [myTeaReactions, setMyTeaReactions] = useState({}); // Confessions tab: postId -> emoji
   const [myTeaPostIds, setMyTeaPostIds] = useState(() => loadIdSet("orbit_my_tea_post_ids"));
@@ -214,125 +124,31 @@ export default function App() {
   // registeredEventIds, which would visibly flip "Joined ✓" back to "Join"
   // even though the membership/registration row was never actually deleted.
   const fetchMyJoins = useCallback(async (userId) => {
-    await supabase.auth.getSession();
-    const { data } = await supabase.from("community_members").select("community_id").eq("user_id", userId);
-    if (data) setJoinedIds(data.map((r) => r.community_id));
+    setJoinedIds(await db.fetchMyJoins(userId));
   }, []);
   const fetchMyRegistrations = useCallback(async (userId) => {
-    await supabase.auth.getSession();
-    const { data } = await supabase.from("event_registrations").select("event_id").eq("user_id", userId);
-    if (data) setRegisteredEventIds(data.map((r) => r.event_id));
+    setRegisteredEventIds(await db.fetchMyRegistrations(userId));
   }, []);
 
-  // Communities + events are public-readable (RLS allows anon), so they load
-  // immediately on mount regardless of auth state — guests see the real feed too.
-  useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase.from("communities").select("*").order("created_at", { ascending: false });
-      if (!error && data) setDbCommunities(data.map(mapCommunityRow));
-    })();
-    (async () => {
-      const { data, error } = await supabase.from("events").select("*").order("created_at", { ascending: true });
-      if (!error && data) setEvents(data.map(mapEventRow));
-    })();
-  }, []);
-
-  // Home dashboard's "Latest posts" feed — every community's posts, newest
-  // first, across the whole app (not just joined ones), Instagram-style.
-  // Readable signed out as well as signed in: schema_public_feed.sql adds a
-  // `to anon` select policy on community_posts plus a column-scoped grant on
-  // profiles.name for the bylines. Guests could already see that communities
-  // and events existed but not a word anyone had said, which left the front
-  // door of the app permanently blank.
+  // Communities, events and the feed are all live subscriptions now. In
+  // Firestore onSnapshot delivers the first page and every later change
+  // through the same callback, so the separate initial-fetch effects and the
+  // three Realtime channels this used to need collapse into one line each.
   //
-  // Sparks stay signed-in only — which of these you personally sparked is a
-  // question that needs a "you".
-  //
-  // Also subscribed to Realtime below — a post from any community (or a
-  // spark landing on one) shows up in the feed live, no manual refresh.
+  // All three read signed out as well as signed in, so a guest sees the real
+  // campus feed instead of an empty page.
+  useEffect(() => db.watchCommunities(setDbCommunities), []);
+  useEffect(() => db.watchEvents(setEvents), []);
+  useEffect(() => db.watchFeed(setFeedPosts), []);
+
+  // Which of those posts you personally sparked needs a "you", so it stays
+  // signed-in only and refetches when the session changes.
   useEffect(() => {
-    (async () => {
-      const { data, error } = await supabase
-        .from("community_posts")
-        .select("id, community_id, author_id, text, has_image, image_url, spark_count, created_at, profiles!author_id(name)")
-        .order("created_at", { ascending: false })
-        .limit(40);
-      if (!error && data) setFeedPosts(data.map(mapFeedPostRow));
-
-      if (!authUser) { setFeedSparkIds([]); return; }
-      const { data: myRows } = await supabase
-        .from("community_post_sparks")
-        .select("post_id")
-        .eq("user_id", authUser.id);
-      if (myRows) setFeedSparkIds(myRows.map((r) => r.post_id));
-    })();
-
-    // App-wide (no community_id filter, unlike Community.jsx's scoped
-    // channel) — a new/edited/deleted post anywhere updates Home's feed
-    // live. INSERT/UPDATE payloads carry raw columns only (no joined
-    // profiles.name), so those two re-fetch just that one row with the
-    // same relationship hint the initial query uses.
-    const channel = supabase
-      .channel("home-feed-realtime")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "community_posts" }, async (payload) => {
-        const { data } = await supabase
-          .from("community_posts")
-          .select("id, community_id, author_id, text, has_image, image_url, spark_count, created_at, profiles!author_id(name)")
-          .eq("id", payload.new.id)
-          .single();
-        if (!data) return;
-        const mapped = mapFeedPostRow(data);
-        setFeedPosts((ps) => (ps.some((p) => p.id === mapped.id) ? ps : [mapped, ...ps].slice(0, 60)));
-      })
-      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "community_posts" }, (payload) => {
-        setFeedPosts((ps) => ps.map((p) => (p.id === payload.new.id ? { ...p, sparks: payload.new.spark_count, text: payload.new.text } : p)));
-      })
-      .on("postgres_changes", { event: "DELETE", schema: "public", table: "community_posts" }, (payload) => {
-        setFeedPosts((ps) => ps.filter((p) => p.id !== payload.old.id));
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+    if (!authUser) { setFeedSparkIds([]); return; }
+    let alive = true;
+    db.fetchMySparks(authUser.id).then((ids) => { if (alive) setFeedSparkIds(ids); });
+    return () => { alive = false; };
   }, [authUser]);
-
-  // Realtime: member counts / new communities update live for everyone in
-  // the app without a manual refresh (e.g. someone else joining a community
-  // you're looking at right now).
-  useEffect(() => {
-    const channel = supabase
-      .channel("communities-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "communities" }, (payload) => {
-        setDbCommunities((cs) => {
-          if (payload.eventType === "DELETE") return cs.filter((c) => c.id !== payload.old.id);
-          const mapped = mapCommunityRow(payload.new);
-          return cs.some((c) => c.id === mapped.id)
-            ? cs.map((c) => (c.id === mapped.id ? mapped : c))
-            : [mapped, ...cs];
-        });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
-
-  // Realtime: Events tab updates live too (new event posted, one edited or
-  // removed) — same pattern as the communities channel above. Safe to
-  // broadcast in full (unlike tea_posts below): events has no anonymity
-  // requirement and its "readable by anyone" RLS already exposes every
-  // column to begin with.
-  useEffect(() => {
-    const channel = supabase
-      .channel("events-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "events" }, (payload) => {
-        setEvents((es) => {
-          if (payload.eventType === "DELETE") return es.filter((e) => e.id !== payload.old.id);
-          const mapped = mapEventRow(payload.new);
-          return es.some((e) => e.id === mapped.id)
-            ? es.map((e) => (e.id === mapped.id ? mapped : e))
-            : [...es, mapped];
-        });
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, []);
 
   // Session bootstrap — returning users with a live Firebase session skip
   // onboarding entirely, matching "no repeated re-verification."
@@ -402,10 +218,10 @@ export default function App() {
     showToast(isJoined ? "Left" : "Joined");
 
     if (!authUser) return;
-    const { error } = isJoined
-      ? await supabase.from("community_members").delete().eq("community_id", id).eq("user_id", authUser.id)
-      : await supabase.from("community_members").insert({ community_id: id, user_id: authUser.id });
-    if (error) {
+    try {
+      if (isJoined) await db.leaveCommunity(id, authUser.id);
+      else await db.joinCommunity(id, authUser.id, user.name);
+    } catch {
       setJoinedIds((ids) => (isJoined ? [...ids, id] : ids.filter((x) => x !== id)));
       setDbCommunities((cs) => cs.map((c) => (c.id === id ? { ...c, members: c.members - delta } : c)));
       showToast("Something went wrong, try again");
@@ -429,27 +245,22 @@ export default function App() {
     const body = text.trim();
     if (!body || !communityId) return false;
 
-    const { data, error } = await supabase
-      .from("community_posts")
-      .insert({ community_id: communityId, author_id: authUser.id, text: body })
-      .select("id, text, has_image, image_url, spark_count, created_at, author_id")
-      .single();
-
-    if (error || !data) { showToast("Couldn't post, try again"); return false; }
-
-    setFeedPosts((ps) => [
-      {
-        id: data.id,
+    let created;
+    try {
+      created = await db.createPost({
         communityId,
-        who: user.name || "You",
-        text: data.text,
-        time: "just now",
-        hasImage: !!data.has_image,
-        imageUrl: data.image_url,
-        sparks: data.spark_count ?? 0,
-      },
-      ...ps,
-    ]);
+        authorId: authUser.id,
+        authorName: user.name,
+        text: body,
+      });
+    } catch {
+      showToast("Couldn't post, try again");
+      return false;
+    }
+
+    // watchFeed will deliver this too, but optimistically prepending keeps the
+    // post on screen in the same frame the composer closes.
+    setFeedPosts((ps) => (ps.some((p) => p.id === created.id) ? ps : [created, ...ps]));
     showToast("Posted");
     return true;
   };
@@ -459,10 +270,10 @@ export default function App() {
     const wasSparked = feedSparkIds.includes(postId);
     setFeedSparkIds((ids) => (wasSparked ? ids.filter((x) => x !== postId) : [...ids, postId]));
     setFeedPosts((posts) => posts.map((p) => (p.id === postId ? { ...p, sparks: p.sparks + (wasSparked ? -1 : 1) } : p)));
-    const { error } = wasSparked
-      ? await supabase.from("community_post_sparks").delete().eq("post_id", postId).eq("user_id", authUser.id)
-      : await supabase.from("community_post_sparks").insert({ post_id: postId, user_id: authUser.id });
-    if (error) {
+    const post = feedPosts.find((p) => p.id === postId);
+    try {
+      await db.toggleSpark(post?.communityId, postId, authUser.id);
+    } catch {
       setFeedSparkIds((ids) => (wasSparked ? [...ids, postId] : ids.filter((x) => x !== postId)));
       setFeedPosts((posts) => posts.map((p) => (p.id === postId ? { ...p, sparks: p.sparks + (wasSparked ? 1 : -1) } : p)));
     }
@@ -476,19 +287,19 @@ export default function App() {
     // personalization/recommendation pass needs. Falls back to [category]
     // if somehow empty so a row is never written with no tags at all.
     const finalTags = tags && tags.length ? tags : [category];
-    const { data, error } = await supabase
-      .from("communities")
-      .insert({
-        name, category, tags: finalTags, description: desc || "No description yet.",
-        member_count: 0, creator_id: authUser.id, creator_label: "You", official: false, handle,
-      })
-      .select()
-      .single();
-    if (error || !data) { showToast("Couldn't create, try again"); return; }
-    const mapped = mapCommunityRow(data);
-    setDbCommunities((cs) => [{ ...mapped, members: 1 }, ...cs]);
+    let mapped;
+    try {
+      mapped = await db.createCommunity({
+        name, category, desc, tags: finalTags,
+        creatorId: authUser.id,
+        creatorLabel: user.name || "You",
+      });
+    } catch {
+      showToast("Couldn't create, try again");
+      return;
+    }
+    setDbCommunities((cs) => (cs.some((c) => c.id === mapped.id) ? cs : [mapped, ...cs]));
     setJoinedIds((ids) => [...ids, mapped.id]);
-    await supabase.from("community_members").insert({ community_id: mapped.id, user_id: authUser.id });
     showToast("Community created");
     setShowCreate(false);
     setActiveTab("home");
@@ -504,7 +315,7 @@ export default function App() {
     if (updates.desc !== undefined) dbUpdates.description = updates.desc;
     if (updates.avatarUrl !== undefined) dbUpdates.avatar_url = updates.avatarUrl;
     if (updates.postsAdminOnly !== undefined) dbUpdates.posts_admin_only = updates.postsAdminOnly;
-    const { error } = await supabase.from("communities").update(dbUpdates).eq("id", id);
+    const error = await db.updateCommunity(id, updates).then(() => null).catch((e) => e);
     showToast(error ? "Update failed" : "Updated");
   };
 
@@ -518,7 +329,7 @@ export default function App() {
     const trimmedName = name.trim();
     if (!trimmedName || !authUser) return;
     setUser((u) => ({ ...u, name: trimmedName, bio }));
-    const { error } = await supabase.from("profiles").update({ name: trimmedName, bio }).eq("id", authUser.id);
+    const error = await saveProfile(authUser.id, { name: trimmedName, bio }).then(() => null).catch((e) => e);
     showToast(error ? "Couldn't save profile, try again" : "Profile updated");
   };
 
@@ -526,14 +337,14 @@ export default function App() {
     setDbCommunities((cs) => cs.filter((c) => c.id !== id));
     setJoinedIds((ids) => ids.filter((x) => x !== id));
     setSelectedCommunity(null);
-    const { error } = await supabase.from("communities").delete().eq("id", id);
+    const error = await db.deleteCommunity(id).then(() => null).catch((e) => e);
     showToast(error ? "Delete failed, refresh and retry" : "Deleted");
   };
 
   // Previously this only console.log'd — nothing was ever saved, so reports
   // silently vanished even though the UI said "submitted for review." Now a
-  // real row in public.reports (supabase/schema_security_hardening.sql);
-  // view submissions from the Supabase dashboard.
+  // real document in the reports collection;
+  // view submissions from the Firebase console.
   // `detail` is the optional free-text box the rebuilt ReportModal adds. It's
   // appended to the reason rather than sent as its own column, since the
   // reports table has no field for it — a schema change is backend work.
@@ -544,54 +355,50 @@ export default function App() {
     showToast("Report submitted for review");
     if (!authUser) return;
     const body = detail ? `${reason}: ${detail}` : reason;
-    await supabase.from("reports").insert({ reporter_id: authUser.id, target: String(target), reason: body });
+    await db.createReport({ reporterId: authUser.id, target, reason: body });
   };
 
   // Registering for an event is the access gate to its community — the
-  // register_for_event() RPC (supabase/schema.sql) creates the linked
-  // community on the first registration (or reuses it) and joins the caller,
-  // atomically, server-side.
+  // Registering is the access gate to an event's community. db.registerForEvent
+  // runs it as a Firestore transaction: create-or-reuse the linked community,
+  // add the registration, add the membership, bump the count — all or nothing,
+  // the same guarantee the plpgsql function used to give.
   const handleRegisterEvent = async (event) => {
     if (!authUser) { handleBlocked(); return; }
-    const { data: communityId, error } = await supabase.rpc("register_for_event", { p_event_id: event.id });
-    if (error || !communityId) { showToast("Registration failed, try again"); return; }
+    let communityId;
+    try {
+      communityId = await db.registerForEvent(event, authUser.id, user.name);
+    } catch {
+      showToast("Registration failed, try again");
+      return;
+    }
+    if (!communityId) { showToast("Registration failed, try again"); return; }
 
     setRegisteredEventIds((ids) => [...ids, event.id]);
     setJoinedIds((ids) => (ids.includes(communityId) ? ids : [...ids, communityId]));
     setEvents((es) => es.map((e) => (e.id === event.id ? { ...e, linkedCommunityId: communityId } : e)));
-
-    if (!dbCommunities.some((c) => c.id === communityId)) {
-      const { data: row } = await supabase.from("communities").select("*").eq("id", communityId).single();
-      if (row) setDbCommunities((cs) => [mapCommunityRow(row), ...cs]);
-    }
+    // watchCommunities delivers the new community on its own; no manual fetch.
     showToast(`Registered for ${event.title}`);
   };
 
-  // Locali-Tea: anonymous, 48h self-expiring — real Supabase data (posts,
+  // Locali-Tea: anonymous, 48h self-expiring — real Firestore data (posts,
   // votes, comments), just not realtime-subscribed (see schema_tea.sql for
   // why: postgres_changes would leak author_id over the wire, breaking the
   // anonymity the whole feature is built on). Refetches on open instead.
   const fetchTea = useCallback(async () => {
-    // See the getSession() note on fetchMyJoins/Community.jsx — tea_posts
-    // and friends are also "to authenticated" RLS, same stale-JWT race.
-    await supabase.auth.getSession();
-    const { data } = await supabase
-      .from("tea_posts")
-      .select("id, text, category, true_count, cap_count, reactions, comment_count, created_at")
-      .order("created_at", { ascending: false });
-    if (data) setTeaPosts((prev) => {
+    const rows = await db.fetchTea();
+    setTeaPosts((prev) => {
       const byId = new Map(prev.map((t) => [t.id, t]));
-      return data.map((row) => {
-        const mapped = mapTeaRow(row);
-        const existing = byId.get(row.id);
-        return existing ? { ...mapped, comments: existing.comments } : mapped;
+      // Comments are lazy-loaded per post, so a refetch must not throw away
+      // the ones already open on screen.
+      return rows.map((r) => {
+        const existing = byId.get(r.id);
+        return existing ? { ...r, comments: existing.comments } : r;
       });
     });
     if (authUser) {
-      const { data: votes } = await supabase.from("tea_votes").select("post_id, vote").eq("user_id", authUser.id);
-      if (votes) setMyTeaVotes(Object.fromEntries(votes.map((v) => [v.post_id, v.vote])));
-      const { data: reactions } = await supabase.from("tea_reactions").select("post_id, emoji").eq("user_id", authUser.id);
-      if (reactions) setMyTeaReactions(Object.fromEntries(reactions.map((r) => [r.post_id, r.emoji])));
+      setMyTeaVotes(await db.fetchMyTeaVotes(authUser.id));
+      setMyTeaReactions(await db.fetchMyTeaReactions(authUser.id));
     }
   }, [authUser]);
 
@@ -607,34 +414,28 @@ export default function App() {
   }, [teaOpen, fetchTea]);
 
   const loadTeaComments = useCallback(async (postId) => {
-    const { data } = await supabase
-      .from("tea_comments")
-      .select("id, text, created_at")
-      .eq("post_id", postId)
-      .order("created_at", { ascending: true });
-    setTeaPosts((ts) => ts.map((t) => (t.id === postId ? { ...t, comments: (data || []).map(mapTeaCommentRow) } : t)));
+    const comments = await db.fetchTeaComments(postId);
+    setTeaPosts((ts) => ts.map((t) => (t.id === postId ? { ...t, comments } : t)));
   }, []);
 
   const handlePostTea = async (text, category = "tea") => {
     if (!authUser) { handleBlocked(); return; }
-    const { data, error } = await supabase
-      .from("tea_posts")
-      .insert({ author_id: authUser.id, text, category })
-      .select("id, text, category, true_count, cap_count, reactions, comment_count, created_at")
-      .single();
-    if (!error && data) {
-      setTeaPosts((ts) => [{ ...mapTeaRow(data), comments: [] }, ...ts]);
-      setMyTeaPostIds((ids) => { const next = new Set(ids); next.add(data.id); saveIdSet("orbit_my_tea_post_ids", next); return next; });
-      showToast("Posted anonymously, gone in 48h");
-    } else {
+    let newId;
+    try {
+      newId = await db.postTea({ text, category, authorId: authUser.id });
+    } catch {
       showToast("Couldn't post, try again");
+      return;
     }
+    await fetchTea();
+    setMyTeaPostIds((ids) => { const next = new Set(ids); next.add(newId); saveIdSet("orbit_my_tea_post_ids", next); return next; });
+    showToast("Posted anonymously, gone in 48h");
   };
 
   const handleDeleteTea = async (id) => {
     const prevPosts = teaPosts;
     setTeaPosts((ts) => ts.filter((t) => t.id !== id));
-    const { error } = await supabase.from("tea_posts").delete().eq("id", id);
+    const error = await db.deleteTea(id).then(() => null).catch((e) => e);
     if (error) {
       setTeaPosts(prevPosts);
       showToast("Couldn't delete, try again");
@@ -649,7 +450,7 @@ export default function App() {
         ? { ...t, comments: (t.comments || []).filter((c) => c.id !== commentId), commentCount: Math.max(0, (t.commentCount || 1) - 1) }
         : t
     )));
-    const { error } = await supabase.from("tea_comments").delete().eq("id", commentId);
+    const error = await db.deleteTeaComment(postId, commentId).then(() => null).catch((e) => e);
     if (error) {
       loadTeaComments(postId); // out of sync — just re-pull the truth
     } else {
@@ -665,8 +466,7 @@ export default function App() {
     if (prev === emoji) {
       setMyTeaReactions((rs) => { const next = { ...rs }; delete next[id]; return next; });
       setTeaPosts((ts) => ts.map((t) => (t.id === id ? { ...t, reactions: { ...t.reactions, [emoji]: Math.max(0, (t.reactions?.[emoji] || 0) - 1) } } : t)));
-      const { error } = await supabase.from("tea_reactions").delete().eq("post_id", id).eq("user_id", authUser.id);
-      if (error) fetchTea();
+      try { await db.reactTea(id, authUser.id, emoji); } catch { fetchTea(); }
       return;
     }
     setMyTeaReactions((rs) => ({ ...rs, [id]: emoji }));
@@ -677,10 +477,7 @@ export default function App() {
       next[emoji] = (next[emoji] || 0) + 1;
       return { ...t, reactions: next };
     }));
-    const { error } = prev
-      ? await supabase.from("tea_reactions").update({ emoji }).eq("post_id", id).eq("user_id", authUser.id)
-      : await supabase.from("tea_reactions").insert({ post_id: id, user_id: authUser.id, emoji });
-    if (error) fetchTea();
+    try { await db.reactTea(id, authUser.id, emoji); } catch { fetchTea(); }
   };
 
   const handleValidateTea = async (id, vote) => {
@@ -697,25 +494,24 @@ export default function App() {
       if (vote === "cap") capCount += 1;
       return { ...t, trueCount, capCount };
     }));
-    const { error } = prev
-      ? await supabase.from("tea_votes").update({ vote }).eq("post_id", id).eq("user_id", authUser.id)
-      : await supabase.from("tea_votes").insert({ post_id: id, user_id: authUser.id, vote });
-    if (error) fetchTea(); // out of sync — just re-pull the truth
+    try { await db.voteTea(id, authUser.id, vote); } catch { fetchTea(); } // out of sync, re-pull the truth
   };
 
   const handleCommentTea = async (id, text) => {
     if (!authUser) { handleBlocked(); return; }
-    const { data, error } = await supabase
-      .from("tea_comments")
-      .insert({ post_id: id, author_id: authUser.id, text })
-      .select("id, text, created_at")
-      .single();
-    if (!error && data) {
-      setTeaPosts((ts) => ts.map((t) => (
-        t.id === id ? { ...t, comments: [...(t.comments || []), mapTeaCommentRow(data)], commentCount: (t.commentCount || 0) + 1 } : t
-      )));
-      setMyTeaCommentIds((ids) => { const next = new Set(ids); next.add(data.id); saveIdSet("orbit_my_tea_comment_ids", next); return next; });
+    let commentId;
+    try {
+      commentId = await db.commentTea(id, text, authUser.id);
+    } catch {
+      showToast("Couldn't post, try again");
+      return;
     }
+    setTeaPosts((ts) => ts.map((t) => (
+      t.id === id
+        ? { ...t, comments: [...(t.comments || []), { id: commentId, who: "Anonymous", text, time: "just now" }], commentCount: (t.commentCount || 0) + 1 }
+        : t
+    )));
+    setMyTeaCommentIds((ids) => { const next = new Set(ids); next.add(commentId); saveIdSet("orbit_my_tea_comment_ids", next); return next; });
   };
 
   const handleOpenEventCommunity = (event) => {
@@ -812,7 +608,6 @@ export default function App() {
         onOpenSettings={() => goToTab("settings")}
         verified={user.verified} user={user} theme={theme} onToggleTheme={toggleTheme}
         joinedCount={joinedIds.length}
-        isAdmin={isAdmin}
         onUnbuilt={(m) => showToast(m)} />
       <div className="flex-1 flex flex-col overflow-hidden lg:h-full min-w-0">
       {!showingSubPage && (
@@ -911,12 +706,6 @@ export default function App() {
             if (c) setSelectedCommunity(c);
             else goToTab("events");
           }}
-        />
-      ) : activeTab === "admin" ? (
-        <AdminPanel
-          user={user}
-          onBack={() => goToTab("home")}
-          onToast={showToast}
         />
       ) : activeTab === "settings" ? (
         <SettingsScreen

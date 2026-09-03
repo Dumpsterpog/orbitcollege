@@ -1,0 +1,91 @@
+{
+  "//": [
+    "Composite and collection-group indexes Orbit needs.",
+    "",
+    "Firestore auto-creates single-field indexes, but not these: a",
+    "collectionGroup query needs its scope declared explicitly, and any query",
+    "that filters on one field while ordering by another needs a composite.",
+    "",
+    "You do not have to apply this file by hand. The first time each query",
+    "runs, Firestore fails with a console error containing a click-to-create",
+    "link that builds exactly the index below. This file exists so the set is",
+    "written down, reviewable, and deployable with:",
+    "",
+    "  firebase deploy --only firestore:indexes",
+    "",
+    "Building an index over an empty collection is instant; over a large one",
+    "it can take minutes, during which the query keeps failing."
+  ],
+
+  "indexes": [
+    {
+      "//": "Home feed: newest posts across every community at once.",
+      "collectionGroup": "posts",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "//": "Which posts a given person has sparked, across all communities.",
+      "collectionGroup": "sparks",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "uid", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "//": "Which communities a given person belongs to.",
+      "collectionGroup": "members",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "uid", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "//": "Which events a given person has registered for.",
+      "collectionGroup": "registrations",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "uid", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "//": "A person's Locali-Tea votes and reactions, for restoring their own state.",
+      "collectionGroup": "votes",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "uid", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "reactions",
+      "queryScope": "COLLECTION_GROUP",
+      "fields": [
+        { "fieldPath": "uid", "order": "ASCENDING" }
+      ]
+    }
+  ],
+
+  "fieldOverrides": [
+    {
+      "//": [
+        "48-hour self-deletion for Locali-Tea. Postgres did this in SQL; here",
+        "it is a native TTL policy on expiresAt, which db.js stamps at write",
+        "time. Firestore sweeps expired documents within about 24 hours of the",
+        "timestamp, so fetchTea() ALSO filters on the client — a post is",
+        "invisible the moment it expires rather than whenever the sweeper next",
+        "runs. Both are needed: the filter for correctness, the TTL so the",
+        "collection does not grow without bound.",
+        "",
+        "TTL cannot be set from this file. Turn it on at:",
+        "Firebase Console -> Firestore -> Time-to-live -> Create policy",
+        "  Collection group: tea_posts     Timestamp field: expiresAt"
+      ],
+      "collectionGroup": "tea_posts",
+      "fieldPath": "expiresAt",
+      "ttl": true,
+      "indexes": []
+    }
+  ]
+}

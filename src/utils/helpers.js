@@ -50,7 +50,7 @@ export function handleFor(name, id) {
   return `${slugify(name)}-${id}`;
 }
 
-// Stable numeric hash for a string id — Supabase rows use uuid string ids,
+// Stable numeric hash for a string id — Firestore documents use string ids,
 // so anything that used to do `id % N` (fine for the old numeric mock ids)
 // needs this instead, or it silently produces NaN.
 export function hashId(id) {

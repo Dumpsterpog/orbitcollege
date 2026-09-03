@@ -55,7 +55,7 @@ export const COLOR_MAP = {
 // MOCK_SUGGESTED_PEOPLE / MOCK_TEA mock-data arrays that used to live here
 // were removed (PDF improvement list, item 7 — "removal of seed data").
 // Every one of them was already dead: communities/events/Locali-Tea have
-// been reading from live Supabase since early in the build (see App.jsx),
+// been reading from the live database since early in the build (see App.jsx),
 // and the one component that still imported the two chat-related mocks
 // (Chat.jsx) was itself never imported by anything — a leftover from before
 // DMs got gated as "coming soon". Deleted both rather than leave unreachable

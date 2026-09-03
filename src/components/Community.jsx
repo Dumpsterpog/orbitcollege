@@ -6,7 +6,7 @@ import { Icon, Avatar, Button, IconButton, Input, Textarea, Field, Spinner, cx }
 import { Switch } from "./ui/Primitives.jsx";
 import { Screen, PageHeader, Modal } from "./ui/Layout.jsx";
 import { EmptyState } from "./EmptyState.jsx";
-import { supabase } from "../lib/supabaseClient.js";
+import * as db from "../lib/db.js";
 
 export function CommunitySettings({ c, onSave, onDelete, onClose }) {
   const [name, setName] = useState(c.name);
@@ -34,7 +34,8 @@ export function CommunitySettings({ c, onSave, onDelete, onClose }) {
       setSavingAvatar(true);
       setAvatarError("");
       const path = `${c.id}/${Date.now()}-${avatarFile.name}`;
-      const { error: upErr } = await supabase.storage.from("community-avatars").upload(path, avatarFile, { upsert: true });
+      let uploaded = null;
+      try { uploaded = await db.uploadImage("community-avatars", avatarFile, c.id); } catch (e) { var upErr = e; }
       if (upErr) {
         setSavingAvatar(false);
         setAvatarError(upErr.message || "Image upload failed.");
@@ -45,7 +46,7 @@ export function CommunitySettings({ c, onSave, onDelete, onClose }) {
         // pressed again.
         return;
       }
-      const { data: pub } = supabase.storage.from("community-avatars").getPublicUrl(path);
+      const pub = uploaded ? { publicUrl: uploaded.url } : null;
       if (pub?.publicUrl) updates.avatarUrl = pub.publicUrl;
       setSavingAvatar(false);
     }
@@ -216,130 +217,37 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
   const [stickersLoaded, setStickersLoaded] = useState(false);
   const [uploadingSticker, setUploadingSticker] = useState(false);
 
-  // Real fetch + realtime, scoped to this one community. App.jsx re-mounts
-  // this component (key={selectedCommunity.id}) on every community switch,
-  // so a plain mount-time effect is enough — no need to watch c.id changing.
+  // Live subscriptions, scoped to this one community. App.jsx remounts this
+  // component (key={selectedCommunity.id}) on every switch, so a mount-time
+  // effect is enough.
+  //
+  // This replaced about ninety lines. Most of what was here existed to work
+  // around Postgres-era problems that no longer exist:
+  //
+  //   A getSession() call before every read, plus a 400ms retry, because a
+  //   stale JWT made RLS silently scope the request as anon and return an
+  //   empty 200 that overwrote real posts. Firestore's SDK holds the auth
+  //   state itself and re-runs the listener when it changes.
+  //
+  //   A profiles!author_id join hint, because PostgREST returned HTTP 300
+  //   "more than one relationship was found". Author names are denormalised
+  //   onto the document now, so there is no join to disambiguate.
+  //
+  //   Three postgres_changes channels with manual insert/update/delete
+  //   reconciliation. onSnapshot delivers the whole current list.
   useEffect(() => {
+    const stopPosts = db.watchCommunityPosts(c.id, setPosts);
+    const stopMessages = db.watchMessages(c.id, setChatMessages);
+
     let cancelled = false;
+    db.fetchMembers(c.id).then((m) => { if (!cancelled) setMembers(m); });
+    if (authUserId) {
+      db.fetchMySparks(authUserId).then((ids) => { if (!cancelled) setPostSparkIds(ids); });
+    }
 
-    // Make sure the auth session is actually fresh before any of the
-    // RLS-gated fetches below fire. Without this, a request can go out
-    // right as the app resumes (or a community is reopened) with a
-    // stale/expiring JWT — Supabase doesn't error on that, it just quietly
-    // scopes the request as "anon" under RLS and returns an EMPTY result
-    // (200 OK, data: []). Since this component remounts fresh on every
-    // community open (key={selectedCommunity.id} in App.jsx), that empty
-    // result was overwriting real, still-in-the-database posts/messages —
-    // looked exactly like data vanishing, even though nothing was ever
-    // deleted (confirmed via a delete-audit trigger: zero deletes fired).
-    const ready = supabase.auth.getSession();
-
-    ready.then(() => {
-      if (cancelled) return;
-
-      (async () => {
-        const fetchPosts = () =>
-          supabase
-            .from("community_posts")
-            // profiles!author_id (not plain profiles(name)) — PostgREST was
-            // returning HTTP 300 "more than one relationship was found for
-            // community_posts and profiles" on this query specifically
-            // (confirmed via Edge Logs), meaning every fetch silently
-            // returned no data and wiped the local posts list on every
-            // remount. This explicit column hint tells it exactly which
-            // foreign key to embed through, removing the ambiguity.
-            .select("id, text, has_image, image_url, spark_count, pinned, created_at, author_id, profiles!author_id(name)")
-            .eq("community_id", c.id)
-            .order("created_at", { ascending: false });
-        let { data } = await fetchPosts();
-        if ((!data || data.length === 0) && !cancelled) {
-          // Empty on the first try could be a genuinely-empty community, OR
-          // the same stale/expiring-JWT race the getSession() call above is
-          // meant to close — belt and suspenders: confirm with one retry
-          // after a short pause + a fresh session check before trusting a
-          // single empty response enough to wipe posts that are still
-          // really there.
-          await new Promise((r) => setTimeout(r, 400));
-          await supabase.auth.getSession();
-          ({ data } = await fetchPosts());
-        }
-        if (!cancelled && data) setPosts(data.map(mapPostRow));
-
-        if (authUserId) {
-          const { data: myRows } = await supabase
-            .from("community_post_sparks")
-            .select("post_id")
-            .eq("user_id", authUserId);
-          if (!cancelled && myRows) setPostSparkIds(myRows.map((r) => r.post_id));
-        }
-      })();
-
-      (async () => {
-        const fetchMessages = () =>
-          supabase
-            .from("community_messages")
-            .select("id, text, image_url, created_at, author_id, pinned, profiles(name)")
-            .eq("community_id", c.id)
-            .order("created_at", { ascending: true });
-        let { data } = await fetchMessages();
-        if ((!data || data.length === 0) && !cancelled) {
-          await new Promise((r) => setTimeout(r, 400));
-          await supabase.auth.getSession();
-          ({ data } = await fetchMessages());
-        }
-        if (!cancelled && data) setChatMessages(data.map(mapMessageRow));
-      })();
-
-      (async () => {
-        const { data } = await supabase
-          .from("community_members")
-          .select("user_id, joined_at, role, profiles(name, interests)")
-          .eq("community_id", c.id)
-          .order("joined_at", { ascending: true });
-        if (!cancelled && data) setMembers(data.map(mapMemberRow));
-      })();
-    });
-
-    const channel = supabase
-      .channel(`community-${c.id}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "community_posts", filter: `community_id=eq.${c.id}` }, (payload) => {
-        if (payload.eventType === "DELETE") {
-          setPosts((ps) => ps.filter((p) => p.id !== payload.old.id));
-          return;
-        }
-        setPosts((ps) => {
-          const mapped = mapPostRow(payload.new);
-          const exists = ps.some((p) => p.id === mapped.id);
-          return exists ? ps.map((p) => (p.id === mapped.id ? { ...p, ...mapped, who: p.who } : p)) : [mapped, ...ps];
-        });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "community_messages", filter: `community_id=eq.${c.id}` }, (payload) => {
-        if (payload.eventType === "DELETE") {
-          setChatMessages((ms) => ms.filter((m) => m.id !== payload.old.id));
-          return;
-        }
-        setChatMessages((ms) => {
-          const mapped = mapMessageRow(payload.new);
-          const exists = ms.some((m) => m.id === mapped.id);
-          return exists ? ms.map((m) => (m.id === mapped.id ? { ...m, ...mapped, who: m.who } : m)) : [...ms, mapped];
-        });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "community_members", filter: `community_id=eq.${c.id}` }, async () => {
-        const { data } = await supabase
-          .from("community_members")
-          .select("user_id, joined_at, role, profiles(name, interests)")
-          .eq("community_id", c.id)
-          .order("joined_at", { ascending: true });
-        if (!cancelled && data) setMembers(data.map(mapMemberRow));
-      })
-      .subscribe();
-
-    return () => {
-      cancelled = true;
-      supabase.removeChannel(channel);
-    };
+    return () => { cancelled = true; stopPosts(); stopMessages(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [c.id]);
+  }, [c.id, authUserId]);
 
   const total = members.length || c.members;
   const filteredMembers = useMemo(() => {
@@ -382,23 +290,15 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
     setPostImageFile(null);
     setPostImagePreview(null);
     setPostingImage(true);
-    const path = `${authUserId}/${Date.now()}-${file.name}`;
-    const { error: upErr } = await supabase.storage.from("community-media").upload(path, file);
     let imageUrl = null;
-    if (!upErr) {
-      const { data: pub } = supabase.storage.from("community-media").getPublicUrl(path);
-      imageUrl = pub?.publicUrl || null;
-    }
+    try {
+      ({ url: imageUrl } = await db.uploadImage("community-media", file, authUserId));
+    } catch { imageUrl = null; }
     setPostingImage(false);
     if (!imageUrl) return; // upload failed — don't create a photo-less post
-    const { data, error } = await supabase
-      .from("community_posts")
-      .insert({ community_id: c.id, author_id: authUserId, text: t, has_image: true, image_url: imageUrl })
-      .select("id, text, has_image, image_url, spark_count, pinned, created_at, author_id")
-      .single();
-    if (!error && data) {
-      setPosts((ps) => [{ ...mapPostRow(data), who: myName || "You" }, ...ps]);
-    }
+    try {
+      await db.createPost({ communityId: c.id, authorId: authUserId, authorName: myName, text: t, imageUrl });
+    } catch { /* watchCommunityPosts stays the source of truth */ }
   };
 
   // Author can always remove their own post/message; the community's
@@ -408,53 +308,40 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
   const deletePost = async (post) => {
     if (!(post.authorId === authUserId || isAdmin)) return;
     setPosts((ps) => ps.filter((p) => p.id !== post.id));
-    const { error } = await supabase.from("community_posts").delete().eq("id", post.id);
+    const error = await db.deletePost(c.id, post.id).then(() => null).catch((e) => e);
     if (error) setPosts((ps) => [post, ...ps]);
   };
 
   const deleteMessage = async (message) => {
     if (!(message.authorId === authUserId || isAdmin)) return;
     setChatMessages((ms) => ms.filter((m) => m.id !== message.id));
-    const { error } = await supabase.from("community_messages").delete().eq("id", message.id);
+    const error = await db.deleteMessage(c.id, message.id).then(() => null).catch((e) => e);
     if (error) setChatMessages((ms) => [...ms, message]);
   };
 
   const loadStickers = async () => {
-    const { data } = await supabase.from("stickers").select("id, image_url").order("created_at", { ascending: false });
-    setStickers(data || []);
+    const rows = await db.fetchStickers();
+    setStickers(rows.map((r) => ({ id: r.id, image_url: r.url })));
     setStickersLoaded(true);
   };
 
   const uploadSticker = async (file) => {
     if (!authUserId || !file) return;
     setUploadingSticker(true);
-    const path = `${authUserId}/${Date.now()}-${file.name}`;
-    const { error: upErr } = await supabase.storage.from("stickers").upload(path, file);
-    if (!upErr) {
-      const { data: pub } = supabase.storage.from("stickers").getPublicUrl(path);
-      if (pub?.publicUrl) {
-        const { data, error } = await supabase
-          .from("stickers")
-          .insert({ uploader_id: authUserId, image_url: pub.publicUrl })
-          .select("id, image_url")
-          .single();
-        if (!error && data) setStickers((s) => [data, ...s]);
-      }
-    }
+    try {
+      const { url } = await db.uploadImage("stickers", file, authUserId);
+      const created = await db.addSticker({ url, authorId: authUserId });
+      setStickers((prev) => [{ id: created.id, image_url: url }, ...prev]);
+    } catch { /* leave the picker as it was */ }
     setUploadingSticker(false);
   };
 
   const sendSticker = async (sticker) => {
     if (!authUserId) return;
     setStickerPickerOpen(false);
-    const { data, error } = await supabase
-      .from("community_messages")
-      .insert({ community_id: c.id, author_id: authUserId, text: "", image_url: sticker.image_url })
-      .select("id, text, image_url, created_at, author_id")
-      .single();
-    if (!error && data) {
-      setChatMessages((ms) => [...ms, { ...mapMessageRow(data), who: myName || "You" }]);
-    }
+    try {
+      await db.sendMessage({ communityId: c.id, authorId: authUserId, authorName: myName, text: "", imageUrl: sticker.image_url });
+    } catch { /* watchMessages stays the source of truth */ }
   };
 
   const togglePostSpark = async (id) => {
@@ -463,8 +350,8 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
     setPostSparkIds((ids) => (already ? ids.filter((x) => x !== id) : [...ids, id]));
     setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, sparks: p.sparks + (already ? -1 : 1) } : p)));
     const { error } = already
-      ? await supabase.from("community_post_sparks").delete().eq("post_id", id).eq("user_id", authUserId)
-      : await supabase.from("community_post_sparks").insert({ post_id: id, user_id: authUserId });
+      ? await db.toggleSpark(c.id, id, authUserId).then(() => ({})).catch((e) => ({ error: e }))
+      : await db.toggleSpark(c.id, id, authUserId).then(() => ({})).catch((e) => ({ error: e }));
     if (error) {
       setPostSparkIds((ids) => (already ? [...ids, id] : ids.filter((x) => x !== id)));
       setPosts((ps) => ps.map((p) => (p.id === id ? { ...p, sparks: p.sparks + (already ? 1 : -1) } : p)));
@@ -474,20 +361,20 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
   const togglePin = async (post) => {
     const currentlyPinned = posts.find((p) => p.pinned);
     if (currentlyPinned && currentlyPinned.id !== post.id) {
-      await supabase.from("community_posts").update({ pinned: false }).eq("id", currentlyPinned.id);
+      await db.setPostPinned(c.id, currentlyPinned.id, false);
     }
     const nextPinned = !post.pinned;
-    await supabase.from("community_posts").update({ pinned: nextPinned }).eq("id", post.id);
+    await db.setPostPinned(c.id, post.id, nextPinned);
     setPosts((ps) => ps.map((p) => (p.id === post.id ? { ...p, pinned: nextPinned } : currentlyPinned && p.id === currentlyPinned.id ? { ...p, pinned: false } : p)));
   };
 
   const togglePinMessage = async (message) => {
     const currentlyPinned = chatMessages.find((m) => m.pinned);
     if (currentlyPinned && currentlyPinned.id !== message.id) {
-      await supabase.from("community_messages").update({ pinned: false }).eq("id", currentlyPinned.id);
+      await db.setMessagePinned(c.id, currentlyPinned.id, false);
     }
     const nextPinned = !message.pinned;
-    await supabase.from("community_messages").update({ pinned: nextPinned }).eq("id", message.id);
+    await db.setMessagePinned(c.id, message.id, nextPinned);
     setChatMessages((ms) => ms.map((m) => (m.id === message.id ? { ...m, pinned: nextPinned } : currentlyPinned && m.id === currentlyPinned.id ? { ...m, pinned: false } : m)));
   };
 
@@ -498,11 +385,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
   const removeMember = async (member) => {
     if (!isAdmin) return;
     setMembers((ms) => ms.filter((m) => m.userId !== member.userId));
-    const { error } = await supabase
-      .from("community_members")
-      .delete()
-      .eq("community_id", c.id)
-      .eq("user_id", member.userId);
+    const error = await db.leaveCommunity(c.id, member.userId).then(() => null).catch((e) => e);
     if (error) {
       setMembers((ms) => [...ms, member]);
     }
@@ -514,11 +397,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
     if (!isAdmin) return;
     const nextRole = member.dbRole === "admin" ? "member" : "admin";
     setMembers((ms) => ms.map((m) => (m.userId === member.userId ? { ...m, dbRole: nextRole } : m)));
-    const { error } = await supabase
-      .from("community_members")
-      .update({ role: nextRole })
-      .eq("community_id", c.id)
-      .eq("user_id", member.userId);
+    const error = await db.setMemberRole(c.id, member.userId, nextRole).then(() => null).catch((e) => e);
     if (error) {
       setMembers((ms) => ms.map((m) => (m.userId === member.userId ? { ...m, dbRole: member.dbRole } : m)));
     }
@@ -528,14 +407,9 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
     const t = chatDraft.trim();
     if (!t || !authUserId) return;
     setChatDraft("");
-    const { data, error } = await supabase
-      .from("community_messages")
-      .insert({ community_id: c.id, author_id: authUserId, text: t })
-      .select("id, text, created_at, author_id")
-      .single();
-    if (!error && data) {
-      setChatMessages((ms) => [...ms, { ...mapMessageRow(data), who: myName || "You" }]);
-    }
+    try {
+      await db.sendMessage({ communityId: c.id, authorId: authUserId, authorName: myName, text: t });
+    } catch { setChatDraft(t); }
   };
 
   const TABS = [

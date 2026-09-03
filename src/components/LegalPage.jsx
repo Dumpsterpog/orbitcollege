@@ -1,5 +1,5 @@
 // Renders /privacy and /terms as plain web pages, outside the app's normal
-// tab flow (no Supabase calls, no auth needed — these must be readable by
+// tab flow (no database calls, no auth needed — these must be readable by
 // anyone, including Play Store reviewers, without signing in).
 //
 // Deliberately NOT using the app's mobile-frame `shellClass` from App.jsx —
