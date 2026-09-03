@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Icon, Avatar, Button } from "./ui/Primitives.jsx";
+import { Icon, Avatar, Button, cx } from "./ui/Primitives.jsx";
 
 export { Avatar };
 
@@ -34,6 +34,57 @@ export function Toast({ message }) {
     <div className="fixed inset-x-0 bottom-36 lg:bottom-24 z-[90] flex justify-center px-4 pointer-events-none animate-rise">
       <div className="bg-solid text-solid-ink text-base font-medium px-4 py-2.5 rounded-full shadow-pop max-w-sm text-center">
         {message}
+      </div>
+    </div>
+  );
+}
+
+// Theme notice.
+//
+// The app follows the OS on a first visit rather than picking a look for you.
+// That is the right default but an invisible one, so this says it happened
+// once, names which way it went, and points at where to override it. It never
+// appears again after being dismissed or after any manual theme choice, so it
+// cannot become the kind of banner people learn to swat away.
+export function ThemeNotice({ theme, onDismiss, onOpenSettings, raised }) {
+  return (
+    <div className={cx(
+      "fixed inset-x-0 z-[75] flex justify-center px-4 pointer-events-none",
+      // Sits in the toast's lane normally, and one pill higher when the guest
+      // prompt is already occupying the lane below it.
+      raised ? "bottom-52 lg:bottom-40" : "bottom-36 lg:bottom-24"
+    )}>
+      <div
+        className="pointer-events-auto flex items-center gap-3 pl-4 pr-2 py-2 rounded-full
+          bg-solid text-solid-ink shadow-pop animate-rise max-w-[calc(100vw-2rem)]"
+      >
+        <span className="grid place-items-center w-7 h-7 rounded-full bg-white/15 shrink-0">
+          <Icon name={theme === "dark" ? "dark_mode" : "light_mode"} size={17} />
+        </span>
+
+        <p className="text-base font-medium truncate">
+          <span className="hidden sm:inline">Your system is set to {theme}, </span>
+          <span className="sm:hidden">System is {theme}, </span>
+          <span className="opacity-70">so Orbit is too.</span>
+        </p>
+
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={() => { onOpenSettings(); onDismiss(); }}
+          className="shrink-0 bg-bg text-ink hover:bg-bg-sunken"
+        >
+          Change
+        </Button>
+
+        <button
+          onClick={onDismiss}
+          aria-label="Dismiss"
+          className="grid place-items-center w-8 h-8 rounded-full shrink-0 opacity-60
+            hover:opacity-100 hover:bg-white/10 transition-all"
+        >
+          <Icon name="close" size={18} />
+        </button>
       </div>
     </div>
   );

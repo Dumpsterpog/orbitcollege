@@ -9,7 +9,7 @@ import { auth } from "./lib/firebase.js";
 import { TopBar } from "./components/TopBar.jsx";
 import { BottomNav } from "./components/BottomNav.jsx";
 import { Sidebar } from "./components/Sidebar.jsx";
-import { GuestBanner, Toast, Logo } from "./components/Common.jsx";
+import { GuestBanner, Toast, ThemeNotice, Logo } from "./components/Common.jsx";
 import { SearchOverlay } from "./components/SearchOverlay.jsx";
 import { HomeScreen } from "./components/Home.jsx";
 import { ExploreScreen } from "./components/Explore.jsx";
@@ -57,7 +57,7 @@ const SKIP_AUTH = import.meta.env.VITE_SKIP_AUTH === "true";
 
 export default function App() {
   useViewportHeight(); // keyboard-float fix — see utils/useViewportHeight.js
-  const { theme, mode: themeMode, toggleTheme, setThemeMode } = useTheme(); // dark/light — see utils/useTheme.js
+  const { theme, mode: themeMode, toggleTheme, setThemeMode, themeNotice, dismissThemeNotice } = useTheme(); // see utils/useTheme.js
   const [loadingSession, setLoadingSession] = useState(true);
   const [stage, setStage] = useState(SKIP_AUTH ? "app" : "onboarding");
   const [authUser, setAuthUser] = useState(null); // { id, email } from Firebase Auth, or null
@@ -736,6 +736,16 @@ export default function App() {
         <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} onSubmit={handleReportSubmit} />
       )}
       {!showingSubPage && !user.verified && <GuestBanner onVerify={goToInitialPage} />}
+      {/* Sits above the guest pill rather than beside it, and only one of the
+          two is ever new information at a time. */}
+      {themeNotice && (
+        <ThemeNotice
+          theme={themeNotice}
+          onDismiss={dismissThemeNotice}
+          onOpenSettings={() => goToTab("settings")}
+          raised={!showingSubPage && !user.verified}
+        />
+      )}
       <Toast message={toastMsg} />
     </div>
   );
