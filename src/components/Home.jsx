@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { CATEGORIES } from "../data/constants.js";
 import { Icon, Avatar, Button, IconButton, Textarea, cx } from "./ui/Primitives.jsx";
 import { Screen, Modal } from "./ui/Layout.jsx";
 
@@ -217,67 +218,99 @@ export function ComposerModal({ user, communities, onClose, onSubmit }) {
 
 /* ----------------------------------------------------------------- Post */
 
-function Post({ post, community, liked, onLike, onOpen }) {
-  // A campus post belongs to no community, so it is bylined by its author.
-  const head = community ? nameHead(community.name) : (post.who || "Someone");
+// A feed post carries its source, not just its author: which community it came
+// from is the first thing you need in a campus-wide feed, and for a campus post
+// there is no community, so the author takes that slot instead.
+function Post({ post, community, liked, onLike, onOpen, onShare }) {
+  const cat = CATEGORIES.find((x) => x.name === community?.category);
+  const source = community ? nameHead(community.name) : (post.who || "Someone");
+
   return (
-    <article className="card card-interactive p-4">
-      <div className="flex items-center gap-3">
-        <button onClick={() => community && onOpen(community)} className="shrink-0">
-          <Avatar src={community?.avatarUrl} name={head} size={40} />
-        </button>
-        <div className="min-w-0 flex-1 leading-tight">
-          <button
-            onClick={() => community && onOpen(community)}
-            className="block max-w-full text-base font-bold text-ink truncate hover:opacity-70"
-          >
-            {head}
+    <article className="rounded-2xl border border-line hover:border-line-strong transition-colors overflow-hidden">
+      <div className="p-4">
+        <div className="flex items-start gap-3">
+          <button onClick={() => community && onOpen(community)} className="shrink-0">
+            {community ? (
+              <span className="grid place-items-center w-10 h-10 rounded-xl overflow-hidden bg-bg-sunken">
+                {community.avatarUrl
+                  ? <img src={community.avatarUrl} alt="" className="w-full h-full object-cover" />
+                  : <Icon name={cat?.msr || "groups"} size={20} className={cat?.tint || "text-ink-3"} />}
+              </span>
+            ) : (
+              <Avatar name={post.who} size={40} />
+            )}
           </button>
-          <p className="text-xs text-ink-2 truncate">
-            {post.who}<span className="mx-1 text-ink-3">·</span>{post.time}
-          </p>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <button
+                onClick={() => community && onOpen(community)}
+                className="text-md font-bold text-ink truncate hover:opacity-70 transition-opacity"
+              >
+                {source}
+              </button>
+              {community ? (
+                <span className="inline-flex items-center h-5 px-2 rounded-full bg-bg-sunken text-ink-2 text-[10px] font-bold">
+                  {community.official ? "Club" : "Community"}
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-c-blue/12 text-c-blue text-[10px] font-bold">
+                  <Icon name="public" size={10} />Campus
+                </span>
+              )}
+              <span className="text-base text-ink-3">· {post.time}</span>
+            </div>
+            {community && (
+              <p className="text-2xs text-ink-3 mt-0.5 truncate">Posted by {post.who}</p>
+            )}
+          </div>
         </div>
-        <IconButton icon="more_horiz" label="More" size={20} />
+
+        {post.text && (
+          <p className="text-md text-ink leading-relaxed mt-3 whitespace-pre-wrap break-words">
+            {post.text}
+          </p>
+        )}
       </div>
 
-      {post.text && <p className="text-md text-ink leading-relaxed mt-3 whitespace-pre-wrap">{post.text}</p>}
-
       {post.imageUrl && (
-        <button
-          onClick={() => community && onOpen(community)}
-          className="block w-full media rounded-lg overflow-hidden mt-3 ring-1 ring-line"
-        >
-          <img src={post.imageUrl} alt="" loading="lazy" className="w-full max-h-[560px] object-cover" />
-        </button>
+        <img
+          src={post.imageUrl}
+          alt=""
+          loading="lazy"
+          className="w-full max-h-[560px] object-cover border-y border-line"
+        />
       )}
 
-      <div className="flex items-center gap-1 mt-3 pt-3 border-t border-line">
+      <div className="flex items-center gap-1 px-4 py-2.5">
         <button
           onClick={() => onLike(post.id)}
           aria-pressed={liked}
           className={cx(
-            "inline-flex items-center gap-2 h-9 px-3 rounded-full text-base font-semibold transition-colors",
-            "hover:bg-black/[0.05] dark:hover:bg-white/[0.08] active:scale-[0.97]",
-            liked ? "text-c-orange" : "text-ink-2"
+            "inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-semibold transition-colors",
+            liked ? "bg-accent-wash text-accent" : "text-ink-2 hover:text-ink hover:bg-bg-sunken"
           )}
         >
-          <Icon name="local_fire_department" size={20} />
-          {post.sparks > 0 ? compact(post.sparks) : "Spark"}
+          <Icon name="local_fire_department" size={16} className="text-c-orange" />
+          <span className="tabular-nums">{post.sparks || 0}</span>
         </button>
+
         <button
-          onClick={() => community && onOpen(community)}
-          className="inline-flex items-center gap-2 h-9 px-3 rounded-full text-base font-semibold text-ink-2
-            hover:bg-black/[0.05] dark:hover:bg-white/[0.08] active:scale-[0.97] transition-colors"
+          onClick={() => onShare?.(post, community)}
+          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-semibold text-ink-2 hover:text-ink hover:bg-bg-sunken transition-colors"
         >
-          <Icon name="mode_comment" size={19} />Comment
+          <Icon name="share" size={16} className="text-c-teal" />
+          <span className="hidden sm:inline">Share</span>
         </button>
-        <button
-          onClick={() => community && onOpen(community)}
-          className="ml-auto inline-flex items-center gap-2 h-9 px-3 rounded-full text-base font-semibold text-ink-2
-            hover:bg-black/[0.05] dark:hover:bg-white/[0.08] active:scale-[0.97] transition-colors"
-        >
-          Open
-        </button>
+
+        {community && (
+          <button
+            onClick={() => onOpen(community)}
+            className="ml-auto text-xs font-semibold text-accent hover:opacity-70 shrink-0"
+          >
+            Open
+          </button>
+        )}
       </div>
     </article>
   );
@@ -334,28 +367,34 @@ function RailCard({ title, count, action, onAction, children }) {
   );
 }
 
-/* ---------------------------------------------------------- Event row */
+/* ------------------------------------------------------------- Event row */
 
+// The date reads as a block rather than a sentence, because in a rail the
+// thing you scan for is "when", not the title.
 function EventRow({ e, onRegister, onOpen }) {
-  const [head, ...rest] = String(e.when || "").split(/[\s,]+/).filter(Boolean);
+  const [day, ...rest] = String(e.when || "").split(/[\s,]+/).filter(Boolean);
   return (
-    <div className="group flex items-start gap-3.5 py-3.5 border-b border-line last:border-0">
-      <span className="shrink-0 text-center leading-none pt-0.5" style={{ width: 42 }}>
-        <span className="block font-mono text-lg font-semibold tabular-nums text-ink">{head || "TBA"}</span>
-        <span className="block text-2xs font-semibold uppercase tracking-wide text-ink-3 mt-1 truncate">
-          {rest.slice(0, 1).join(" ")}
+    <div className="group flex items-start gap-3 px-4 py-3 border-b border-line last:border-0">
+      <span className="shrink-0 w-11 rounded-lg bg-bg-sunken text-center py-1.5">
+        <span className="block text-[9px] font-bold uppercase tracking-wide text-ink-3">
+          {rest.slice(0, 1).join(" ") || "TBA"}
+        </span>
+        <span className="block font-mono text-md font-bold tabular-nums text-ink leading-tight">
+          {day || "--"}
         </span>
       </span>
+
       <div className="min-w-0 flex-1">
         <button onClick={onOpen} className="text-left block w-full min-w-0">
-          <span className="block text-md font-semibold text-ink leading-snug group-hover:opacity-70 transition-opacity line-clamp-2">
+          <span className="block text-base font-semibold text-ink leading-snug group-hover:opacity-70 transition-opacity line-clamp-2">
             {e.title}
           </span>
         </button>
-        <p className="text-2xs text-ink-2 truncate mt-1">{e.where}</p>
+        <p className="text-2xs text-ink-2 truncate mt-0.5">{e.where}</p>
       </div>
+
       <Button variant="outline" size="xs" onClick={() => onRegister?.(e)} className="shrink-0 mt-0.5">
-        Register
+        RSVP
       </Button>
     </div>
   );

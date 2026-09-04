@@ -235,6 +235,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
   const isLive = c.lastActive <= 10;
   const [tab, setTab] = useState("posts");
   const [sort, setSort] = useState("hot");
+  const [shareNote, setShareNote] = useState("");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [draft, setDraft] = useState("");
@@ -333,6 +334,19 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
   // Posts now require a photo — text-only updates belong in Chat instead
   // (see the composer UI below), so the feed reads as an actual photo feed
   // rather than a mix of text posts and photo posts. Caption stays optional.
+  // Copies a link to the community. Deep links to a single post do not exist
+  // yet, so this does not pretend to be one.
+  const sharePost = async () => {
+    const url = window.location.origin + "/c/" + handle;
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareNote("Link copied");
+    } catch {
+      setShareNote("Could not copy the link");
+    }
+    setTimeout(() => setShareNote(""), 1800);
+  };
+
   const handlePost = async () => {
     const t = draft.trim();
     const file = postImageFile;
@@ -771,7 +785,8 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                       placeholder={"Share something with " + nameHead(c.name) + "…"}
                       rows={3}
                       maxLength={2000}
-                      className="w-full bg-transparent text-ink placeholder:text-ink-3 text-md outline-none resize-none leading-relaxed"
+                      className="w-full bg-bg-sunken rounded-xl px-3.5 py-3 text-ink placeholder:text-ink-3 text-md
+                        outline-none resize-none leading-relaxed border border-transparent focus:border-line-strong transition-colors"
                     />
 
                     {postImagePreview && (
@@ -823,18 +838,19 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
             {orderedPosts.length > 0 && (
               <div className="flex items-center gap-1 mb-4">
                 {[
-                  { key: "hot", label: "Hot" },
-                  { key: "new", label: "Newest" },
-                  { key: "top", label: "Top" },
+                  { key: "hot", label: "Hot discussions", icon: "local_fire_department" },
+                  { key: "new", label: "Newest", icon: null },
+                  { key: "top", label: "Top rated", icon: null },
                 ].map((s) => (
                   <button
                     key={s.key}
                     onClick={() => setSort(s.key)}
                     className={cx(
-                      "h-8 px-3.5 rounded-full text-xs font-semibold transition-colors",
-                      sort === s.key ? "bg-solid text-solid-ink" : "text-ink-2 hover:text-ink hover:bg-bg-sunken"
+                      "inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-xs font-semibold transition-colors",
+                      sort === s.key ? "bg-accent-wash text-accent" : "text-ink-2 hover:text-ink hover:bg-bg-sunken"
                     )}
                   >
+                    {s.icon && <Icon name={s.icon} size={14} className={sort === s.key ? "" : "text-c-orange"} />}
                     {s.label}
                   </button>
                 ))}
@@ -870,18 +886,19 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                       )}
                     >
                       {isPinned && (
-                        <div className="flex items-center gap-1.5 px-4 py-2 bg-accent-wash">
-                          <Icon name="push_pin" size={14} className="text-c-amber" />
-                          <span className="text-2xs font-bold text-accent">Pinned by the creator</span>
+                        <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-line">
+                          <Icon name="push_pin" size={15} className="text-c-amber" />
+                          <span className="text-xs font-bold text-accent">Pinned announcement</span>
                         </div>
                       )}
 
                       <div className="p-4">
-                        <div className="flex items-start gap-3">
-                          <Avatar name={p.who} size={40} />
+                        <div className="flex items-start gap-3.5">
+                          <Avatar name={p.who} size={44} />
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-md font-bold text-ink truncate">{p.who}</span>
+                              {byCreator && <Icon name="verified" size={15} className="text-c-blue shrink-0" />}
                               {byCreator && (
                                 <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-accent-wash text-accent text-[10px] font-bold">
                                   <Icon name="workspace_premium" size={10} className="text-c-amber" />Creator
@@ -894,7 +911,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                             </div>
 
                             {p.text && (
-                              <p className="text-md text-ink leading-relaxed mt-1.5 whitespace-pre-wrap break-words">
+                              <p className="text-md text-ink leading-[1.65] mt-2 whitespace-pre-wrap break-words">
                                 {p.text}
                               </p>
                             )}
@@ -924,19 +941,28 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                           />
                         )}
 
-                        <div className="flex items-center gap-2 mt-3.5">
+                        <div className="flex items-center gap-2 mt-4 pt-3 border-t border-line">
                           <button
                             onClick={() => togglePostSpark(p.id)}
                             aria-pressed={postSparked}
                             className={cx(
-                              "inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-semibold transition-colors",
+                              "inline-flex items-center gap-2 h-9 px-3.5 rounded-full text-xs font-semibold transition-colors",
                               postSparked
                                 ? "bg-accent-wash text-accent"
                                 : "bg-bg-sunken text-ink-2 hover:text-ink"
                             )}
                           >
-                            <Icon name="local_fire_department" size={15} className="text-c-orange" />
+                            <Icon name="local_fire_department" size={16} className="text-c-orange" />
                             <span className="tabular-nums">{p.sparks || 0}</span>
+                          </button>
+
+                          <button
+                            onClick={() => sharePost(p)}
+                            className="inline-flex items-center gap-2 h-9 px-3.5 rounded-full text-xs font-semibold
+                              text-ink-2 hover:text-ink hover:bg-bg-sunken transition-colors"
+                          >
+                            <Icon name="share" size={16} className="text-c-teal" />
+                            <span className="hidden sm:inline">Share</span>
                           </button>
                         </div>
                       </div>
@@ -1060,6 +1086,13 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
           onSave={(updates) => { onUpdate(c.id, updates); setSettingsOpen(false); }}
           onDelete={() => onDelete(c.id)}
         />
+      )}
+      {shareNote && (
+        <div className="fixed inset-x-0 bottom-8 z-[90] flex justify-center px-4 pointer-events-none">
+          <div className="bg-solid text-solid-ink text-base font-medium px-4 py-2.5 rounded-full shadow-pop">
+            {shareNote}
+          </div>
+        </div>
       )}
       {qrOpen && (
         <Modal title={c.name} onClose={() => setQrOpen(false)} max="max-w-xs">
