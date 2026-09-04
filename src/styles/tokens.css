@@ -136,12 +136,24 @@
   -webkit-font-feature-settings: "liga";
   -webkit-font-smoothing: antialiased;
   user-select: none;
-  font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
+  /* Outlined by default, the way X's are.
+   *
+   * This used to be FILL 1. Solid glyphs at nav size read as a row of stickers
+   * rather than as controls, and the app asks for a lot of icons at once -- a
+   * rail, a post footer, a composer, a rail of cards. Outline is the quieter
+   * default and the one that survives being repeated.
+   *
+   * Add .icon-fill where a solid glyph is genuinely wanted. */
+  font-variation-settings: "FILL" 0, "wght" 350, "GRAD" -25, "opsz" 40;
 }
 /* Outlined, and lighter than the filled default. The nav rail uses this at a
    larger size: a thin glyph needs the extra size to read, and the pair is what
    makes an icon look drawn rather than stamped. */
-.icon-thin { font-variation-settings: "FILL" 0, "wght" 300, "GRAD" -25, "opsz" 40; }
+/* Lighter still, for large glyphs where the default reads heavy. */
+.icon-thin { font-variation-settings: "FILL" 0, "wght" 250, "GRAD" -25, "opsz" 48; }
+
+/* The escape hatch: a solid glyph where one is genuinely wanted. */
+.icon-fill { font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24; }
 
 /* Story ring: a 2px conic sweep with the avatar punched out of the middle. */
 .story-ring {

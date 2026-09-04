@@ -228,45 +228,42 @@ export function ComposerModal({ user, communities, onClose, onSubmit }) {
 // there is no community, so the author takes that slot instead.
 function Post({ post, community, liked, onLike, onOpen, onShare, authUserId, myName, canWrite, onBlocked }) {
   const cat = CATEGORIES.find((x) => x.name === community?.category);
-  const source = community ? nameHead(community.name) : (post.who || "Someone");
 
   return (
     <article className="border-b border-line last:border-0 transition-colors hover:bg-bg-sunken/40">
       <div className="px-1 pt-4 pb-0">
+        {/* The person leads, the place follows. A feed is written by people;
+            which room they were standing in is context for that, not a
+            replacement for it. */}
         <div className="flex items-start gap-3">
-          <button onClick={() => community && onOpen(community)} className="shrink-0">
-            {community ? (
-              <span className="grid place-items-center w-10 h-10 rounded-xl overflow-hidden bg-bg-sunken">
-                {community.avatarUrl
-                  ? <img src={community.avatarUrl} alt="" className="w-full h-full object-cover" />
-                  : <Icon name={cat?.msr || "groups"} size={20} className={cat?.tint || "text-ink-3"} />}
-              </span>
-            ) : (
-              <Avatar name={post.who} size={40} />
-            )}
-          </button>
+          <Avatar name={post.who} size={40} />
 
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <button
-                onClick={() => community && onOpen(community)}
-                className="text-md font-bold text-ink truncate hover:opacity-70 transition-opacity"
-              >
-                {source}
-              </button>
-              {community ? (
-                <span className="inline-flex items-center h-5 px-2 rounded-full bg-bg-sunken text-ink-2 text-[10px] font-bold">
-                  {community.official ? "Club" : "Community"}
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-c-blue/12 text-c-blue text-[10px] font-bold">
-                  <Icon name="public" size={10} />Campus
-                </span>
-              )}
+              <span className="text-md font-bold text-ink truncate">{post.who}</span>
               <span className="text-base text-ink-3">· {post.time}</span>
             </div>
-            {community && (
-              <p className="text-2xs text-ink-3 mt-0.5 truncate">Posted by {post.who}</p>
+
+            {community ? (
+              <button
+                onClick={() => onOpen(community)}
+                className="flex items-center gap-1.5 mt-0.5 min-w-0 max-w-full text-ink-2 hover:text-ink transition-colors"
+              >
+                <span className="grid place-items-center w-4 h-4 rounded overflow-hidden bg-bg-sunken shrink-0">
+                  {community.avatarUrl
+                    ? <img src={community.avatarUrl} alt="" className="w-full h-full object-cover" />
+                    : <Icon name={cat?.msr || "groups"} size={11} />}
+                </span>
+                <span className="text-2xs truncate">
+                  in {nameHead(community.name)}
+                  {community.official && " · Club"}
+                </span>
+              </button>
+            ) : (
+              <span className="flex items-center gap-1.5 mt-0.5 text-ink-2">
+                <Icon name="public" size={13} />
+                <span className="text-2xs">to everyone on campus</span>
+              </span>
             )}
           </div>
         </div>
