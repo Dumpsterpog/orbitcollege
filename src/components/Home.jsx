@@ -3,6 +3,9 @@ import { CATEGORIES } from "../data/constants.js";
 import { Icon, Avatar, Button, IconButton, Textarea, cx } from "./ui/Primitives.jsx";
 import { Screen, Modal } from "./ui/Layout.jsx";
 import { PostComments } from "./Common.jsx";
+import { Spotlight } from "./home/Spotlight.jsx";
+import { CodeBlock, parseSegments } from "./home/CodeBlock.jsx";
+import { Recommended, UpcomingEvents, Trending } from "./home/Rail.jsx";
 
 // Home is the campus feed: every post from every community, newest first.
 //
@@ -78,27 +81,68 @@ function SearchBar({ onOpen }) {
 
 /* ------------------------------------------------------------- Composer */
 
-function ComposerBar({ user, onOpen }) {
+function ComposerBar({ user, onOpen, onAttach, target }) {
   return (
-    <div className="card p-3 flex items-center gap-3">
-      <Avatar name={user?.name || "Guest"} size={40} ring={!!user?.verified} />
-      <button
-        onClick={onOpen}
-        className="flex-1 min-w-0 text-left h-10 px-4 rounded-full bg-bg-sunken text-ink-2 text-base
-          hover:bg-black/[0.06] dark:hover:bg-white/[0.10] transition-colors truncate"
-      >
-        {`What's happening, ${(user?.name || "").split(" ")[0] || "there"}?`}
-      </button>
-      <Button tone="blue" size="sm" onClick={onOpen} className="shrink-0 hidden sm:inline-flex">Post</Button>
+    <div className="w-full bg-bg-raised rounded-2xl border border-line p-4 hover:border-line-strong transition-colors">
+      <div className="flex items-start gap-3">
+        <Avatar name={user?.name || "Guest"} size={36} ring={!!user?.verified} />
+        <button
+          onClick={onOpen}
+          className="flex-1 min-w-0 text-left text-ink-3 text-[13.5px] leading-relaxed pt-1.5 truncate"
+        >
+          {`What's happening on campus, ${(user?.name || "").split(" ")[0] || "there"}?`}
+        </button>
+      </div>
+
+      <div className="mt-3 pt-3 border-t border-line flex flex-wrap items-center justify-between gap-2">
+        {/* Two entry points, both of which do something. The mock also shows
+            Poll and Topic; Orbit stores neither a poll nor a tag, and a button
+            that opens nothing is worse than a shorter row. */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => onOpen("snippet")}
+            className="flex items-center gap-1 text-xs font-medium px-2 py-1.5 rounded-lg
+              text-ink-2 hover:bg-bg-sunken hover:text-ink transition-colors"
+          >
+            <Icon name="code_blocks" size={18} className="text-c-blue" />
+            <span>Snippet</span>
+          </button>
+          <label className="flex items-center gap-1 text-xs font-medium px-2 py-1.5 rounded-lg cursor-pointer
+            text-ink-2 hover:bg-bg-sunken hover:text-ink transition-colors">
+            <Icon name="image" size={18} className="text-c-green" />
+            <span>Media</span>
+            <input type="file" accept="image/*" className="hidden" onChange={onAttach} />
+          </label>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onOpen}
+            className="flex items-center gap-1.5 text-xs font-medium text-ink bg-bg-sunken hover:bg-bg-hover
+              border border-line px-2.5 py-1.5 rounded-lg transition-colors max-w-[160px]"
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-c-blue shrink-0" />
+            <span className="truncate">{target ? nameHead(target.name) : "Everyone"}</span>
+            <Icon name="expand_more" size={15} className="text-ink-3 shrink-0" />
+          </button>
+          <button
+            onClick={onOpen}
+            className="bg-c-blue hover:brightness-110 text-white font-semibold text-[13px] px-4 py-1.5
+              rounded-lg transition-all active:scale-[0.98]"
+          >
+            Publish
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
 
-export function ComposerModal({ user, communities, onClose, onSubmit }) {
+export function ComposerModal({ user, communities, onClose, onSubmit, seed = "" }) {
   // null means campus-wide. That is the default: addressing everyone needs
   // no prior decision, picking a community is the deliberate act.
   const [communityId, setCommunityId] = useState(null);
-  const [text, setText] = useState("");
+  const [text, setText] = useState(seed);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -228,182 +272,100 @@ export function ComposerModal({ user, communities, onClose, onSubmit }) {
 // there is no community, so the author takes that slot instead.
 function Post({ post, community, liked, onLike, onOpen, onShare, authUserId, myName, canWrite, onBlocked }) {
   const cat = CATEGORIES.find((x) => x.name === community?.category);
+  const segments = parseSegments(post.text || "");
 
   return (
-    <article className="border-b border-line last:border-0 transition-colors hover:bg-bg-sunken/40">
-      <div className="px-1 pt-4 pb-0">
-        {/* The person leads, the place follows. A feed is written by people;
-            which room they were standing in is context for that, not a
-            replacement for it. */}
-        <div className="flex items-start gap-3">
+    <article className="w-full bg-bg-raised rounded-2xl border border-line hover:border-line-strong
+      transition-all p-5 flex flex-col gap-3.5">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
           <Avatar name={post.who} size={40} />
-
-          <div className="min-w-0 flex-1">
+          <div className="flex flex-col min-w-0">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-md font-bold text-ink truncate">{post.who}</span>
-              <span className="text-base text-ink-3">· {post.time}</span>
+              <span className="font-bold text-sm text-ink truncate">{post.who}</span>
+              <span className="text-ink-3">·</span>
+              <span className="text-ink-3 text-xs">{post.time}</span>
             </div>
 
             {community ? (
               <button
                 onClick={() => onOpen(community)}
-                className="flex items-center gap-1.5 mt-0.5 min-w-0 max-w-full text-ink-2 hover:text-ink transition-colors"
+                className="flex items-center gap-1.5 mt-0.5 min-w-0 text-ink-2 hover:text-c-blue transition-colors"
               >
                 <span className="grid place-items-center w-4 h-4 rounded overflow-hidden bg-bg-sunken shrink-0">
                   {community.avatarUrl
                     ? <img src={community.avatarUrl} alt="" className="w-full h-full object-cover" />
                     : <Icon name={cat?.msr || "groups"} size={11} />}
                 </span>
-                <span className="text-2xs truncate">
-                  in {nameHead(community.name)}
-                  {community.official && " · Club"}
+                <span className="text-xs truncate">
+                  in {nameHead(community.name)}{community.official && " · Club"}
                 </span>
               </button>
             ) : (
               <span className="flex items-center gap-1.5 mt-0.5 text-ink-2">
                 <Icon name="public" size={13} />
-                <span className="text-2xs">to everyone on campus</span>
+                <span className="text-xs">to everyone on campus</span>
               </span>
             )}
           </div>
         </div>
 
-        {post.text && (
-          <p className="text-md text-ink leading-relaxed mt-3 whitespace-pre-wrap break-words">
-            {post.text}
-          </p>
-        )}
+        <button
+          onClick={() => onShare?.(post, community)}
+          aria-label="Share"
+          className="p-1.5 text-ink-3 hover:text-ink rounded-lg hover:bg-bg-sunken transition-colors shrink-0"
+        >
+          <Icon name="share" size={19} />
+        </button>
       </div>
 
+      {segments.map((seg, i) =>
+        seg.type === "code" ? (
+          <CodeBlock key={i} lang={seg.lang} value={seg.value} filename={post.codeName} />
+        ) : (
+          <p key={i} className="text-[13.5px] text-ink leading-relaxed whitespace-pre-wrap break-words">
+            {seg.value.trim()}
+          </p>
+        )
+      )}
+
       {post.imageUrl && (
-        <div className="px-1">
-          <img
-            src={post.imageUrl}
-            alt=""
-            loading="lazy"
-            className="w-full max-h-[560px] object-cover rounded-xl border border-line mt-3"
-          />
+        <div className="w-full rounded-xl overflow-hidden border border-line">
+          <img src={post.imageUrl} alt="" loading="lazy" className="w-full max-h-[460px] object-cover" />
         </div>
       )}
 
-      <div className="flex items-center flex-wrap gap-1 px-1 py-2.5">
+      <div className="flex items-center flex-wrap gap-1 pt-1 border-t border-line -mb-1">
         <button
           onClick={() => onLike(post.id)}
           aria-pressed={liked}
           className={cx(
-            "inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-semibold transition-colors",
-            liked ? "bg-accent-wash text-accent" : "text-ink-2 hover:text-ink hover:bg-bg-sunken"
+            "inline-flex items-center gap-2 h-9 px-3 rounded-full text-xs font-semibold transition-colors mt-1",
+            liked ? "text-c-blue bg-c-blue/10" : "text-ink-2 hover:text-ink hover:bg-bg-sunken"
           )}
         >
-          <Icon name="local_fire_department" size={16} className="text-c-orange" />
+          <Icon name="thumb_up" size={16} />
           <span className="tabular-nums">{post.sparks || 0}</span>
         </button>
 
-        <button
-          onClick={() => onShare?.(post, community)}
-          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-semibold text-ink-2 hover:text-ink hover:bg-bg-sunken transition-colors"
-        >
-          <Icon name="share" size={16} className="text-c-teal" />
-          <span className="hidden sm:inline">Share</span>
-        </button>
-
-        <PostComments
-          communityId={post.communityId}
-          postId={post.id}
-          count={post.comments}
-          authUserId={authUserId}
-          myName={myName}
-          canWrite={canWrite}
-          onBlocked={onBlocked}
-        />
+        <span className="mt-1">
+          <PostComments
+            communityId={post.communityId}
+            postId={post.id}
+            count={post.comments}
+            authUserId={authUserId}
+            myName={myName}
+            canWrite={canWrite}
+            onBlocked={onBlocked}
+          />
+        </span>
       </div>
     </article>
   );
 }
 
-/* ------------------------------------------------------ Suggestion row */
 
-function SuggestionRow({ c, onOpen, onJoin }) {
-  // mapCommunity exposes the count as `members`, not `memberCount`.
-  const n = c.members ?? 0;
-  return (
-    <div className="group flex items-center gap-3 px-4 py-3 border-b border-line last:border-0 hover:bg-bg-sunken/60 transition-colors">
-      <button onClick={() => onOpen(c)} className="shrink-0">
-        <Avatar src={c.avatarUrl} name={nameHead(c.name)} size={38} />
-      </button>
-      <button onClick={() => onOpen(c)} className="min-w-0 flex-1 text-left">
-        <span className="block text-base font-semibold text-ink truncate group-hover:opacity-70 transition-opacity">
-          {nameHead(c.name)}
-        </span>
-        <span className="block text-2xs text-ink-2 truncate mt-0.5">
-          {compact(n)} {n === 1 ? "member" : "members"}
-          {c.official && " · Official"}
-        </span>
-      </button>
-      <Button variant="outline" size="xs" onClick={() => onJoin?.(c)} className="shrink-0">
-        Join
-      </Button>
-    </div>
-  );
-}
 
-/* ------------------------------------------------------------ Rail card */
-
-// One bordered surface per block, the way X does it, rather than headings and
-// rows floating on the page background. The border is what tells you where a
-// block starts and ends when the rail has more than one thing in it.
-function RailCard({ title, count, action, onAction, children }) {
-  return (
-    <section className="rounded-2xl border border-line overflow-hidden">
-      <div className="flex items-baseline gap-2.5 px-4 pt-3.5 pb-2.5">
-        <h2 className="text-lg font-bold text-ink">{title}</h2>
-        {count > 0 && <span className="font-mono text-xs tabular-nums text-ink-3">{count}</span>}
-        {action && (
-          <button
-            onClick={onAction}
-            className="ml-auto text-xs font-semibold text-accent hover:opacity-70 shrink-0"
-          >
-            {action}
-          </button>
-        )}
-      </div>
-      {children}
-    </section>
-  );
-}
-
-/* ------------------------------------------------------------- Event row */
-
-// The date reads as a block rather than a sentence, because in a rail the
-// thing you scan for is "when", not the title.
-function EventRow({ e, onRegister, onOpen }) {
-  const [day, ...rest] = String(e.when || "").split(/[\s,]+/).filter(Boolean);
-  return (
-    <div className="group flex items-start gap-3 px-4 py-3 border-b border-line last:border-0">
-      <span className="shrink-0 w-11 rounded-lg bg-bg-sunken text-center py-1.5">
-        <span className="block text-[9px] font-bold uppercase tracking-wide text-ink-3">
-          {rest.slice(0, 1).join(" ") || "TBA"}
-        </span>
-        <span className="block font-mono text-md font-bold tabular-nums text-ink leading-tight">
-          {day || "--"}
-        </span>
-      </span>
-
-      <div className="min-w-0 flex-1">
-        <button onClick={onOpen} className="text-left block w-full min-w-0">
-          <span className="block text-base font-semibold text-ink leading-snug group-hover:opacity-70 transition-opacity line-clamp-2">
-            {e.title}
-          </span>
-        </button>
-        <p className="text-2xs text-ink-2 truncate mt-0.5">{e.where}</p>
-      </div>
-
-      <Button variant="outline" size="xs" onClick={() => onRegister?.(e)} className="shrink-0 mt-0.5">
-        RSVP
-      </Button>
-    </div>
-  );
-}
 
 /* --------------------------------------------------------------- Screen */
 
@@ -415,7 +377,9 @@ export function HomeScreen({
 }) {
   const [loading, setLoading] = useState(() => !(feedPosts || []).length);
   const [composing, setComposing] = useState(false);
+  const [composeSeed, setComposeSeed] = useState("");
   const [scope, setScope] = useState("all");
+  const [sort, setSort] = useState("relevant");
 
   useEffect(() => {
     if (!loading) return;
@@ -434,18 +398,32 @@ export function HomeScreen({
   );
 
   const allPosts = feedPosts || [];
-  const posts = useMemo(
-    () => (scope === "following" ? allPosts.filter((p) => joinedIds.includes(p.communityId)) : allPosts),
-    [allPosts, scope, joinedIds]
-  );
-  const followingCount = useMemo(
-    () => allPosts.filter((p) => joinedIds.includes(p.communityId)).length,
-    [allPosts, joinedIds]
-  );
+  const posts = useMemo(() => {
+    const scoped =
+      scope === "following" ? allPosts.filter((p) => joinedIds.includes(p.communityId))
+      : scope === "trending" ? allPosts.filter((p) => (p.sparks || 0) + (p.comments || 0) > 0)
+      : allPosts;
+
+    const byNew = (x, y) => (y.createdAt?.getTime() || 0) - (x.createdAt?.getTime() || 0);
+    const byTop = (x, y) => ((y.sparks || 0) + (y.comments || 0)) - ((x.sparks || 0) + (x.comments || 0)) || byNew(x, y);
+    // "Relevant" decays engagement against age, so a busy post from this
+    // morning outranks a busier one from last month. Without the decay it
+    // would just be Top under another name.
+    const heat = (x) => {
+      const hours = Math.max(1, (Date.now() - (x.createdAt?.getTime() || 0)) / 3600e3);
+      return ((x.sparks || 0) + (x.comments || 0) * 2 + 1) / Math.pow(hours + 2, 0.6);
+    };
+    const byHot = (x, y) => heat(y) - heat(x) || byNew(x, y);
+
+    return [...scoped].sort(sort === "latest" ? byNew : sort === "top" ? byTop : byHot);
+  }, [allPosts, scope, joinedIds, sort]);
 
   const canPost = !!user?.verified;
-  const openComposer = () => {
+  const openComposer = (mode) => {
     if (!user?.verified) { onJoinToggle?.(null); return; }
+    // Snippet opens the composer with an empty fence already in place, so the
+    // button does the thing it names instead of just opening a blank box.
+    setComposeSeed(mode === "snippet" ? "```\n\n```" : "");
     setComposing(true);
   };
 
@@ -479,93 +457,102 @@ export function HomeScreen({
       .slice(0, 4);
   }, [allPosts, communities]);
 
-  const showScope = allPosts.length > 0 && joined.length > 0;
+  // The soonest upcoming event, which is the only one worth a banner.
+  const spotlight = useMemo(() => openEvents[0] || events[0] || null, [openEvents, events]);
+
 
   return (
     <Screen>
-      <div className="w-full mx-auto px-5 sm:px-6 grid justify-center gap-8 xl:gap-10 grid-cols-1 max-w-[1060px] lg:grid-cols-[minmax(0,620px)_350px]">
-        {/* Feed */}
-        <div className="min-w-0 pt-6 pb-20">
-          <div className="space-y-3">
-            {/* Search moved to the rail; on narrow screens there is no rail,
-                so it stays reachable here. */}
-            <div className="lg:hidden">
-              <SearchBar onOpen={onSearchClick} />
-            </div>
+      <div className="w-full mx-auto px-5 sm:px-6 py-6 grid justify-center gap-6 xl:gap-7
+        grid-cols-1 max-w-[1180px] lg:grid-cols-[minmax(0,660px)_340px] items-start">
 
-            {canPost && <ComposerBar user={{ ...user, name: userName }} onOpen={openComposer} />}
-
+        {/* ------------------------------------------------------- feed */}
+        <div className="min-w-0 flex flex-col gap-4">
+          <div className="lg:hidden">
+            <SearchBar onOpen={onSearchClick} />
           </div>
 
-          {showScope && (
-            <div className="sticky top-0 z-10 -mx-5 sm:-mx-6 mt-8 mb-4 px-5 sm:px-6 py-2 bg-bg/85 backdrop-blur-md flex items-center gap-1">
+          <Spotlight
+            event={spotlight}
+            registered={registeredEventIds.includes(spotlight?.id)}
+            onRegister={onRegisterEvent}
+            onOpen={onGoToEvents}
+          />
+
+          {canPost && (
+            <ComposerBar
+              user={{ ...user, name: userName }}
+              target={null}
+              onOpen={openComposer}
+              onAttach={openComposer}
+            />
+          )}
+
+          {/* Tabs and sort. Both change what is on screen; neither is
+              decorative, which is why Showcases from the mock is not here --
+              Orbit has no showcase to sort into one. */}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-1 bg-bg-sunken p-1 rounded-xl">
               {[
-                { key: "all", label: "All posts", n: allPosts.length },
-                { key: "following", label: "Your communities", n: followingCount },
+                { key: "all", label: "Campus Feed" },
+                { key: "following", label: "My Communities" },
+                { key: "trending", label: "Trending" },
               ].map((t) => (
                 <button
                   key={t.key}
                   onClick={() => setScope(t.key)}
                   className={cx(
-                    "inline-flex items-center gap-1.5 h-8 px-3.5 rounded-full text-xs font-semibold transition-colors",
-                    scope === t.key ? "bg-solid text-solid-ink" : "text-ink-2 hover:text-ink hover:bg-bg-sunken"
+                    "px-3 py-1.5 rounded-lg text-[12.5px] transition-all",
+                    scope === t.key
+                      ? "bg-bg-raised text-ink font-semibold shadow-sm"
+                      : "text-ink-2 hover:text-ink font-medium"
                   )}
                 >
                   {t.label}
-                  <span className={cx("font-mono tabular-nums", scope === t.key ? "opacity-60" : "text-ink-3")}>
-                    {t.n}
-                  </span>
                 </button>
               ))}
             </div>
-          )}
 
-          <div className={cx(!showScope && "mt-4")}>
-            {loading ? (
-              <><PostSkeleton /><PostSkeleton /></>
-            ) : posts.length === 0 ? (
-              scope === "following" ? (
-                <div className="py-24 text-center">
-                  <p className="text-lg font-bold text-ink">Nothing from your communities</p>
-                  <p className="text-base text-ink-2 mt-2 max-w-[34ch] mx-auto leading-relaxed">
-                    Switch to All posts to see the rest of campus.
-                  </p>
-                  <Button variant="outline" size="md" onClick={() => setScope("all")} className="mt-6">
-                    Show all posts
-                  </Button>
-                </div>
-              ) : (
-                // Nobody on campus has posted yet. This says so in one line
-                // and gets out of the way: the rail beside it is already
-                // showing communities to join and events to register for,
-                // which is what a takeover checklist used to say in ten times
-                // the space.
-                <div className="py-16 text-center">
-                  <p className="text-lg font-bold text-ink">No posts yet</p>
-                  <p className="text-base text-ink-2 mt-2 max-w-[38ch] mx-auto leading-relaxed">
-                    {canPost
-                      ? "Nothing has been posted on campus yet. Yours would be the first."
-                      : "Sign in to post, or join a community and everything it posts lands here."}
-                  </p>
-                  <Button
-                    tone="blue"
-                    size="md"
-                    onClick={canPost ? openComposer : onGoToExplore}
-                    className="mt-6"
-                  >
-                    {canPost ? "Write a post" : "Browse communities"}
-                  </Button>
-                  <p className="text-base text-ink-2 mt-8">
-                    Cannot find your club?{" "}
-                    <button onClick={onCreateClick} className="font-semibold text-accent hover:opacity-70">
-                      Start it yourself
-                    </button>
-                    .
-                  </p>
-                </div>
-              )
-            ) : (
-              posts.map((p) => (
+            <label className="flex items-center gap-1.5 text-xs text-ink-2 shrink-0">
+              <span className="hidden sm:inline">Sort by:</span>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
+                className="bg-transparent font-semibold text-ink text-xs outline-none cursor-pointer"
+              >
+                <option value="relevant">Most Relevant</option>
+                <option value="latest">Latest</option>
+                <option value="top">Top</option>
+              </select>
+            </label>
+          </div>
+
+          {loading ? (
+            <><PostSkeleton /><PostSkeleton /></>
+          ) : posts.length === 0 ? (
+            <div className="py-16 text-center">
+              <p className="text-lg font-bold text-ink">
+                {scope === "following" ? "Nothing from your communities" : "No posts yet"}
+              </p>
+              <p className="text-base text-ink-2 mt-2 max-w-[38ch] mx-auto leading-relaxed">
+                {scope === "following"
+                  ? "Switch to Campus Feed to see the rest of campus."
+                  : canPost
+                    ? "Nothing has been posted on campus yet. Yours would be the first."
+                    : "Sign in to post, or join a community and everything it posts lands here."}
+              </p>
+              <Button
+                tone="blue"
+                size="md"
+                onClick={scope === "following" ? () => setScope("all") : canPost ? openComposer : onGoToExplore}
+                className="mt-6"
+              >
+                {scope === "following" ? "Show all posts" : canPost ? "Write a post" : "Browse communities"}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              {posts.map((p) => (
                 <Post
                   key={p.id}
                   post={p}
@@ -578,86 +565,43 @@ export function HomeScreen({
                   canWrite={!!user?.verified}
                   onBlocked={() => onJoinToggle?.(null)}
                 />
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Rail. Always present, so the page does not change shape between an
-            empty campus and a busy one. Each block hides only when it has
-            genuinely nothing to say. */}
-        <aside className="hidden lg:block pt-6 pb-20">
-          <div className="sticky top-6 max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar pr-1 space-y-4">
+        {/* ------------------------------------------------------- rail */}
+        <aside className="hidden lg:block">
+          <div className="sticky top-6 max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar pr-1 flex flex-col gap-4">
             <SearchBar onOpen={onSearchClick} />
 
-            {suggested.length > 0 && (
-              <RailCard
-                title={joined.length ? "More to join" : "Start here"}
-                count={suggested.length}
-                action="All"
-                onAction={onGoToExplore}
-              >
-                {suggested.map((c) => (
-                  <SuggestionRow key={c.id} c={c} onOpen={onOpen} onJoin={onJoinToggle} />
-                ))}
-              </RailCard>
-            )}
+            <Recommended
+              communities={suggested}
+              joinedIds={joinedIds}
+              onOpen={onOpen}
+              onJoin={onJoinToggle}
+              onAll={onGoToExplore}
+              onCreate={onCreateClick}
+            />
 
-            {/* Always rendered, even empty. An events box that vanishes when
-                there are no events teaches nobody that events exist. */}
-            <RailCard
-              title="Upcoming"
-              count={openEvents.length}
-              action={openEvents.length > 0 ? "All" : undefined}
-              onAction={onGoToEvents}
-            >
-              {openEvents.length > 0 ? (
-                openEvents.slice(0, 5).map((e) => (
-                  <EventRow key={e.id} e={e} onRegister={onRegisterEvent} onOpen={onGoToEvents} />
-                ))
-              ) : (
-                <p className="text-base text-ink-2 px-4 pb-4 leading-relaxed">
-                  No upcoming events.
-                </p>
-              )}
-            </RailCard>
+            <UpcomingEvents
+              events={openEvents}
+              registeredIds={registeredEventIds}
+              onRegister={onRegisterEvent}
+              onAll={onGoToEvents}
+            />
 
-            {trending.length > 0 && (
-              <RailCard title="Trending on campus" action="Explore" onAction={onGoToExplore}>
-                {trending.map((t) => {
-                  const cat = CATEGORIES.find((x) => x.name === t.name);
-                  return (
-                    <button
-                      key={t.name}
-                      onClick={onGoToExplore}
-                      className="group w-full flex items-center gap-3 px-4 py-3 text-left
-                        border-b border-line last:border-0 hover:bg-bg-sunken/60 transition-colors"
-                    >
-                      <Icon name={cat?.msr || "tag"} size={20} className={cat?.tint || "text-ink-3"} />
-                      <span className="min-w-0 flex-1">
-                        <span className="block text-base font-semibold text-ink truncate group-hover:opacity-70 transition-opacity">
-                          {t.name}
-                        </span>
-                        <span className="block text-2xs text-ink-2 mt-0.5">
-                          {t.posts} {t.posts === 1 ? "post" : "posts"} · {t.communities}{" "}
-                          {t.communities === 1 ? "community" : "communities"}
-                        </span>
-                      </span>
-                      <Icon name="chevron_right" size={18} className="text-ink-3 shrink-0" />
-                    </button>
-                  );
-                })}
-              </RailCard>
-            )}
-
+            <Trending topics={trending} onOpen={() => onGoToExplore()} />
           </div>
         </aside>
       </div>
+
 
       {composing && (
         <ComposerModal
           user={{ ...user, name: userName }}
           communities={joined}
+          seed={composeSeed}
           onClose={() => setComposing(false)}
           onSubmit={onCreatePost}
         />

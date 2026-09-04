@@ -4,105 +4,78 @@ import { Icon, Avatar, cx } from "./ui/Primitives.jsx";
 
 // Navigation rail.
 //
-// The previous version was a flat list of six equal rows — nothing told you
-// that Home and Explore are where you live while Locali-Tea is a side trip,
-// and the active row was marked only by a bold label, which is easy to miss
-// at a glance. Three changes:
+// Four labelled groups rather than one flat list, because the destinations are
+// not peers: Home and Explore are where you live, Events and Locali-Tea are
+// side trips, your communities are the things you actually revisit, and
+// Notifications and Preferences are furniture you touch rarely.
 //
-//   Grouping.   Two labelled sections. Six undifferentiated rows is a list;
-//               two groups of three is a structure you can learn once.
-//   Active.     A tinted pill plus a colour bar on the left edge. The bar is
-//               what makes the state readable in peripheral vision, which is
-//               the only time anyone actually looks at a nav rail.
-//   Identity.   A real account row at the foot, so who you are and how to
-//               get to settings live together instead of behind a "More"
-//               hamburger that told you nothing.
+// Communities sit in the middle of that order deliberately. They are the most
+// revisited thing in the app and the least worth scrolling for.
 //
-// Below xl it collapses to an icon rail; below lg it gives way to the bottom
-// bar. Labels become tooltips in the collapsed state rather than vanishing.
+// The rail collapses to icons below xl and gives way to the bottom bar below
+// lg. Labels become tooltips in the collapsed state rather than disappearing.
 
 const GROUPS = [
   {
-    label: "Feed",
     items: [
-      { key: "home", label: "Home", icon: "home", tint: "text-c-blue" },
-      { key: "explore", label: "Explore", icon: "explore", tint: "text-c-violet" },
-      { key: "search", label: "Search", icon: "search", tint: "text-c-teal", action: "search" },
-      { key: "saved", label: "Saved", icon: "bookmark", tint: "text-c-amber", action: "saved" },
+      { key: "home", label: "Home Feed", icon: "home" },
+      { key: "explore", label: "Explore", icon: "explore" },
+      { key: "search", label: "Search", icon: "search", action: "search" },
+      { key: "saved", label: "Saved Posts", icon: "bookmark", action: "saved" },
     ],
   },
   {
-    label: "Campus",
+    label: "Campus Pulse",
     items: [
-      { key: "events", label: "Events", icon: "confirmation_number", tint: "text-c-orange" },
-      { key: "tea", label: "Locali-Tea", icon: "local_cafe", tint: "text-c-pink", action: "tea" },
-      { key: "communities", label: "My communities", icon: "groups", tint: "text-c-green", action: "communities" },
-      { key: "notifications", label: "Notifications", icon: "notifications", tint: "text-c-red", action: "notifications" },
+      { key: "events", label: "Events & Mixers", icon: "calendar_today" },
+      { key: "tea", label: "Locali-Tea", icon: "local_cafe", action: "tea" },
+    ],
+  },
+  {
+    label: "Workspace",
+    items: [
+      { key: "notifications", label: "Notifications", icon: "notifications", action: "notifications" },
+      { key: "settings", label: "Preferences", icon: "tune" },
     ],
   },
 ];
 
-// Left-edge indicator colour per nav item, as whole class strings so
-// Tailwind's scanner can see them.
-const BAR = {
-  "text-c-blue": "bg-c-blue",
-  "text-c-violet": "bg-c-violet",
-  "text-c-teal": "bg-c-teal",
-  "text-c-orange": "bg-c-orange",
-  "text-c-pink": "bg-c-pink",
-  "text-c-green": "bg-c-green",
-};
+function GroupLabel({ children, onAction, actionLabel }) {
+  return (
+    <div className="hidden xl:flex items-center justify-between pt-4 pb-1.5 px-3">
+      <span className="text-[10.5px] font-bold uppercase tracking-wider text-ink-3">{children}</span>
+      {onAction && (
+        <button onClick={onAction} aria-label={actionLabel} className="text-ink-3 hover:text-ink transition-colors">
+          <Icon name="add" size={16} />
+        </button>
+      )}
+    </div>
+  );
+}
 
-function NavRow({ icon, tint, label, active, onClick, badge }) {
+function NavRow({ icon, label, active, onClick, badge }) {
   return (
     <button
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       title={label}
       className={cx(
-        "group relative w-full flex items-center gap-3.5 rounded-full text-left",
-        "px-3 py-2.5 transition-colors duration-150 active:scale-[0.98]",
-        active ? "bg-black/[0.05] dark:bg-white/[0.08]" : "hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+        "w-full flex items-center justify-between gap-3 rounded-xl px-3 py-2 text-left transition-colors",
+        active
+          ? "bg-c-blue/10 text-c-blue font-semibold border border-c-blue/20"
+          : "text-ink-2 hover:text-ink hover:bg-bg-sunken border border-transparent font-medium"
       )}
     >
-      {/* Edge indicator — the part that reads without being looked at. */}
-      <span
-        className={cx(
-          "absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-r-full transition-all duration-200",
-          active ? "h-5 opacity-100 bg-ink" : "h-0 opacity-0"
-        )}
-      />
-      <Icon
-        name={icon}
-        thin
-        size={27}
-        className={cx(
-          "shrink-0 transition-colors duration-150",
-          active ? "text-ink" : "text-ink-2 group-hover:text-ink"
-        )}
-      />
-      <span
-        className={cx(
-          "hidden xl:block text-base truncate flex-1",
-          active ? "font-bold text-ink" : "font-medium text-ink"
-        )}
-      >
-        {label}
+      <span className="flex items-center gap-3 min-w-0">
+        <Icon name={icon} size={20} className={cx("shrink-0", active ? "text-c-blue" : "text-ink-3")} />
+        <span className="hidden xl:block text-[13px] truncate">{label}</span>
       </span>
       {badge > 0 && (
-        <span className="hidden xl:grid place-items-center min-w-[20px] h-5 px-1.5 rounded-full bg-accent text-accent-ink text-2xs font-bold tabular-nums">
+        <span className="hidden xl:block text-[11px] font-semibold text-ink-3 bg-bg-sunken px-1.5 py-0.5 rounded-md shrink-0">
           {badge > 99 ? "99+" : badge}
         </span>
       )}
     </button>
-  );
-}
-
-function GroupLabel({ children }) {
-  return (
-    <p className="hidden xl:block px-4 pt-4 pb-1.5 text-2xs font-bold text-ink-3 uppercase tracking-[0.08em]">
-      {children}
-    </p>
   );
 }
 
@@ -128,9 +101,7 @@ export function Sidebar({
   const go = (item) => {
     if (item.action === "tea") return onTeaClick();
     if (item.action === "search") return onSearchClick();
-    if (item.action === "communities") return setActive("explore");
-    // Not built. A row that quietly does nothing is worse than one that
-    // tells you why, so these report instead of no-oping.
+    // A row that quietly does nothing is worse than one that says why.
     if (item.action === "saved") return onUnbuilt?.("Saved posts aren't built yet");
     if (item.action === "notifications") return onUnbuilt?.("Notifications aren't built yet");
     setActive(item.key);
@@ -138,121 +109,121 @@ export function Sidebar({
 
   return (
     <aside className="rail-edge hidden lg:flex flex-col shrink-0 h-full bg-bg lg:w-rail-sm xl:w-rail transition-[width] duration-200">
-      {/* Wordmark */}
-      <div className="px-3 xl:px-4 pt-5 pb-2 shrink-0">
-        <button
-          onClick={() => setActive("home")}
-          className="flex items-center gap-2.5 group w-full"
-          aria-label="Orbit home"
-        >
-          <span className="grid place-items-center w-9 h-9 rounded-full shrink-0 bg-gradient-to-br from-c-violet via-c-pink to-c-orange">
-            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="white"
+      {/* Brand */}
+      <div className="px-3 xl:px-4 pt-4 pb-2 shrink-0">
+        <button onClick={() => setActive("home")} className="flex items-center gap-2.5 group w-full" aria-label="Orbit home">
+          <span className="grid place-items-center w-8 h-8 rounded-xl shrink-0
+            bg-gradient-to-tr from-c-blue to-c-violet shadow-sm group-hover:scale-105 transition-transform duration-200">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white"
                  strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3" /><circle cx="19" cy="5" r="2" /><circle cx="5" cy="19" r="2" />
               <path d="M10.4 21.9a10 10 0 0 0 9.941-15.416" /><path d="M13.5 2.1a10 10 0 0 0-9.841 15.416" />
             </svg>
           </span>
-          <span className="hidden xl:block text-2xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-c-violet via-c-pink to-c-orange">
-            Orbit
-          </span>
+          <span className="hidden xl:block font-bold text-[17px] tracking-[-0.03em] text-ink">Orbit</span>
+        </button>
+      </div>
+
+      {/* Compose: the one filled action in the rail. */}
+      <div className="px-3 xl:px-4 pb-1 shrink-0">
+        <button
+          onClick={onPostClick}
+          title="Compose a post"
+          className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 px-4
+            bg-c-blue text-white text-[13px] font-semibold shadow-lift
+            hover:brightness-110 active:scale-[0.98] transition-all"
+        >
+          <Icon name="edit_square" size={17} />
+          <span className="hidden xl:inline">Compose Post</span>
         </button>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-2 xl:px-2.5 overflow-y-auto no-scrollbar">
+      <nav className="flex-1 px-2 xl:px-2.5 pt-2 overflow-y-auto no-scrollbar">
         {GROUPS.map((group, gi) => (
-          <div key={group.label}>
-            {gi === 0 ? <div className="h-2" /> : <GroupLabel>{group.label}</GroupLabel>}
+          <div key={group.label || gi}>
+            {group.label ? <GroupLabel>{group.label}</GroupLabel> : <div className="h-1" />}
             {gi > 0 && <div className="xl:hidden h-px bg-line my-2 mx-3" />}
-            <div className="space-y-0.5">
+            <div className="flex flex-col gap-1">
               {group.items.map((item) => (
-                <NavRow
-                  key={item.key}
-                  {...item}
-                  active={active === item.key}
-                  onClick={() => go(item)}
-                />
+                <NavRow key={item.key} {...item} active={active === item.key} onClick={() => go(item)} />
               ))}
             </div>
+
+            {group.label === "Campus Pulse" && (
+              <>
+                <GroupLabel onAction={onCreateClick} actionLabel="Create a community">
+                  My Communities
+                </GroupLabel>
+                <div className="flex flex-col gap-1">
+                  {joinedCommunities.length === 0 && (
+                    <button
+                      onClick={onCreateClick}
+                      className="hidden xl:block w-full text-left px-3 py-2 rounded-xl text-[12.5px]
+                        text-ink-3 hover:text-ink hover:bg-bg-sunken transition-colors"
+                    >
+                      None yet. Start one.
+                    </button>
+                  )}
+                  {joinedCommunities.slice(0, 6).map((c) => {
+                    const cat = CATEGORIES.find((x) => x.name === c.category);
+                    const head = (c.name || "").split(" — ")[0];
+                    return (
+                      <button
+                        key={c.id}
+                        onClick={() => onOpenCommunity?.(c)}
+                        title={head}
+                        className="w-full flex items-center justify-between gap-3 rounded-xl px-3 py-2
+                          text-ink-2 hover:text-ink hover:bg-bg-sunken transition-colors"
+                      >
+                        <span className="flex items-center gap-3 min-w-0">
+                          <span className="grid place-items-center w-6 h-6 rounded-lg overflow-hidden bg-bg-sunken shrink-0">
+                            {c.avatarUrl
+                              ? <img src={c.avatarUrl} alt="" className="w-full h-full object-cover" />
+                              : <Icon name={cat?.msr || "groups"} size={14} />}
+                          </span>
+                          <span className="hidden xl:block text-[13px] font-medium truncate">{head}</span>
+                        </span>
+                        {/* Active in the last hour. A dot that means something. */}
+                        {c.lastActive != null && c.lastActive <= 60 && (
+                          <span className="hidden xl:block w-1.5 h-1.5 rounded-full bg-c-blue shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                  {joinedCommunities.length > 6 && (
+                    <button
+                      onClick={() => setActive("explore")}
+                      className="hidden xl:block w-full text-left px-3 py-1.5 text-[11px] font-semibold text-c-blue hover:underline"
+                    >
+                      +{joinedCommunities.length - 6} more
+                    </button>
+                  )}
+                </div>
+              </>
+            )}
           </div>
         ))}
-
-        {/* Post — the one filled action.
-            Was "Create", which opened the make-a-community flow. That is a
-            thing you do once, not the thing the rail should be pointing at
-            every time you look at it. Creating a community moved to Explore
-            and the empty feed, where someone is actually looking for one. */}
-        <button
-          onClick={onPostClick}
-          title="Write a post"
-          className="w-full mt-5 flex items-center justify-center gap-2 rounded-full
-            px-3 py-3 bg-solid text-solid-ink font-bold text-md shadow-lift
-            hover:opacity-90 active:scale-[0.98] transition-[opacity,transform] duration-150"
-        >
-          <Icon name="add" size={22} />
-          <span className="hidden xl:inline">Post</span>
-        </button>
-
-        {/* Communities you are in, reachable in one click.
-            A rail that lists every destination except the ones you actually
-            visit is a table of contents for someone else's app. */}
-        {joinedCommunities.length > 0 && (
-          <div className="mt-4 pt-3 border-t border-line">
-            <GroupLabel>My communities</GroupLabel>
-            <div className="space-y-0.5">
-              {joinedCommunities.slice(0, 8).map((c) => {
-                const cat = CATEGORIES.find((x) => x.name === c.category);
-                const head = (c.name || "").split(" \u2014 ")[0];
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() => onOpenCommunity?.(c)}
-                    title={head}
-                    className="group w-full flex items-center gap-3 rounded-full px-3 py-2
-                      hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
-                  >
-                    <span className="grid place-items-center w-7 h-7 rounded-lg overflow-hidden bg-bg-sunken shrink-0">
-                      {c.avatarUrl
-                        ? <img src={c.avatarUrl} alt="" className="w-full h-full object-cover" />
-                        : <Icon name={cat?.msr || "groups"} thin size={16} className="text-ink-2" />}
-                    </span>
-                    <span className="hidden xl:block text-base font-medium text-ink truncate flex-1 text-left">
-                      {head}
-                    </span>
-                  </button>
-                );
-              })}
-              {joinedCommunities.length > 8 && (
-                <button
-                  onClick={() => setActive("explore")}
-                  className="hidden xl:block w-full text-left px-3 py-1.5 text-2xs font-semibold text-accent hover:opacity-70"
-                >
-                  +{joinedCommunities.length - 8} more
-                </button>
-              )}
-            </div>
-          </div>
-        )}
       </nav>
 
+      {/* Account */}
       <div className="shrink-0 px-2 xl:px-2.5 pt-2 pb-3 border-t border-line relative" ref={menuRef}>
-        {/* Account menu. Opens upward, because this row sits at the bottom of
-            the viewport and a downward menu would open off-screen. */}
         {menuOpen && (
           <div
             role="menu"
-            className="absolute bottom-full left-2 right-2 mb-1.5 bg-bg-raised border border-line rounded-2xl shadow-pop overflow-hidden animate-pop z-50"
+            className="absolute bottom-full left-2 right-2 mb-1.5 bg-bg-raised border border-line
+              rounded-2xl shadow-pop overflow-hidden animate-pop z-50"
           >
             {(verified
               ? [
-                  { icon: "account_circle", tint: "text-c-blue", label: "Profile", go: () => setActive("profile") },
-                  { icon: "settings", tint: "text-c-violet", label: "Settings", go: () => setActive("settings") },
-                  { icon: "help", tint: "text-c-teal", label: "Support", go: () => onSupport?.() },
-                  { icon: "logout", tint: "text-c-red", label: "Sign out", go: () => onSignOut?.(), danger: true },
+                  { icon: "account_circle", label: "Profile", go: () => setActive("profile") },
+                  { icon: "tune", label: "Preferences", go: () => setActive("settings") },
+                  { icon: "help", label: "Support", go: () => onSupport?.() },
+                  { icon: "logout", label: "Sign out", go: () => onSignOut?.(), danger: true },
                 ]
               : [
-                  { icon: "login", tint: "text-c-blue", label: "Sign in", go: () => onSignOut?.() },
-                  { icon: "help", tint: "text-c-teal", label: "Support", go: () => onSupport?.() },
+                  { icon: "login", label: "Sign in", go: () => onSignOut?.() },
+                  { icon: "help", label: "Support", go: () => onSupport?.() },
                 ]
             ).map((it) => (
               <button
@@ -260,12 +231,11 @@ export function Sidebar({
                 role="menuitem"
                 onClick={() => { setMenuOpen(false); it.go(); }}
                 className={cx(
-                  "w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors",
-                  "hover:bg-black/[0.04] dark:hover:bg-white/[0.06]",
+                  "w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors hover:bg-bg-sunken",
                   it.danger ? "text-c-red" : "text-ink"
                 )}
               >
-                <Icon name={it.icon} size={20} className={it.tint} />
+                <Icon name={it.icon} size={20} className={it.danger ? "text-c-red" : "text-ink-2"} />
                 <span className="text-base font-medium">{it.label}</span>
               </button>
             ))}
@@ -278,36 +248,19 @@ export function Sidebar({
           aria-expanded={menuOpen}
           title={user?.name || "Account"}
           className={cx(
-            "w-full flex items-center gap-2.5 rounded-full p-1.5 transition-colors",
-            menuOpen || active === "profile"
-              ? "bg-black/[0.05] dark:bg-white/[0.08]"
-              : "hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+            "w-full flex items-center gap-2.5 rounded-xl p-1.5 transition-colors",
+            menuOpen ? "bg-bg-sunken" : "hover:bg-bg-sunken"
           )}
         >
           <Avatar name={user?.name || "Guest"} size={32} ring={verified} />
           <span className="hidden xl:block min-w-0 leading-tight flex-1 text-left">
-            <span className="block text-base font-bold text-ink truncate">{user?.name || "Guest"}</span>
-            <span className={cx("block text-2xs truncate", verified ? "text-c-green font-semibold" : "text-ink-2")}>
+            <span className="block text-[13px] font-bold text-ink truncate">{user?.name || "Guest"}</span>
+            <span className={cx("block text-[11px] truncate", verified ? "text-c-green font-medium" : "text-ink-3")}>
               {verified ? "Signed in" : "Browsing as guest"}
             </span>
           </span>
-          <Icon
-            name={menuOpen ? "expand_more" : "expand_less"}
-            size={20}
-            className="hidden xl:block text-ink-2 shrink-0 mr-1"
-          />
+          <Icon name="unfold_more" size={18} className="hidden xl:block text-ink-3 shrink-0 mr-1" />
         </button>
-
-        {/* Legal — moved here from the Home rail so it sits at the bottom of
-            the app chrome instead of at the bottom of one page's sidebar. */}
-        <div className="hidden xl:block px-3 pt-3">
-          <p className="text-2xs text-ink-3 leading-relaxed">
-            <a href="/terms" className="hover:text-ink-2 hover:underline transition-colors">Terms</a>
-            <span className="mx-1">·</span>
-            <a href="/privacy" className="hover:text-ink-2 hover:underline transition-colors">Privacy</a>
-          </p>
-          <p className="text-2xs text-ink-3 leading-relaxed mt-0.5">© 2026 Orbit</p>
-        </div>
       </div>
     </aside>
   );

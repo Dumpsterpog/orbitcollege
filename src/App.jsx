@@ -113,6 +113,25 @@ export default function App() {
   const [myTeaCommentIds, setMyTeaCommentIds] = useState(() => loadIdSet("orbit_my_tea_comment_ids"));
   const [exploreTab, setExploreTab] = useState("clubs");
 
+  // Demo content, reachable from the browser console while signed in. It
+  // writes through the same rules the app obeys, so a refusal here is a
+  // refusal the app would also have hit -- which makes it a smoke test as much
+  // as a way to get something on screen.
+  useEffect(() => {
+    window.orbitSeed = async () => {
+      const { seedDemo } = await import("./lib/seed.js");
+      const out = await seedDemo(authUser?.id, user.name || "Orbit");
+      console.info("[orbit] seeded", out);
+      return out;
+    };
+    window.orbitClearDemo = async () => {
+      const { clearDemo } = await import("./lib/seed.js");
+      const n = await clearDemo();
+      console.info("[orbit] removed", n, "demo documents");
+      return n;
+    };
+  }, [authUser, user.name]);
+
   const showToast = useCallback((msg) => {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(""), 2200);

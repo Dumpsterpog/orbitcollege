@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<style>
+    @layer base {
+      html, body { margin: 0; padding: 0; }
+      body { overscroll-behavior: none; -webkit-font-smoothing: antialiased; }
+      main > :first-child { margin-top: 0 !important; }
+      main > :last-child { margin-bottom: 0 !important; }
+    }
+    ::-webkit-scrollbar { display: none; }
+  </style>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script id="tailwind-config">
+  tailwind.config = {
+    darkMode: "class",
+    theme: {
+      extend: {
+        colors: {
+          "on-primary": "#ffffff",
+          "secondary": "#4b41e1",
+          "inverse-primary": "#b4c5ff",
+          "on-tertiary": "#ffffff",
+          "primary-fixed": "#dbe1ff",
+          "on-primary-fixed": "#00174b",
+          "tertiary": "#784b00",
+          "on-surface-variant": "#434655",
+          "surface-bright": "#faf8ff",
+          "background": "#f8fafd",
+          "on-tertiary-fixed-variant": "#653e00",
+          "on-error": "#ffffff",
+          "surface-container-high": "#e2e7ff",
+          "surface-dim": "#d2d9f4",
+          "primary-container": "#2563eb",
+          "on-surface": "#0f172a",
+          "on-secondary": "#ffffff",
+          "on-secondary-fixed": "#0f0069",
+          "on-primary-container": "#eeefff",
+          "surface-container": "#eaedff",
+          "error-container": "#ffdad6",
+          "on-primary-fixed-variant": "#003ea8",
+          "on-error-container": "#93000a",
+          "surface-container-lowest": "#ffffff",
+          "surface": "#ffffff",
+          "on-tertiary-container": "#ffeedd",
+          "on-tertiary-fixed": "#2a1700",
+          "inverse-on-surface": "#eef0ff",
+          "tertiary-container": "#996100",
+          "secondary-fixed-dim": "#c3c0ff",
+          "on-background": "#0f172a",
+          "surface-container-low": "#f4f6fb",
+          "on-secondary-fixed-variant": "#3323cc",
+          "on-secondary-container": "#fffbff",
+          "error": "#ba1a1a",
+          "tertiary-fixed-dim": "#ffb95f",
+          "surface-tint": "#0053db",
+          "primary": "#2563eb",
+          "outline": "#94a3b8",
+          "surface-variant": "#dae2fd",
+          "tertiary-fixed": "#ffddb8",
+          "surface-container-highest": "#dae2fd",
+          "secondary-fixed": "#e2dfff",
+          "secondary-container": "#645efb",
+          "primary-fixed-dim": "#b4c5ff",
+          "inverse-surface": "#090d16",
+          "outline-variant": "#e2e8f0"
+        },
+        borderRadius: {
+          "DEFAULT": "0.75rem",
+          "lg": "1.25rem",
+          "xl": "1.75rem",
+          "full": "9999px"
+        },
+        spacing: {
+          "space-2xs": "0.25rem",
+          "space-xs": "0.5rem",
+          "space-sm": "0.75rem",
+          "space-md": "1rem",
+          "space-lg": "1.5rem",
+          "space-xl": "2rem",
+          "space-2xl": "3rem",
+          "space-3xl": "4rem",
+          "sidebar-width": "260px"
+        },
+        fontFamily: {
+          sans: ["Inter", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "sans-serif"],
+          mono: ["JetBrains Mono", "monospace"]
+        },
+        boxShadow: {
+          "subtle": "0 1px 2px 0 rgba(0, 0, 0, 0.04), 0 1px 3px 0 rgba(0, 0, 0, 0.02)",
+          "elevated": "0 10px 25px -5px rgba(15, 23, 42, 0.06), 0 8px 10px -6px rgba(15, 23, 42, 0.04)",
+          "spotlight": "0 20px 40px -15px rgba(15, 23, 42, 0.25)"
+        }
+      }
+    }
+  }
+  </script>
+</head>
+<body class="bg-[#f8fafc] font-sans text-slate-800 antialiased selection:bg-blue-500/10 selection:text-blue-600">
+<!-- Refined Linear/Stripe-tier Fixed Left Navigation -->
+<aside class="fixed left-0 top-0 h-full w-[260px] bg-white border-r border-slate-200/80 z-50 flex flex-col justify-between p-4 shadow-[1px_0_4px_rgba(0,0,0,0.02)]">
+<div class="flex flex-col gap-5 overflow-y-auto">
+<!-- Orbit Brand Lockup -->
+<div class="flex items-center justify-between px-2 pt-1 pb-1">
+<a class="flex items-center gap-2.5 group" href="#">
+<div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 p-[1.5px] shadow-sm group-hover:scale-105 transition-transform duration-200">
+<img alt="Orbit Brand logo" class="h-full w-full object-contain rounded-[10px]" src="https://lh3.googleusercontent.com/aida/AEtjO1WHqlDxCSKL2Yrt-MulT221KPXAYS-Ys8_2BNqgKBJwvAmRkNwkVP_Dbfhx3yoYx6rYE8OsOhfC3CJPWE-_liMirGpVPce2IkAB6UT0HBye49d0AHyxXsDV0vFdJpUE_Q9bXNv3rwO9ISFDGAbTAT7HJBCVeI2Ka6uyxBrhZYC6codQe1YgjdNQoLX6zN-U9GCTAeo488sDulA4DbwGGha6HF05km7YasuQcWFNPdjqN5ipJvrmU_8NHQ"/>
+</div>
+<span class="font-bold text-[17px] tracking-[-0.03em] text-slate-900 flex items-center gap-1.5">
+            Orbit
+            <span class="text-[10px] font-semibold uppercase tracking-wider text-blue-600 bg-blue-50 border border-blue-100/80 px-1.5 py-0.5 rounded-full">Pro</span>
+</span>
+</a>
+<button class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors">
+<span class="material-symbols-outlined text-[19px]">keyboard_double_arrow_left</span>
+</button>
+</div>
+<!-- Action: Quick Post -->
+<button class="w-full flex items-center justify-center gap-2 bg-gradient-to-b from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white text-[13px] font-semibold py-2.5 px-4 rounded-xl shadow-[0_1px_2px_rgba(37,99,235,0.2),0_4px_12px_rgba(37,99,235,0.25)] hover:shadow-[0_2px_4px_rgba(37,99,235,0.3),0_6px_16px_rgba(37,99,235,0.3)] transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-[17px]">edit_square</span>
+<span>Compose Post</span>
+</button>
+<!-- Nav Links -->
+<nav class="flex flex-col gap-1 text-[13px] font-medium text-slate-600">
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px] text-slate-400">home</span>
+<span>Home Feed</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px] text-slate-400">explore</span>
+<span>Explore</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px] text-slate-400">search</span>
+<span>Search</span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px] text-slate-400">bookmark</span>
+<span>Saved Posts</span>
+</div>
+<span class="text-[11px] font-semibold text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded-md">12</span>
+</a>
+<!-- Campus Section -->
+<div class="pt-4 pb-1.5 px-3">
+<span class="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Campus Pulse</span>
+</div>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px] text-slate-400">calendar_today</span>
+<span>Events &amp; Mixers</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px] text-slate-400">local_cafe</span>
+<span>Locali-Tea</span>
+</a>
+<!-- Communities Section -->
+<div class="pt-4 pb-1.5 px-3 flex items-center justify-between">
+<span class="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">My Communities</span>
+<button class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined text-[16px]">add</span></button>
+</div>
+<!-- Active Community Pill -->
+<a aria-current="page" class="flex items-center justify-between px-3 py-2 rounded-xl bg-blue-50/80 text-blue-700 font-semibold border border-blue-100/60 shadow-xs" href="#">
+<div class="flex items-center gap-3">
+<span class="w-6 h-6 rounded-lg bg-blue-600 text-white flex items-center justify-center text-[11px] font-mono font-bold shadow-xs">&gt;_</span>
+<span class="text-[13px] text-slate-900 font-semibold">Codeforfun</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-blue-600 ring-4 ring-blue-100"></span>
+</a>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" href="#">
+<div class="flex items-center gap-3">
+<span class="w-6 h-6 rounded-lg bg-indigo-50 text-indigo-600 border border-indigo-200/60 flex items-center justify-center text-[12px]">🚴</span>
+<span class="text-[13px]">cycling comm.</span>
+</div>
+</a>
+<!-- System & Settings -->
+<div class="pt-4 pb-1.5 px-3">
+<span class="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">Workspace</span>
+</div>
+<a class="flex items-center justify-between px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[20px] text-slate-400">notifications</span>
+<span>Notifications</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors" href="#">
+<span class="material-symbols-outlined text-[20px] text-slate-400">tune</span>
+<span>Preferences</span>
+</a>
+</nav>
+</div>
+<!-- User Profile Card -->
+<div class="pt-3 border-t border-slate-200/80">
+<div class="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 border border-transparent hover:border-slate-200/70 transition-all cursor-pointer group">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="relative">
+<img alt="Profile" class="w-8 h-8 rounded-full object-cover ring-1 ring-slate-200" src="https://lh3.googleusercontent.com/aida/AEtjO1UM0hELTglL-r0eo7a1gQomQftBhHvC2HUt4IctHUdnmlzK1kcEl8rH7fayVCPi3BvjdR2iZJtC8pzwWq6obulO-T2TSssvOFGTh-beVTTMBhbNUi_2uaYzq1fz23RRpEVvHWU2f_zJzEEFYNmyMPP9bnertx13bMiXl9Q7F9aLPymnubnoSfHFuM8Ccp3ZkjgDi7OI7E_VbF_9rGYJ_un4lY-qBi0tiYcQUKRSuIjBO7_YDVxSIW5DeKM"/>
+<span class="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-white rounded-full"></span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="text-[13px] font-semibold text-slate-900 truncate group-hover:text-blue-600 transition-colors">atharva</span>
+<span class="text-[11px] text-slate-400 font-mono truncate">@atharva · Lead</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-slate-400 group-hover:text-slate-600 text-[18px]">unfold_more</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Wrapper -->
+<div class="pl-[260px]">
+<!-- Crisp Modern Header -->
+<header class="sticky top-0 right-0 left-[260px] h-14 bg-white/80 backdrop-blur-md border-b border-slate-200/80 z-40 px-6 flex items-center justify-between">
+<div class="flex items-center gap-4">
+<!-- Breadcrumb -->
+<div class="flex items-center gap-2 text-[13px]">
+<span class="text-slate-400 font-medium hover:text-slate-700 transition-colors cursor-pointer">Communities</span>
+<span class="text-slate-300">/</span>
+<div class="flex items-center gap-1.5 font-semibold text-slate-900 bg-slate-100/80 border border-slate-200/60 px-2.5 py-1 rounded-md">
+<span class="w-2 h-2 rounded-full bg-blue-600"></span>
+<span>Codeforfun</span>
+</div>
+</div>
+<div class="h-4 w-px bg-slate-200"></div>
+<!-- Global Search Bar with keyboard shortcut -->
+<div class="relative w-80 hidden md:flex items-center">
+<span class="material-symbols-outlined absolute left-2.5 text-[17px] text-slate-400 pointer-events-none">search</span>
+<input class="w-full bg-slate-50 hover:bg-slate-100/70 focus:bg-white border border-slate-200/80 focus:border-blue-500 rounded-lg pl-8 pr-12 py-1.5 text-[13px] text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150" placeholder="Search discussions, code, events..." type="text"/>
+<span class="absolute right-2.5 text-[10px] font-semibold font-mono text-slate-400 bg-white border border-slate-200 px-1.5 py-0.5 rounded shadow-2xs pointer-events-none">⌘K</span>
+</div>
+</div>
+<!-- Header Utilities -->
+<div class="flex items-center gap-2">
+<button class="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-transparent hover:border-slate-200/60 transition-colors" title="Filter Feed">
+<span class="material-symbols-outlined text-[19px]">tune</span>
+</button>
+<button class="relative w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 border border-transparent hover:border-slate-200/60 transition-colors" title="Notifications">
+<span class="material-symbols-outlined text-[19px]">notifications</span>
+<span class="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-600 rounded-full ring-2 ring-white"></span>
+</button>
+<div class="h-4 w-px bg-slate-200 mx-1"></div>
+<button class="flex items-center gap-1.5 text-[12px] font-semibold text-slate-700 hover:text-slate-900 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+<span>Stanford Node</span>
+<span class="material-symbols-outlined text-[15px] text-slate-400">expand_more</span>
+</button>
+</div>
+</header>
+<!-- Main Layout Grid -->
+<main class="w-full min-h-[calc(100vh-3.5rem)] bg-[#f8fafc]">
+<div class="max-w-[1180px] mx-auto px-6 py-6 flex flex-col lg:flex-row gap-6 items-start">
+<!-- Central Feed Column (680px constrained) -->
+<div class="w-full lg:max-w-[690px] flex-1 flex flex-col gap-4">
+<!-- 1. BESPOKE 3D TECH HERO SPOTLIGHT BANNER -->
+<div class="relative w-full rounded-2xl overflow-hidden bg-slate-950 border border-slate-800 shadow-xl group">
+<!-- Background Image with precise dark glass gradient overlay -->
+<div class="absolute inset-0 z-0">
+<img alt="Tech Connect 3D Isometric" class="w-full h-full object-cover object-center opacity-65 scale-100 group-hover:scale-102 transition-transform duration-700 ease-out" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDM08hs2Vn-crc0k0Z-yvVOWKyjDlk1BExtnsLJQyP8hnK0L-21itIxycQ3fpXqyFajIZ55pvgfTRgdTJ_AY-5cXZ1yf-49QyDb0LMlT12m9FGDXibdFMAMPxdmx0zxlsbtDeRGF43OS6ZSQopSa2JBt2fh0VYxLdS3ZqWDUhmC5GrxYsZ2Kc_fDyCJHee51paFxTIxODqVlZi-1vHDHPUyo30NinZ2BgJl_JZyEj3ymO7MfZ1RZ7NS"/>
+<!-- Ambient Dark Vignette & Radiant Glass Gradients -->
+<div class="absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/80 to-transparent"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-slate-950/40"></div>
+</div>
+<!-- Spotlight Content Over Glass -->
+<div class="relative z-10 p-6 flex flex-col justify-between min-h-[220px]">
+<!-- Badge Row -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="inline-flex items-center gap-1.5 bg-blue-500/20 backdrop-blur-md border border-blue-400/30 text-blue-300 text-[11px] font-semibold px-2.5 py-1 rounded-full tracking-wide">
+<span class="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse"></span>
+                    Campus Flagship Spotlight
+                  </span>
+<span class="text-[11px] font-medium text-slate-400 backdrop-blur-sm">Sponsored by CS Dept &amp; YC Alumni</span>
+</div>
+<button class="text-slate-400 hover:text-white p-1 rounded-md hover:bg-white/10 transition-colors">
+<span class="material-symbols-outlined text-[17px]">close</span>
+</button>
+</div>
+<!-- Main Copy & Action -->
+<div class="mt-4 flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4">
+<div class="max-w-[420px]">
+<h2 class="text-[20px] font-bold text-white tracking-[-0.02em] leading-tight">
+                    Orbit 2026 Spring Hackathon &amp; Builder Mixer
+                  </h2>
+<p class="text-[13px] text-slate-300 mt-1.5 leading-relaxed">
+                    48 hours, $30k in team grants, and direct mentor matching with Stanford &amp; YC founders. Open to all engineers &amp; designers.
+                  </p>
+<!-- Metadata Chips -->
+<div class="flex items-center gap-3 mt-3.5 text-[12px] font-medium text-slate-300">
+<div class="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-2.5 py-1 rounded-md border border-white/10">
+<span class="material-symbols-outlined text-[15px] text-blue-400">event</span>
+<span>April 12–14</span>
+</div>
+<div class="flex items-center gap-1.5 bg-white/10 backdrop-blur-md px-2.5 py-1 rounded-md border border-white/10">
+<span class="material-symbols-outlined text-[15px] text-indigo-400">location_on</span>
+<span>Grand Student Commons</span>
+</div>
+</div>
+</div>
+<!-- Action Button & Attendees -->
+<div class="flex flex-col items-start sm:items-end gap-2.5 shrink-0 w-full sm:w-auto">
+<div class="flex items-center gap-2">
+<div class="flex -space-x-1.5 overflow-hidden">
+<span class="inline-block h-6 w-6 rounded-full ring-2 ring-slate-900 bg-gradient-to-br from-blue-500 to-indigo-600 text-[10px] font-bold text-white flex items-center justify-center">JD</span>
+<span class="inline-block h-6 w-6 rounded-full ring-2 ring-slate-900 bg-gradient-to-br from-purple-500 to-pink-500 text-[10px] font-bold text-white flex items-center justify-center">AL</span>
+<span class="inline-block h-6 w-6 rounded-full ring-2 ring-slate-900 bg-slate-700 text-[10px] font-semibold text-slate-200 flex items-center justify-center">+94</span>
+</div>
+<span class="text-[11px] text-slate-300 font-medium">96 RSVP’d</span>
+</div>
+<button class="w-full sm:w-auto px-4 py-2 rounded-xl bg-white hover:bg-slate-100 text-slate-950 text-[13px] font-semibold shadow-lg hover:shadow-xl transition-all duration-150 flex items-center justify-center gap-1.5 group-hover:bg-blue-50">
+<span>RSVP for Pass</span>
+<span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- 2. REFINED TACTILE COMPOSER -->
+<div class="w-full bg-white rounded-2xl border border-slate-200/80 p-4 shadow-subtle hover:border-slate-300 transition-colors">
+<div class="flex items-start gap-3">
+<div class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-blue-500 text-white font-bold text-[13px] flex items-center justify-center shadow-xs shrink-0 ring-2 ring-blue-50">
+                F
+              </div>
+<div class="flex-1">
+<textarea class="w-full bg-transparent text-slate-900 placeholder:text-slate-400 text-[13.5px] leading-relaxed resize-none outline-none border-0 p-0 pt-1.5 focus:ring-0" placeholder="What's happening on campus or in your repo, forksai?" rows="2"></textarea>
+</div>
+</div>
+<div class="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+<div class="flex items-center gap-1 text-slate-500">
+<button class="flex items-center gap-1 text-[12px] font-medium px-2 py-1.5 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition-colors">
+<span class="material-symbols-outlined text-[18px] text-blue-600">code_blocks</span>
+<span>Snippet</span>
+</button>
+<button class="flex items-center gap-1 text-[12px] font-medium px-2 py-1.5 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition-colors">
+<span class="material-symbols-outlined text-[18px] text-emerald-600">image</span>
+<span>Media</span>
+</button>
+<button class="flex items-center gap-1 text-[12px] font-medium px-2 py-1.5 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition-colors">
+<span class="material-symbols-outlined text-[18px] text-amber-600">poll</span>
+<span>Poll</span>
+</button>
+<button class="flex items-center gap-1 text-[12px] font-medium px-2 py-1.5 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition-colors">
+<span class="material-symbols-outlined text-[18px] text-indigo-500">tag</span>
+<span>Topic</span>
+</button>
+</div>
+<div class="flex items-center gap-2">
+<!-- Target Community Selector -->
+<button class="flex items-center gap-1.5 text-[12px] font-medium text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200/80 px-2.5 py-1.5 rounded-lg transition-colors">
+<span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+<span>Codeforfun</span>
+<span class="material-symbols-outlined text-[15px] text-slate-400">expand_more</span>
+</button>
+<button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[13px] px-4 py-1.5 rounded-lg shadow-sm hover:shadow transition-all active:scale-[0.98]">
+                  Publish
+                </button>
+</div>
+</div>
+</div>
+<!-- Feed Nav Filter Tabs -->
+<div class="flex items-center justify-between pt-1">
+<div class="flex items-center gap-1 bg-slate-200/60 p-1 rounded-xl">
+<button class="px-3 py-1.5 rounded-lg bg-white text-slate-900 font-semibold text-[12.5px] shadow-xs transition-all">
+                Campus Feed
+              </button>
+<button class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-medium text-[12.5px] transition-all">
+                My Communities
+              </button>
+<button class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-medium text-[12.5px] transition-all">
+                Trending
+              </button>
+<button class="px-3 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 font-medium text-[12.5px] transition-all">
+                Showcases
+              </button>
+</div>
+<div class="flex items-center gap-1.5 text-[12px] text-slate-500 font-medium">
+<span>Sort by:</span>
+<button class="flex items-center gap-1 text-slate-800 font-semibold hover:text-blue-600">
+<span>Most Relevant</span>
+<span class="material-symbols-outlined text-[15px]">expand_more</span>
+</button>
+</div>
+</div>
+<!-- 3. DETAILED FEED POST 1: Codeforfun (Syntax-Highlighted Interactive Card) -->
+<article class="w-full bg-white rounded-2xl border border-slate-200/80 p-5 shadow-subtle hover:border-slate-300/90 transition-all flex flex-col gap-3.5">
+<!-- Author Header -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-slate-950 text-blue-400 font-mono font-bold text-[14px] flex items-center justify-center border border-slate-800 shadow-xs">
+                  &lt;/&gt;
+                </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="font-bold text-[14px] text-slate-900">Codeforfun</span>
+<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-100">
+                      Featured
+                    </span>
+<span class="text-slate-300">•</span>
+<span class="text-slate-400 text-[12px]">2h ago</span>
+</div>
+<div class="flex items-center gap-1 text-[12px] text-slate-500">
+<span>Posted by</span>
+<span class="font-medium text-slate-800">@alex_dev</span>
+<span class="text-blue-600 material-symbols-outlined text-[14px]" title="Verified Student Architect">verified</span>
+<span>· Core Maintainer</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-1">
+<button class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+<span class="material-symbols-outlined text-[19px]">bookmark_border</span>
+</button>
+<button class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+<span class="material-symbols-outlined text-[19px]">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Post Text -->
+<p class="text-[13.5px] text-slate-800 leading-relaxed">
+              Just deployed the new lightweight state manager for the campus room tracker app! Tested it against 10,000 live WebSocket subscriptions in the study center. Here is how clean the consumption looks in React 19:
+            </p>
+<!-- Refined macOS Terminal Code Block -->
+<div class="w-full bg-[#0d1117] rounded-xl border border-slate-800 overflow-hidden shadow-sm my-1">
+<!-- Window Header -->
+<div class="flex items-center justify-between px-3.5 py-2.5 bg-[#161b22] border-b border-slate-800/80 text-[12px]">
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1.5">
+<span class="w-2.5 h-2.5 rounded-full bg-[#ff5f56]"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-[#ffbd2e]"></span>
+<span class="w-2.5 h-2.5 rounded-full bg-[#27c93f]"></span>
+</div>
+<span class="font-mono text-[11.5px] text-slate-400 ml-2 font-medium">roomPulseStore.ts</span>
+</div>
+<div class="flex items-center gap-3">
+<span class="font-mono text-[11px] text-slate-500">TypeScript · React 19</span>
+<button class="flex items-center gap-1 text-[11px] font-mono text-slate-400 hover:text-slate-200 transition-colors bg-slate-800/60 px-2 py-0.5 rounded border border-slate-700">
+<span class="material-symbols-outlined text-[13px]">content_copy</span>
+<span>Copy</span>
+</button>
+</div>
+</div>
+<!-- Syntax Area with Line Numbers -->
+<div class="p-4 font-mono text-[12.5px] leading-relaxed overflow-x-auto text-slate-300 flex gap-4">
+<!-- Line Numbers -->
+<div class="select-none text-slate-600 text-right pr-2 border-r border-slate-800 flex flex-col font-mono text-[12px]">
+<span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
+</div>
+<!-- Highlighted Code -->
+<pre class="flex-1"><code class="block"><span class="text-purple-400 font-semibold">import</span> { createOrbitSignal } <span class="text-purple-400 font-semibold">from</span> <span class="text-emerald-300">'@orbit/core'</span>;
+
+<span class="text-slate-500">// Real-time campus room broadcast pulse</span>
+<span class="text-blue-400 font-semibold">export const</span> <span class="text-yellow-200 font-medium">useRoomPulse</span> = createOrbitSignal({
+  channel: <span class="text-emerald-300">'hall-b-quiet-study'</span>,
+  syncInterval: <span class="text-amber-400">250</span>,
+  onCollision: (event) =&gt; event.reconcile()
+});</code></pre>
+</div>
+</div>
+<!-- Tags -->
+<div class="flex items-center gap-1.5 flex-wrap pt-0.5">
+<span class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[11.5px] font-mono cursor-pointer transition-colors">#react19</span>
+<span class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[11.5px] font-mono cursor-pointer transition-colors">#typescript</span>
+<span class="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-[11.5px] font-mono cursor-pointer transition-colors">#opensource</span>
+<span class="px-2 py-0.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-md text-[11.5px] font-mono font-medium cursor-pointer transition-colors">v2.4.0-rc</span>
+</div>
+<!-- Action Bar -->
+<div class="flex items-center justify-between pt-2 border-t border-slate-100 text-slate-500 text-[12.5px] font-medium">
+<div class="flex items-center gap-1">
+<button class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition-colors">
+<span>🔥</span>
+<span class="font-semibold text-slate-700">142</span>
+</button>
+<button class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition-colors">
+<span class="material-symbols-outlined text-[17px] text-slate-400">chat_bubble_outline</span>
+<span>38</span>
+</button>
+<button class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition-colors">
+<span>🚀</span>
+<span class="text-slate-600">9</span>
+</button>
+<button class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition-colors">
+<span class="material-symbols-outlined text-[17px] text-slate-400">share</span>
+<span>Share</span>
+</button>
+</div>
+<span class="text-[11.5px] text-slate-400 font-mono">1.2k views</span>
+</div>
+</article>
+<!-- 4. DETAILED FEED POST 2: Cycling Community (Rich Activity Card) -->
+<article class="w-full bg-white rounded-2xl border border-slate-200/80 p-5 shadow-subtle hover:border-slate-300/90 transition-all flex flex-col gap-3.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200/60 text-amber-700 flex items-center justify-center text-[18px]">
+                  🚴
+                </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-bold text-[14px] text-slate-900">cycling community</span>
+<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200/60">Campus Club</span>
+<span class="text-slate-300">•</span>
+<span class="text-slate-400 text-[12px]">5h ago</span>
+</div>
+<span class="text-[12px] text-slate-500">Organized by <strong class="text-slate-700 font-medium">@sam_rides</strong> · Peloton Lead</span>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<button class="px-3 py-1 rounded-lg bg-slate-100 hover:bg-blue-600 hover:text-white text-slate-700 font-semibold text-[12px] transition-colors">
+                  Join Club
+                </button>
+<button class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+<span class="material-symbols-outlined text-[19px]">more_horiz</span>
+</button>
+</div>
+</div>
+<div>
+<h3 class="text-[15px] font-bold text-slate-900 leading-snug">Saturday Sunrise Coastal Loop (28.4km) 🌅</h3>
+<p class="text-[13.5px] text-slate-700 mt-1 leading-relaxed">
+                Pace is casual &amp; friendly (20–22 km/h), no drops! We will grab espresso and fresh pastries at Bay Roast around kilometer 18. Helmets mandatory, lights recommended.
+              </p>
+</div>
+<!-- Route Visual with Glass Floating Overlay -->
+<div class="relative w-full h-52 rounded-xl overflow-hidden border border-slate-200 group">
+<img class="w-full h-full object-cover group-hover:scale-102 transition-transform duration-500 ease-out" data-alt="Scenic elevated cycling road during clear morning sunrise with a soft golden hour glow, coastal pine trees, ocean vistas in the background, professional cycling photography with blue sky and sharp vibrant contrast" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnG6gTKENZY1jHGRMFc05LIzlvph9ya4NDz5A5PK56urn_BSBvPW2J9gCv6VYcbvhrzcHo7RfeNmPOjpwuRrYY1hpwf_0D6t9qF6uTevqADbzpB8M9eBIx2rFXPQ6aEb6DEPVBc_cP5PUbvz7cfnbLR5_k3cPXFh6QFnvLaVMnYubXQ1EQnrroAeNHuGVLswqrM6BA520OMXj3FuXrZ79pke-lB4gg63kLlg3mVIpLeYUjK1KARHA0"/>
+<div class="absolute bottom-3 left-3 right-3 flex items-center justify-between">
+<div class="bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-lg border border-white/50 shadow-sm flex items-center gap-3">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-blue-600">route</span>
+<span class="text-[12px] font-bold text-slate-900">28.4 km</span>
+</div>
+<span class="text-slate-300">|</span>
+<span class="text-[12px] font-medium text-slate-600">310m Elev</span>
+<span class="text-slate-300">|</span>
+<span class="text-[12px] font-semibold text-emerald-700">Departs 6:45 AM</span>
+</div>
+<span class="bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-medium px-2.5 py-1 rounded-md shadow-xs">
+                  GPX Sync Available
+                </span>
+</div>
+</div>
+<!-- Action Bar -->
+<div class="flex items-center justify-between pt-2 border-t border-slate-100 text-slate-500 text-[12.5px] font-medium">
+<div class="flex items-center gap-1">
+<button class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition-colors">
+<span class="material-symbols-outlined text-[17px] text-slate-400">favorite_border</span>
+<span class="font-semibold text-slate-700">89</span>
+</button>
+<button class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition-colors">
+<span class="material-symbols-outlined text-[17px] text-slate-400">group</span>
+<span>24 riders attending</span>
+</button>
+</div>
+<button class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[12px] shadow-xs transition-colors flex items-center gap-1">
+<span>Join Ride</span>
+<span class="material-symbols-outlined text-[15px]">add</span>
+</button>
+</div>
+</article>
+<!-- 5. DETAILED FEED POST 3: Locali-Tea Campus Culture -->
+<article class="w-full bg-white rounded-2xl border border-slate-200/80 p-5 shadow-subtle hover:border-slate-300/90 transition-all flex flex-col gap-3.5">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-xl bg-orange-50 border border-orange-200/60 text-orange-700 flex items-center justify-center text-[18px]">
+                  ☕
+                </div>
+<div class="flex flex-col">
+<div class="flex items-center gap-1.5">
+<span class="font-bold text-[14px] text-slate-900">Locali-Tea</span>
+<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-orange-50 text-orange-800 border border-orange-200/60">Campus Buzz</span>
+<span class="text-slate-300">•</span>
+<span class="text-slate-400 text-[12px]">8h ago</span>
+</div>
+<span class="text-[12px] text-slate-500">Shared by <strong class="text-slate-700 font-medium">@charlotte_k</strong> · Student Life</span>
+</div>
+</div>
+<button class="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 transition-colors">
+<span class="material-symbols-outlined text-[19px]">more_horiz</span>
+</button>
+</div>
+<p class="text-[13.5px] text-slate-700 leading-relaxed">
+              The North Library coffee lounge just installed the cold brew nitro tap! Plus free oat milk upgrades all finals week for Orbit student badge holders. ☕️⚡️
+            </p>
+<div class="relative w-full h-44 rounded-xl overflow-hidden border border-slate-200">
+<img class="w-full h-full object-cover" data-alt="Modern minimalist aesthetic campus coffee shop interior with wooden brew bar, brass nitro cold brew taps, warm ambient cafe lighting, and students studying with laptops in background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwXb_FAHGnDUJ-0qvV6hGjebs_5czuXq3-G_R_K2ANBmgfhCu3-0yvuvvRAd4R0Zc2wBkLb13VnwOYtBuAKnC6p_2ETe37T6qPISnTjAPiiLNzGzIiMKFzlfZDtVU17UG-IHe8IOhTi5oC4JSmm9xzUyJgsMa5Y5eDUzznpzsmEZutCVQ6PCbpun4WPQSnX_VHjql42yte0VfufHQe8pPtUY-Pk0iOppGE5biQZklmXN3Fai5f5vHJ"/>
+<div class="absolute bottom-2.5 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[11px] font-medium px-2.5 py-1 rounded-md">
+                Library Commons · Ground Floor
+              </div>
+</div>
+<div class="flex items-center justify-between pt-2 border-t border-slate-100 text-slate-500 text-[12.5px] font-medium">
+<div class="flex items-center gap-1">
+<button class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition-colors">
+<span class="material-symbols-outlined text-[17px] text-slate-400">thumb_up</span>
+<span class="font-semibold text-slate-700">215</span>
+</button>
+<button class="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg hover:bg-slate-100 hover:text-slate-800 transition-colors">
+<span class="material-symbols-outlined text-[17px] text-slate-400">chat_bubble_outline</span>
+<span>45 comments</span>
+</button>
+</div>
+<button class="text-slate-400 hover:text-slate-600">
+<span class="material-symbols-outlined text-[18px]">bookmark_border</span>
+</button>
+</div>
+</article>
+</div>
+<!-- Right Rail Column (350px sticky) -->
+<aside class="w-full lg:w-[350px] flex flex-col gap-4 shrink-0 lg:sticky lg:top-20">
+<!-- Widget 1: Recommended Communities (Elevated Craft) -->
+<div class="w-full bg-white rounded-2xl border border-slate-200/80 p-4 shadow-subtle flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-2">
+<h3 class="text-[13.5px] font-bold text-slate-900 tracking-tight">Recommended for You</h3>
+<span class="px-1.5 py-0.5 rounded-md text-[11px] font-mono font-semibold bg-slate-100 text-slate-600">4</span>
+</div>
+<a class="text-[12px] font-semibold text-blue-600 hover:text-blue-700 hover:underline" href="#">View all</a>
+</div>
+<div class="flex flex-col divide-y divide-slate-100">
+<!-- Item 1 -->
+<div class="py-2.5 first:pt-1 last:pb-1 flex items-center justify-between group">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-500 to-purple-500 text-white font-bold text-[12px] flex items-center justify-center shrink-0 shadow-xs">
+                    OB
+                  </div>
+<div class="flex flex-col min-w-0">
+<span class="text-[13px] font-semibold text-slate-900 truncate group-hover:text-blue-600 transition-colors">Orbit Builders</span>
+<span class="text-[11px] text-slate-400">3,890 members · Official</span>
+</div>
+</div>
+<button class="px-3 py-1 rounded-lg border border-slate-200 hover:border-slate-300 text-slate-700 hover:text-slate-900 text-[12px] font-semibold transition-all">
+                  Join
+                </button>
+</div>
+<!-- Item 2 -->
+<div class="py-2.5 flex items-center justify-between group">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-xl bg-slate-900 text-emerald-400 font-mono font-bold text-[12px] flex items-center justify-center shrink-0 shadow-xs">
+                    C#
+                  </div>
+<div class="flex flex-col min-w-0">
+<span class="text-[13px] font-semibold text-slate-900 truncate group-hover:text-blue-600 transition-colors">Codeforfun</span>
+<span class="text-[11px] text-slate-400">4,210 members · Devs</span>
+</div>
+</div>
+<button class="px-3 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200/60 text-[12px] font-semibold cursor-default">
+                  Joined
+                </button>
+</div>
+<!-- Item 3 -->
+<div class="py-2.5 flex items-center justify-between group">
+<div class="flex items-center gap-2.5 min-w-0">
+<div class="w-8 h-8 rounded-xl bg-orange-100 text-orange-700 font-bold text-[12px] flex items-center justify-center shrink-0 shadow-xs">
+                    ☕
+                  </div>
+<div class="flex flex-col min-w-0">
+<span class="text-[13px] font-semibold text-slate-900 truncate group-hover:text-blue-600 transition-colors">Locali-Tea</span>
+<span class="text-[11px] text-slate-400">850 members · Campus</span>
+</div>
+</div>
+<button class="px-3 py-1 rounded-lg border border-slate-200 hover:border-slate-300 text-slate-700 hover:text-slate-900 text-[12px] font-semibold transition-all">
+                  Join
+                </button>
+</div>
+</div>
+<div class="pt-1 text-center">
+<a class="text-[11.5px] text-slate-500 hover:text-blue-600 font-medium inline-flex items-center gap-1" href="#">
+<span>Start your own community</span>
+<span class="material-symbols-outlined text-[13px]">arrow_forward</span>
+</a>
+</div>
+</div>
+<!-- Widget 2: Upcoming Events with Calendar Chips -->
+<div class="w-full bg-white rounded-2xl border border-slate-200/80 p-4 shadow-subtle flex flex-col gap-3">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-blue-600 text-[18px]">calendar_month</span>
+<h3 class="text-[13.5px] font-bold text-slate-900 tracking-tight">Upcoming Mixers</h3>
+</div>
+<span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">This Week</span>
+</div>
+<div class="flex flex-col gap-2">
+<!-- Event Card 1 -->
+<div class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/60 transition-colors group">
+<div class="w-10 h-10 rounded-xl bg-white border border-slate-200/80 flex flex-col items-center justify-center shrink-0 shadow-2xs">
+<span class="text-[9px] font-extrabold uppercase text-blue-600 leading-none">TOM</span>
+<span class="text-[14px] font-extrabold text-slate-900 leading-tight">19</span>
+</div>
+<div class="flex flex-col min-w-0 flex-1">
+<span class="text-[12.5px] font-bold text-slate-900 truncate group-hover:text-blue-600 transition-colors">Web3 &amp; Rust Hack Night</span>
+<span class="text-[11px] text-slate-500">7:00 PM · Innovation Hub</span>
+<span class="text-[11px] text-emerald-600 font-medium mt-0.5">32 builders confirmed</span>
+</div>
+<button class="text-slate-400 hover:text-blue-600 p-1 rounded-md">
+<span class="material-symbols-outlined text-[17px]">bookmark_add</span>
+</button>
+</div>
+<!-- Event Card 2 -->
+<div class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/60 transition-colors group">
+<div class="w-10 h-10 rounded-xl bg-white border border-slate-200/80 flex flex-col items-center justify-center shrink-0 shadow-2xs">
+<span class="text-[9px] font-extrabold uppercase text-indigo-600 leading-none">SAT</span>
+<span class="text-[14px] font-extrabold text-slate-900 leading-tight">22</span>
+</div>
+<div class="flex flex-col min-w-0 flex-1">
+<span class="text-[12.5px] font-bold text-slate-900 truncate group-hover:text-blue-600 transition-colors">Weekend Morning Ride</span>
+<span class="text-[11px] text-slate-500">8:00 AM · North Gate Arch</span>
+<span class="text-[11px] text-blue-600 font-medium mt-0.5">18 cyclists attending</span>
+</div>
+<button class="text-slate-400 hover:text-blue-600 p-1 rounded-md">
+<span class="material-symbols-outlined text-[17px]">bookmark_add</span>
+</button>
+</div>
+</div>
+<button class="w-full py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 text-slate-700 font-semibold text-[12px] transition-colors flex items-center justify-center gap-1">
+<span>View Full Campus Calendar</span>
+<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+</button>
+</div>
+<!-- Widget 3: Trending Topics (Raycast/Linear style) -->
+<div class="w-full bg-white rounded-2xl border border-slate-200/80 p-4 shadow-subtle flex flex-col gap-2.5">
+<div class="flex items-center justify-between pb-1">
+<div class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-purple-600 text-[18px]">trending_up</span>
+<h3 class="text-[13.5px] font-bold text-slate-900 tracking-tight">Trending on Campus</h3>
+</div>
+<span class="w-2 h-2 rounded-full bg-emerald-500" title="Live updates"></span>
+</div>
+<div class="flex flex-col divide-y divide-slate-100 text-[12.5px]">
+<a class="py-2 first:pt-1 last:pb-1 flex items-center justify-between hover:text-blue-600 transition-colors group" href="#">
+<div class="flex flex-col">
+<span class="font-semibold text-slate-800 group-hover:text-blue-600">#hackathon2026</span>
+<span class="text-[11px] text-slate-400">520 discussions · Tech</span>
+</div>
+<span class="text-[11px] font-semibold text-slate-400 font-mono bg-slate-100 px-1.5 py-0.5 rounded">+48%</span>
+</a>
+<a class="py-2 flex items-center justify-between hover:text-blue-600 transition-colors group" href="#">
+<div class="flex flex-col">
+<span class="font-semibold text-slate-800 group-hover:text-blue-600">#react-compiler</span>
+<span class="text-[11px] text-slate-400">248 posts · Codeforfun</span>
+</div>
+<span class="text-[11px] font-semibold text-slate-400 font-mono bg-slate-100 px-1.5 py-0.5 rounded">+19%</span>
+</a>
+<a class="py-2 flex items-center justify-between hover:text-blue-600 transition-colors group" href="#">
+<div class="flex flex-col">
+<span class="font-semibold text-slate-800 group-hover:text-blue-600">#campus-rides</span>
+<span class="text-[11px] text-slate-400">189 posts · Sports</span>
+</div>
+<span class="text-[11px] font-semibold text-slate-400 font-mono bg-slate-100 px-1.5 py-0.5 rounded">+12%</span>
+</a>
+</div>
+</div>
+<!-- Refined Footer -->
+<div class="px-2 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-[11px] text-slate-400">
+<a class="hover:text-slate-600 transition-colors" href="#">About Orbit</a>
+<span>•</span>
+<a class="hover:text-slate-600 transition-colors" href="#">Community Guidelines</a>
+<span>•</span>
+<a class="hover:text-slate-600 transition-colors" href="#">API Docs</a>
+<span>•</span>
+<a class="hover:text-slate-600 transition-colors" href="#">Privacy</a>
+<span>•</span>
+<span>© 2026 Orbit Systems</span>
+</div>
+</aside>
+</div>
+</main>
+</div>
+</body></html>

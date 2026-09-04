@@ -131,6 +131,9 @@ export const mapEvent = (d) => {
     when: r.eventWhen,
     where: r.eventWhere,
     capacity: r.capacity,
+    // A real timestamp alongside the human-written `when` string, so the rail
+    // can sort and render a date chip without parsing prose.
+    startsAt: toDate(r.startsAt),
     imageUrl: r.imageUrl || null,
     linkedCommunityId: r.linkedCommunityId || null,
   };
