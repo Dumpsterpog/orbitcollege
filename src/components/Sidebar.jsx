@@ -187,11 +187,11 @@ export function Sidebar({
         <button
           onClick={onPostClick}
           title="Write a post"
-          className="w-full mt-5 flex items-center justify-center xl:justify-start xl:pl-6 gap-3 rounded-full
+          className="w-full mt-5 flex items-center justify-center gap-2 rounded-full
             px-3 py-3 bg-accent text-accent-ink font-bold text-md shadow-lift
             hover:bg-accent-press active:scale-[0.98] transition-[background-color,transform] duration-150"
         >
-          <Icon name="edit_square" size={22} className="xl:hidden" />
+          <Icon name="add" size={22} />
           <span className="hidden xl:inline">Post</span>
         </button>
 

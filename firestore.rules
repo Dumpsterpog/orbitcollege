@@ -68,14 +68,32 @@ service cloud.firestore {
           && get(/databases/$(database)/documents/communities/$(communityId)/members/$(request.auth.uid)).data.role == 'admin';
       }
 
+      // Only the counter fields, and nothing else, changed in this write.
+      function onlyCounters() {
+        return request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['memberCount', 'lastActiveAt']);
+      }
+
       allow read: if true;
       allow create: if signedIn() && request.resource.data.creatorId == request.auth.uid;
-      // memberCount and lastActiveAt are written by joins and posts from
-      // members, so an update is allowed for any member; only the creator can
-      // rename or recategorise. Splitting those apart properly needs the
-      // counters moved to a Cloud Function, which is the upgrade path if this
-      // ever gets abused.
-      allow update: if isCreator() || isCommunityAdmin() || isMember() || isAdmin();
+
+      // The counter clause is what makes joining possible, and it is not
+      // redundant with isMember().
+      //
+      // joinCommunity writes the member document and bumps memberCount in ONE
+      // transaction. Rules evaluate against committed state, so at the moment
+      // this update is checked the member document does not exist yet --
+      // isMember() is false for the very person joining. Only the community's
+      // creator could satisfy the old condition, which is why joining worked
+      // for whoever made the community and silently failed for everyone else.
+      //
+      // Scoped to the two counter fields so a stranger still cannot rename,
+      // recategorise or unpublish a community. They can still write a wrong
+      // number into memberCount; moving counters to a Cloud Function is the
+      // fix for that, and the upgrade path if it is ever abused.
+      allow update: if isCreator() || isCommunityAdmin() || isAdmin()
+        || (signedIn() && onlyCounters());
+
       allow delete: if isCreator() || isAdmin();
 
       match /members/{memberId} {
@@ -112,6 +130,44 @@ service cloud.firestore {
         allow update: if isMember();
         allow delete: if (signedIn() && resource.data.authorId == request.auth.uid)
           || isCreator() || isCommunityAdmin() || isAdmin();
+      }
+    }
+
+    /* --------------------------------------------------- campus posts */
+
+    // Posts that belong to no community.
+    //
+    // Posting used to require joining something first, which put a chore in
+    // front of the one action the app wants from a new account. A campus post
+    // needs only an account: it is addressed to everyone, and it lives here
+    // rather than in a community subcollection.
+    //
+    // The home feed does not need changing for this. collectionGroup("posts")
+    // matches a collection of that name at any depth, so a root `posts`
+    // collection is swept up by the query that already runs.
+    match /posts/{postId} {
+      allow read: if true;
+
+      // communityId must be null. A post claiming to belong to a community
+      // while sitting outside it would show a byline the community's own
+      // rules never authorised.
+      allow create: if signedIn()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.communityId == null
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 2000;
+
+      // Sparks only. Nobody edits someone else's post text.
+      allow update: if signedIn()
+        && request.resource.data.diff(resource.data).affectedKeys()
+             .hasOnly(['sparkCount']);
+
+      allow delete: if (signedIn() && resource.data.authorId == request.auth.uid)
+        || isAdmin();
+
+      match /sparks/{sparkUid} {
+        allow read: if true;
+        allow create, delete: if isSelf(sparkUid);
       }
     }
 

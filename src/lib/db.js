@@ -326,10 +326,24 @@ export function watchCommunityPosts(communityId, cb) {
   );
 }
 
-export async function createPost({ communityId, authorId, authorName, text, imageUrl = null }) {
+
+// Where a post lives.
+//
+// A post made to a community is a document in that community's subcollection.
+// A campus post belongs to no community and goes in a root `posts` collection
+// instead. collectionGroup(db, "posts") matches a collection of that name at
+// ANY depth, root included, so the home feed picks both up through the query
+// it already runs -- no second read, no merging, no ordering to reconcile.
+const postsRef = (communityId) =>
+  communityId ? collection(db, "communities", communityId, "posts") : collection(db, "posts");
+
+const postRef = (communityId, postId) =>
+  communityId ? doc(db, "communities", communityId, "posts", postId) : doc(db, "posts", postId);
+
+export async function createPost({ communityId = null, authorId, authorName, text, imageUrl = null }) {
   need();
-  const ref = await addDoc(collection(db, "communities", communityId, "posts"), {
-    communityId,
+  const ref = await addDoc(postsRef(communityId), {
+    communityId: communityId || null,
     authorId,
     authorName: authorName || "Someone", // denormalised: Firestore has no join
     text: text || "",
@@ -338,14 +352,14 @@ export async function createPost({ communityId, authorId, authorName, text, imag
     pinned: false,
     createdAt: serverTimestamp(),
   });
-  await updateDoc(doc(db, "communities", communityId), { lastActiveAt: serverTimestamp() });
+  if (communityId) await updateDoc(doc(db, "communities", communityId), { lastActiveAt: serverTimestamp() });
   const snap = await getDoc(ref);
   return mapPost(snap);
 }
 
 export async function deletePost(communityId, postId) {
   need();
-  await deleteDoc(doc(db, "communities", communityId, "posts", postId));
+  await deleteDoc(postRef(communityId, postId));
 }
 
 export async function setPostPinned(communityId, postId, pinned) {
@@ -362,18 +376,18 @@ export async function fetchMySparks(uid) {
 // One spark per person per post, and the count kept in the same transaction.
 export async function toggleSpark(communityId, postId, uid) {
   need();
-  const sparkRef = doc(db, "communities", communityId, "posts", postId, "sparks", uid);
-  const postRef = doc(db, "communities", communityId, "posts", postId);
+  const target = postRef(communityId, postId);
+  const sparkRef = doc(target, "sparks", uid);
   let nowSparked = false;
   await runTransaction(db, async (tx) => {
     const existing = await tx.get(sparkRef);
     if (existing.exists()) {
       tx.delete(sparkRef);
-      tx.update(postRef, { sparkCount: increment(-1) });
+      tx.update(target, { sparkCount: increment(-1) });
       nowSparked = false;
     } else {
       tx.set(sparkRef, { uid, createdAt: serverTimestamp() });
-      tx.update(postRef, { sparkCount: increment(1) });
+      tx.update(target, { sparkCount: increment(1) });
       nowSparked = true;
     }
   });

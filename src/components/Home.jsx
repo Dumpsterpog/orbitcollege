@@ -89,7 +89,9 @@ function ComposerBar({ user, onOpen }) {
 }
 
 export function ComposerModal({ user, communities, onClose, onSubmit }) {
-  const [communityId, setCommunityId] = useState(communities[0]?.id || null);
+  // null means campus-wide. That is the default: addressing everyone needs
+  // no prior decision, picking a community is the deliberate act.
+  const [communityId, setCommunityId] = useState(null);
   const [text, setText] = useState("");
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -102,7 +104,7 @@ export function ComposerModal({ user, communities, onClose, onSubmit }) {
   const target = communities.find((c) => c.id === communityId);
   // A photo on its own is a post. Requiring text as well would make the
   // attach button useless for the case people actually want it for.
-  const canPost = (!!text.trim() || !!file) && !!communityId && !busy;
+  const canPost = (!!text.trim() || !!file) && !busy;
 
   const attach = (e) => {
     const f = e.target.files?.[0];
@@ -151,7 +153,26 @@ export function ComposerModal({ user, communities, onClose, onSubmit }) {
       <div className="flex items-start gap-3">
         <Avatar name={user?.name || "You"} size={40} ring />
         <div className="min-w-0 flex-1">
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-2 -mx-1 px-1">
+          {/* Audience, the way X does it: one pill saying where this goes,
+              defaulting to everyone. Choosing a community is the option, not
+              the requirement -- posting should not depend on having joined
+              anything first. */}
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-2.5 -mx-1 px-1">
+            <button
+              onClick={() => setCommunityId(null)}
+              className={cx(
+                "inline-flex items-center gap-1.5 h-8 pl-2.5 pr-3 rounded-full text-xs font-semibold shrink-0 transition-colors",
+                communityId === null
+                  ? "bg-c-blue/15 text-c-blue ring-1 ring-c-blue/40"
+                  : "bg-bg-sunken text-ink-2 hover:text-ink"
+              )}
+            >
+              <Icon name="public" size={15} />
+              Everyone
+            </button>
+
+            {communities.length > 0 && <span className="w-px my-1.5 bg-line shrink-0" />}
+
             {communities.map((c) => {
               const on = c.id === communityId;
               return (
@@ -171,7 +192,7 @@ export function ComposerModal({ user, communities, onClose, onSubmit }) {
           <Textarea
             autoFocus rows={preview ? 3 : 6} maxLength={2000} value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder={target ? `Share something with ${nameHead(target.name)}…` : "Pick a community first"}
+            placeholder={target ? `Share something with ${nameHead(target.name)}…` : "What's happening on campus?"}
             className="bg-transparent px-0 text-md"
           />
 
@@ -197,7 +218,8 @@ export function ComposerModal({ user, communities, onClose, onSubmit }) {
 /* ----------------------------------------------------------------- Post */
 
 function Post({ post, community, liked, onLike, onOpen }) {
-  const head = nameHead(community?.name || "Orbit");
+  // A campus post belongs to no community, so it is bylined by its author.
+  const head = community ? nameHead(community.name) : (post.who || "Someone");
   return (
     <article className="card card-interactive p-4">
       <div className="flex items-center gap-3">
@@ -377,10 +399,9 @@ export function HomeScreen({
     [allPosts, joinedIds]
   );
 
-  const canPost = !!user?.verified && joined.length > 0;
+  const canPost = !!user?.verified;
   const openComposer = () => {
     if (!user?.verified) { onJoinToggle?.(null); return; }
-    if (joined.length === 0) { onGoToExplore(); return; }
     setComposing(true);
   };
 
@@ -474,9 +495,7 @@ export function HomeScreen({
                   <p className="text-base text-ink-2 mt-2 max-w-[38ch] mx-auto leading-relaxed">
                     {canPost
                       ? "Nothing has been posted on campus yet. Yours would be the first."
-                      : joined.length === 0
-                        ? "Join a community and everything it posts lands here."
-                        : "Nothing has been posted on campus yet."}
+                      : "Sign in to post, or join a community and everything it posts lands here."}
                   </p>
                   <Button
                     tone="blue"

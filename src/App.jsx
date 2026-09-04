@@ -246,7 +246,8 @@ export default function App() {
     const body = text.trim();
     // A photo with no caption is a valid post, so only the pair being empty
     // is a reason to refuse.
-    if ((!body && !file) || !communityId) return false;
+    // communityId null is a campus post, addressed to everyone.
+    if (!body && !file) return false;
 
     let created;
     try {
@@ -615,7 +616,6 @@ export default function App() {
   // Explore rather than opening a composer with an empty target list.
   const openComposer = () => {
     if (!user.verified) { handleBlocked(); return; }
-    if (joinedCommunities.length === 0) { showToast("Join a community first"); goToTab("explore"); return; }
     setComposerOpen(true);
   };
 
