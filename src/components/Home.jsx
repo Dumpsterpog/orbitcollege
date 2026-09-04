@@ -88,7 +88,7 @@ function ComposerBar({ user, onOpen }) {
   );
 }
 
-function ComposerModal({ user, communities, onClose, onSubmit }) {
+export function ComposerModal({ user, communities, onClose, onSubmit }) {
   const [communityId, setCommunityId] = useState(communities[0]?.id || null);
   const [text, setText] = useState("");
   const [file, setFile] = useState(null);
@@ -264,8 +264,10 @@ function Post({ post, community, liked, onLike, onOpen }) {
 /* ------------------------------------------------------ Suggestion row */
 
 function SuggestionRow({ c, onOpen, onJoin }) {
+  // mapCommunity exposes the count as `members`, not `memberCount`.
+  const n = c.members ?? 0;
   return (
-    <div className="group flex items-center gap-3 py-3 border-b border-line last:border-0">
+    <div className="group flex items-center gap-3 px-4 py-3 border-b border-line last:border-0 hover:bg-bg-sunken/60 transition-colors">
       <button onClick={() => onOpen(c)} className="shrink-0">
         <Avatar src={c.avatarUrl} name={nameHead(c.name)} size={38} />
       </button>
@@ -274,7 +276,7 @@ function SuggestionRow({ c, onOpen, onJoin }) {
           {nameHead(c.name)}
         </span>
         <span className="block text-2xs text-ink-2 truncate mt-0.5">
-          {compact(c.memberCount || 0)} {c.memberCount === 1 ? "member" : "members"}
+          {compact(n)} {n === 1 ? "member" : "members"}
           {c.official && " · Official"}
         </span>
       </button>
@@ -285,22 +287,28 @@ function SuggestionRow({ c, onOpen, onJoin }) {
   );
 }
 
-/* --------------------------------------------------------- Rail heading */
+/* ------------------------------------------------------------ Rail card */
 
-function RailHead({ title, count, action, onAction }) {
+// One bordered surface per block, the way X does it, rather than headings and
+// rows floating on the page background. The border is what tells you where a
+// block starts and ends when the rail has more than one thing in it.
+function RailCard({ title, count, action, onAction, children }) {
   return (
-    <div className="flex items-baseline gap-3 pb-2.5 border-b-2 border-ink">
-      <h2 className="text-base font-bold text-ink">{title}</h2>
-      {count > 0 && <span className="font-mono text-xs tabular-nums text-ink-3">{count}</span>}
-      {action && (
-        <button
-          onClick={onAction}
-          className="ml-auto text-xs font-semibold text-accent hover:opacity-70 shrink-0"
-        >
-          {action}
-        </button>
-      )}
-    </div>
+    <section className="rounded-2xl border border-line overflow-hidden">
+      <div className="flex items-baseline gap-2.5 px-4 pt-3.5 pb-2.5">
+        <h2 className="text-lg font-bold text-ink">{title}</h2>
+        {count > 0 && <span className="font-mono text-xs tabular-nums text-ink-3">{count}</span>}
+        {action && (
+          <button
+            onClick={onAction}
+            className="ml-auto text-xs font-semibold text-accent hover:opacity-70 shrink-0"
+          >
+            {action}
+          </button>
+        )}
+      </div>
+      {children}
+    </section>
   );
 }
 
@@ -508,38 +516,36 @@ export function HomeScreen({
         <aside className="hidden lg:block pt-6 pb-20">
           <div className="sticky top-6 max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar pr-1 space-y-8">
             {suggested.length > 0 && (
-              <section>
-                <RailHead
-                  title={joined.length ? "More to join" : "Start here"}
-                  count={suggested.length}
-                  action="All"
-                  onAction={onGoToExplore}
-                />
+              <RailCard
+                title={joined.length ? "More to join" : "Start here"}
+                count={suggested.length}
+                action="All"
+                onAction={onGoToExplore}
+              >
                 {suggested.map((c) => (
                   <SuggestionRow key={c.id} c={c} onOpen={onOpen} onJoin={onJoinToggle} />
                 ))}
-              </section>
+              </RailCard>
             )}
 
             {/* Always rendered, even empty. An events box that vanishes when
                 there are no events teaches nobody that events exist. */}
-            <section>
-              <RailHead
-                title="Upcoming"
-                count={openEvents.length}
-                action={openEvents.length > 0 ? "All" : undefined}
-                onAction={onGoToEvents}
-              />
+            <RailCard
+              title="Upcoming"
+              count={openEvents.length}
+              action={openEvents.length > 0 ? "All" : undefined}
+              onAction={onGoToEvents}
+            >
               {openEvents.length > 0 ? (
                 openEvents.slice(0, 5).map((e) => (
                   <EventRow key={e.id} e={e} onRegister={onRegisterEvent} onOpen={onGoToEvents} />
                 ))
               ) : (
-                <p className="text-base text-ink-2 py-5 leading-relaxed">
+                <p className="text-base text-ink-2 px-4 pb-4 leading-relaxed">
                   No upcoming events.
                 </p>
               )}
-            </section>
+            </RailCard>
           </div>
         </aside>
       </div>

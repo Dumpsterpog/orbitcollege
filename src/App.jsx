@@ -11,7 +11,7 @@ import { BottomNav } from "./components/BottomNav.jsx";
 import { Sidebar } from "./components/Sidebar.jsx";
 import { GuestBanner, Toast, ThemeNotice, Logo } from "./components/Common.jsx";
 import { SearchOverlay } from "./components/SearchOverlay.jsx";
-import { HomeScreen } from "./components/Home.jsx";
+import { HomeScreen, ComposerModal } from "./components/Home.jsx";
 import { ExploreScreen } from "./components/Explore.jsx";
 import { EventsScreen } from "./components/Events.jsx";
 import { CommunityDetail } from "./components/Community.jsx";
@@ -88,6 +88,7 @@ export default function App() {
   const [notifOpen, setNotifOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
   const [showCreate, setShowCreate] = useState(false);
+  const [composerOpen, setComposerOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   // "/" opens search, the way the sidebar's kbd hint advertises. Ignored while
   // the user is typing into a field or a contentEditable, otherwise the key
@@ -609,12 +610,21 @@ export default function App() {
   const openSearch = () => setSearchOpen(true);
   const openCreate = () => { if (!user.verified) { handleBlocked(); return; } setShowCreate(true); };
 
+  // Posting is reachable from the rail on every screen now, not only from
+  // Home. It needs somewhere to post TO, so joining nothing yet routes to
+  // Explore rather than opening a composer with an empty target list.
+  const openComposer = () => {
+    if (!user.verified) { handleBlocked(); return; }
+    if (joinedCommunities.length === 0) { showToast("Join a community first"); goToTab("explore"); return; }
+    setComposerOpen(true);
+  };
+
   return (
     <div className={shellClassApp} style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
       <style>{FONT_IMPORT}</style>
       <Sidebar
         active={activeTab} setActive={goToTab}
-        onTeaClick={openTea} onSearchClick={openSearch} onCreateClick={openCreate}
+        onTeaClick={openTea} onSearchClick={openSearch} onCreateClick={openCreate} onPostClick={openComposer}
         onOpenSettings={() => goToTab("settings")}
         verified={user.verified} user={user} theme={theme} onToggleTheme={toggleTheme}
         joinedCount={joinedIds.length}
@@ -744,6 +754,14 @@ export default function App() {
 
       {reportTarget && (
         <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} onSubmit={handleReportSubmit} />
+      )}
+      {composerOpen && (
+        <ComposerModal
+          user={user}
+          communities={joinedCommunities}
+          onClose={() => setComposerOpen(false)}
+          onSubmit={handleCreatePost}
+        />
       )}
       {!showingSubPage && !user.verified && <GuestBanner onVerify={goToInitialPage} />}
       {/* Sits above the guest pill rather than beside it, and only one of the

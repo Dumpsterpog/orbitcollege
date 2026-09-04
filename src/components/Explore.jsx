@@ -4,14 +4,12 @@ import { communityTrendScore } from "../utils/helpers.js";
 import { Icon, Avatar, Button, Input, Tag, cx } from "./ui/Primitives.jsx";
 import { Screen, Column, Empty } from "./ui/Layout.jsx";
 
-// Explore — a discovery grid, not a directory of bordered cards.
+// Explore -- a directory.
 //
-// The reference's explore is a dense tile mosaic: no borders, no gaps of
-// dead space, tiles butted up against each other so the images form the
-// layout. That only works when every tile has an image. Communities here
-// often don't, so a tile falls back to its category glyph on a tinted wash
-// — still full-bleed, still no border, and the colour keeps the mosaic from
-// going grey when covers are missing.
+// This was a dense tile mosaic copied from a reference whose tiles are all
+// photographs. Communities here rarely have cover art, so it degraded into a
+// screen of tinted squares each holding one category glyph: maximum space for
+// minimum information. It is a list of rows now. See the note on Row.
 
 const compact = (n) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : `${n}`);
 
@@ -28,70 +26,75 @@ const WASH = {
   "text-c-red": "from-c-red/15 to-c-red/5",
 };
 
-function Tile({ c, joined, onOpen, onJoin, tall = false }) {
+// A row, not a tile.
+//
+// This was a photo grid with a masonry "tall" variant, which assumed every
+// community has cover art worth looking at. Almost none do, so the grid was
+// mostly tinted squares holding a category glyph -- a lot of screen spent
+// saying very little -- and with only three results the row-span-2 variant had
+// no sibling to constrain it and grew to the height of the viewport.
+//
+// A row shows strictly more per community (name, blurb, category, count, and
+// a Join that does not need a hover to find) in a fraction of the height, and
+// it looks the same whether there are two communities or two hundred.
+function Row({ c, joined, onOpen, onJoin }) {
   const cat = CATEGORIES.find((x) => x.name === c.category);
   const wash = WASH[cat?.tint] || WASH["text-c-blue"];
 
   return (
-    <button
+    <div
       onClick={() => onOpen(c)}
-      className={cx(
-        "group relative overflow-hidden bg-bg-sunken text-left",
-        tall ? "row-span-2 aspect-[1/2.02]" : "aspect-square"
-      )}
+      className="group flex items-center gap-3.5 px-3 sm:px-4 py-3 cursor-pointer
+        border-b border-line last:border-0 hover:bg-bg-sunken/60 transition-colors"
     >
-      {c.avatarUrl ? (
-        <img src={c.avatarUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
-      ) : (
-        <span className={cx("w-full h-full grid place-items-center bg-gradient-to-br", wash)}>
-          <Icon name={cat?.msr || "groups"} size={tall ? 72 : 44} className={cx(cat?.tint, "opacity-80")} />
-        </span>
-      )}
-
-      {/* Always-on label strip. The reference hides everything until hover,
-          which works when the image is the content; here the name IS the
-          content, so it stays legible at rest and the overlay only adds
-          the secondary detail. */}
-      <span className="absolute inset-x-0 bottom-0 p-3 bg-gradient-to-t from-black/75 via-black/35 to-transparent">
-        <span className="block text-base font-semibold text-white truncate drop-shadow-sm">
-          {c.name.split(" — ")[0]}
-        </span>
-        <span className="block text-xs text-white/80 truncate">{compact(c.members)} members</span>
-      </span>
-
-      {c.official && (
-        <span className="absolute top-2.5 right-2.5">
-          <Icon name="verified" size={20} className="text-white drop-shadow" />
-        </span>
-      )}
-
-      <span
-        className="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 transition-opacity duration-200
-          grid place-items-center gap-2 p-4"
-      >
-        <span className="text-center">
-          <span className="block text-base font-semibold text-white line-clamp-2">{c.name}</span>
-          <span className="block text-xs text-white/75 mt-1 line-clamp-2">{c.desc}</span>
-          <span
-            role="button"
-            tabIndex={-1}
-            onClick={(e) => { e.stopPropagation(); onJoin(c.id); }}
-            className={cx(
-              "inline-flex items-center justify-center h-8 px-4 mt-3 rounded-full text-xs font-semibold transition-colors",
-              joined ? "bg-white/15 text-white ring-1 ring-white/40" : "bg-white text-black hover:bg-white/90"
-            )}
-          >
-            {joined ? "Joined" : "Join"}
+      <span className="shrink-0 w-11 h-11 rounded-xl overflow-hidden">
+        {c.avatarUrl ? (
+          <img src={c.avatarUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
+        ) : (
+          <span className={cx("w-full h-full grid place-items-center bg-gradient-to-br", wash)}>
+            <Icon name={cat?.msr || "groups"} size={22} className={cx(cat?.tint, "opacity-90")} />
           </span>
+        )}
+      </span>
+
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-1.5">
+          <span className="text-md font-semibold text-ink truncate group-hover:opacity-70 transition-opacity">
+            {c.name.split(" — ")[0]}
+          </span>
+          {c.official && <Icon name="verified" size={15} className="text-c-blue shrink-0" />}
+        </span>
+        {c.desc && <span className="block text-base text-ink-2 truncate mt-0.5">{c.desc}</span>}
+        <span className="block text-2xs text-ink-3 truncate mt-0.5">
+          {compact(c.members)} {c.members === 1 ? "member" : "members"} · {c.category}
         </span>
       </span>
-    </button>
+
+      <button
+        onClick={(e) => { e.stopPropagation(); onJoin(c.id); }}
+        className={cx(
+          "shrink-0 inline-flex items-center justify-center h-8 px-4 rounded-full text-xs font-semibold transition-colors",
+          joined
+            ? "text-ink-2 ring-1 ring-line hover:ring-line-strong"
+            : "bg-solid text-solid-ink hover:opacity-90"
+        )}
+      >
+        {joined ? "Joined" : "Join"}
+      </button>
+    </div>
   );
 }
 
-function TileSkeleton({ tall }) {
+function RowSkeleton() {
   return (
-    <div className={cx("bg-bg-sunken animate-pulse", tall ? "row-span-2 aspect-[1/2.02]" : "aspect-square")} />
+    <div className="flex items-center gap-3.5 px-3 sm:px-4 py-3 border-b border-line last:border-0">
+      <div className="w-11 h-11 rounded-xl bg-bg-sunken animate-pulse shrink-0" />
+      <div className="flex-1 min-w-0 space-y-1.5">
+        <div className="h-3.5 w-2/5 rounded bg-bg-sunken animate-pulse" />
+        <div className="h-3 w-3/5 rounded bg-bg-sunken animate-pulse" />
+      </div>
+      <div className="w-16 h-8 rounded-full bg-bg-sunken animate-pulse shrink-0" />
+    </div>
   );
 }
 
@@ -222,8 +225,8 @@ export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, j
         </p>
 
         {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-3 auto-rows-[minmax(0,1fr)] gap-1 sm:gap-2">
-            {Array.from({ length: 9 }).map((_, i) => <TileSkeleton key={i} tall={i % 7 === 0} />)}
+          <div className="rounded-2xl border border-line overflow-hidden">
+            {Array.from({ length: 6 }).map((_, i) => <RowSkeleton key={i} />)}
           </div>
         ) : results.length === 0 ? (
           <Empty
@@ -233,17 +236,14 @@ export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, j
             action={<Button tone="blue" onClick={() => { setQuery(""); setCat(null); }}>Clear filters</Button>}
           />
         ) : (
-          // Mosaic: every third tile is double-height, which breaks the grid
-          // out of a flat checkerboard without needing per-item art direction.
-          <div className="grid grid-cols-2 md:grid-cols-3 auto-rows-[minmax(0,1fr)] gap-1 sm:gap-2">
-            {results.map((c, i) => (
-              <Tile
+          <div className="rounded-2xl border border-line overflow-hidden">
+            {results.map((c) => (
+              <Row
                 key={c.id}
                 c={c}
                 joined={joinedIds.includes(c.id)}
                 onOpen={onOpen}
                 onJoin={onJoinToggle}
-                tall={i % 7 === 0}
               />
             ))}
           </div>

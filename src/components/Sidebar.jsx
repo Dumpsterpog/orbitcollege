@@ -109,7 +109,7 @@ function GroupLabel({ children }) {
 }
 
 export function Sidebar({
-  active, setActive, onTeaClick, onSearchClick, onCreateClick,
+  active, setActive, onTeaClick, onSearchClick, onCreateClick, onPostClick,
   verified, user, theme, onToggleTheme, onOpenSettings, joinedCount = 0, onUnbuilt,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -179,17 +179,20 @@ export function Sidebar({
           </div>
         ))}
 
-        {/* Create — the one filled action. It is what the product wants you
-            to do, so it is the only row carrying a solid fill. */}
+        {/* Post — the one filled action.
+            Was "Create", which opened the make-a-community flow. That is a
+            thing you do once, not the thing the rail should be pointing at
+            every time you look at it. Creating a community moved to Explore
+            and the empty feed, where someone is actually looking for one. */}
         <button
-          onClick={onCreateClick}
-          title="Create a community"
-          className="w-full mt-5 flex items-center justify-center xl:justify-start gap-3 rounded-full
-            px-3 py-3 bg-accent text-accent-ink font-bold text-base shadow-lift
+          onClick={onPostClick}
+          title="Write a post"
+          className="w-full mt-5 flex items-center justify-center xl:justify-start xl:pl-6 gap-3 rounded-full
+            px-3 py-3 bg-accent text-accent-ink font-bold text-md shadow-lift
             hover:bg-accent-press active:scale-[0.98] transition-[background-color,transform] duration-150"
         >
-          <Icon name="add" size={22} />
-          <span className="hidden xl:inline">Create</span>
+          <Icon name="edit_square" size={22} className="xl:hidden" />
+          <span className="hidden xl:inline">Post</span>
         </button>
 
         {joinedCount > 0 && (
