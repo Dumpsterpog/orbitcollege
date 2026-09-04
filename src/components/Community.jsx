@@ -234,6 +234,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
   const isAdmin = !!authUserId && c.creatorId === authUserId;
   const isLive = c.lastActive <= 10;
   const [tab, setTab] = useState("posts");
+  const [sort, setSort] = useState("hot");
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [qrOpen, setQrOpen] = useState(false);
   const [draft, setDraft] = useState("");
@@ -309,10 +310,25 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
   const faceStack = members.slice(0, 5);
   const extraCount = Math.max(0, total - faceStack.length);
   const orderedPosts = useMemo(() => {
+    // Pinned first, always. A pin is the creator saying "read this first", and
+    // no sort should be able to bury it.
     const pinned = posts.filter((p) => p.pinned);
     const rest = posts.filter((p) => !p.pinned);
-    return [...pinned, ...rest];
-  }, [posts]);
+
+    const byNew = (a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0);
+    const byTop = (a, b) => (b.sparks || 0) - (a.sparks || 0) || byNew(a, b);
+    // Hot decays a post's sparks against its age, so a day-old post with five
+    // sparks outranks a month-old one with six. Without the decay "hot" and
+    // "top" would return the same list forever.
+    const heat = (x) => {
+      const hours = Math.max(1, (Date.now() - (x.createdAt?.getTime() || 0)) / 3600e3);
+      return (x.sparks || 0) / Math.pow(hours + 2, 0.6);
+    };
+    const byHot = (a, b) => heat(b) - heat(a) || byNew(a, b);
+
+    const cmp = sort === "new" ? byNew : sort === "top" ? byTop : byHot;
+    return [...pinned.sort(byNew), ...rest.sort(cmp)];
+  }, [posts, sort]);
 
   // Posts now require a photo — text-only updates belong in Chat instead
   // (see the composer UI below), so the feed reads as an actual photo feed
@@ -320,20 +336,34 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
   const handlePost = async () => {
     const t = draft.trim();
     const file = postImageFile;
-    if (!authUserId || !file) return;
+    // Text alone is a post. This used to require a photo, on the theory that
+    // text belonged in Chat -- but chat is members-only and ephemeral, so the
+    // rule quietly meant a community could not have a written announcement.
+    if (!authUserId || (!t && !file)) return;
+
     setDraft("");
     setPostImageFile(null);
     setPostImagePreview(null);
     setPostingImage(true);
+
     let imageUrl = null;
-    try {
-      ({ url: imageUrl } = await db.uploadImage("community-media", file, authUserId));
-    } catch { imageUrl = null; }
-    setPostingImage(false);
-    if (!imageUrl) return; // upload failed — don't create a photo-less post
+    if (file) {
+      try {
+        ({ url: imageUrl } = await db.uploadImage("community-media", file, authUserId));
+      } catch {
+        // A failed upload should not silently drop what was written, so the
+        // post still goes up -- without the picture.
+        imageUrl = null;
+      }
+    }
+
     try {
       await db.createPost({ communityId: c.id, authorId: authUserId, authorName: myName, text: t, imageUrl });
-    } catch { /* watchCommunityPosts stays the source of truth */ }
+    } catch (err) {
+      console.error("[orbit] community post failed", err);
+    } finally {
+      setPostingImage(false);
+    }
   };
 
   // Author can always remove their own post/message; the community's
@@ -722,23 +752,49 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
           </div>
         )}
         {tab === "posts" && (
-          <div className="px-5 pt-4 pb-6">
+          <div className="px-5 lg:px-0 pt-5 pb-16">
             {joined && !canPost && (
-              <p className="text-xs text-ink-2 text-center py-4 mb-2 bg-bg-sunken border border-line rounded-2xl">Only this community's admins can post right now.</p>
+              <p className="text-base text-ink-2 text-center py-4 mb-4 rounded-2xl border border-line">
+                Only this community&apos;s admins can post right now.
+              </p>
             )}
+
             {joined && canPost && (
-              <div className="bg-bg-sunken border border-line rounded-2xl p-3 mb-4">
-                {postImagePreview ? (
-                  <div className="relative mb-2 w-full">
-                    <img src={postImagePreview} alt="" className="w-full max-h-64 rounded-lg border border-line object-cover" />
-                    <button onClick={() => { setPostImageFile(null); setPostImagePreview(null); }} className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-bg border border-line-strong flex items-center justify-center">
-                      <Icon name="close" size={12} className="text-ink-2" />
-                    </button>
+              <div className="rounded-2xl border border-line p-3.5 mb-5">
+                <div className="flex gap-3">
+                  <Avatar name={myName} size={40} />
+                  <div className="min-w-0 flex-1">
+                    <textarea
+                      value={draft}
+                      onChange={(e) => setDraft(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handlePost(); }}
+                      placeholder={"Share something with " + nameHead(c.name) + "…"}
+                      rows={3}
+                      maxLength={2000}
+                      className="w-full bg-transparent text-ink placeholder:text-ink-3 text-md outline-none resize-none leading-relaxed"
+                    />
+
+                    {postImagePreview && (
+                      <div className="relative mt-1">
+                        <img src={postImagePreview} alt="" className="w-full max-h-80 object-cover rounded-xl border border-line" />
+                        <button
+                          onClick={() => { setPostImageFile(null); setPostImagePreview(null); }}
+                          aria-label="Remove photo"
+                          className="absolute top-2 right-2 grid place-items-center w-7 h-7 rounded-full bg-black/60 text-white backdrop-blur-sm hover:bg-black/75 transition-colors"
+                        >
+                          <Icon name="close" size={15} />
+                        </button>
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <label className="flex flex-col items-center justify-center gap-1.5 py-6 rounded-xl border-2 border-dashed border-line-strong cursor-pointer text-ink-2 hover:border-line-strong mb-2">
-                    <Icon name="photo_camera" size={20} className="text-c-teal" />
-                    <span className="text-xs font-medium">Add a photo to post</span>
+                </div>
+
+                <div className="flex items-center gap-2 mt-2.5 pt-2.5 border-t border-line">
+                  <label
+                    title="Add a photo"
+                    className="inline-grid place-items-center w-9 h-9 rounded-full shrink-0 cursor-pointer text-c-teal hover:bg-black/[0.05] dark:hover:bg-white/[0.08] transition-colors"
+                  >
+                    <Icon name="photo_camera" size={20} />
                     <input type="file" accept="image/*" className="hidden" onChange={(e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
@@ -746,61 +802,149 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                       setPostImagePreview(URL.createObjectURL(file));
                     }} />
                   </label>
-                )}
-                <textarea
-                  value={draft} onChange={(e) => setDraft(e.target.value)}
-                  placeholder="Add a caption (optional)..."
-                  rows={2}
-                  maxLength={2000}
-                  className="w-full bg-transparent text-ink placeholder:text-ink-3 text-sm outline-none resize-none"
-                />
-                <div className="flex items-center justify-between mt-1.5">
-                  <p className="text-[10px] text-ink-3">Just want to say something? Use Chat instead.</p>
-                  <button disabled={!postImageFile || postingImage} onClick={handlePost} className="px-4 h-8 rounded-full bg-solid disabled:bg-bg-sunken text-solid-ink disabled:text-ink-3 text-xs font-semibold flex items-center gap-1.5 shrink-0 active:scale-95 transition-transform">
-                    {postingImage && <Icon name="progress_activity" size={12} className="animate-spin text-ink-2" />}
-                    {postingImage ? "Posting..." : "Post"}
-                  </button>
+                  <span className="text-xs text-ink-3 tabular-nums">{draft.length}/2000</span>
+                  <span className="hidden sm:inline text-xs text-ink-3 ml-auto mr-2">Ctrl + Enter</span>
+                  <Button
+                    tone="blue"
+                    size="md"
+                    className={cx("shrink-0", "sm:ml-0 ml-auto")}
+                    disabled={(!draft.trim() && !postImageFile) || postingImage}
+                    loading={postingImage}
+                    onClick={handlePost}
+                  >
+                    Post
+                  </Button>
                 </div>
               </div>
             )}
-            <div className="space-y-4">
-              {orderedPosts.map((p) => {
-                const isPinned = p.pinned;
-                const postSparked = postSparkIds.includes(p.id);
-                return (
-                  <div key={p.id} className={cx("flex gap-2.5", isPinned && "bg-accent-wash border border-accent/20 -mx-2 px-3 py-2.5 rounded")}>
-                    <Avatar name={p.who} size={28} />
-                    <div className="flex-1 min-w-0">
-                      {isPinned && <p className="text-2xs text-accent font-semibold flex items-center gap-1 mb-0.5"><Icon name="push_pin" size={10} className="text-c-amber" />Pinned</p>}
-                      <p className="text-sm text-ink-2"><span className="font-medium text-ink">{p.who}</span> {p.text}</p>
-                      {p.imageUrl ? (
-                        <img src={p.imageUrl} alt="" className="mt-1.5 max-h-60 w-full max-w-[220px] rounded-xl object-cover border border-line" />
-                      ) : p.hasImage ? (
-                        <div className="mt-1.5 h-24 w-full max-w-[220px] rounded-xl bg-bg-sunken border border-line flex items-center justify-center">
-                          <Icon name="image" size={18} className="text-ink-2" />
+
+            {/* Sort. Pinned posts ignore it, because a pin is the creator
+                saying "read this first" and no ordering should bury it. */}
+            {orderedPosts.length > 0 && (
+              <div className="flex items-center gap-1 mb-4">
+                {[
+                  { key: "hot", label: "Hot" },
+                  { key: "new", label: "Newest" },
+                  { key: "top", label: "Top" },
+                ].map((s) => (
+                  <button
+                    key={s.key}
+                    onClick={() => setSort(s.key)}
+                    className={cx(
+                      "h-8 px-3.5 rounded-full text-xs font-semibold transition-colors",
+                      sort === s.key ? "bg-solid text-solid-ink" : "text-ink-2 hover:text-ink hover:bg-bg-sunken"
+                    )}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+                <span className="ml-auto font-mono text-xs tabular-nums text-ink-3">
+                  {orderedPosts.length} {orderedPosts.length === 1 ? "post" : "posts"}
+                </span>
+              </div>
+            )}
+
+            {orderedPosts.length === 0 ? (
+              <div className="py-16 text-center">
+                <p className="text-lg font-bold text-ink">Nothing posted yet</p>
+                <p className="text-base text-ink-2 mt-2 max-w-[36ch] mx-auto leading-relaxed">
+                  {joined && canPost
+                    ? "Yours would be the first."
+                    : "Join to start the conversation here."}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {orderedPosts.map((p) => {
+                  const isPinned = p.pinned;
+                  const postSparked = postSparkIds.includes(p.id);
+                  const mine = p.authorId === authUserId;
+                  const byCreator = p.authorId === c.creatorId;
+
+                  return (
+                    <article
+                      key={p.id}
+                      className={cx(
+                        "rounded-2xl border overflow-hidden transition-colors",
+                        isPinned ? "border-accent/35" : "border-line hover:border-line-strong"
+                      )}
+                    >
+                      {isPinned && (
+                        <div className="flex items-center gap-1.5 px-4 py-2 bg-accent-wash">
+                          <Icon name="push_pin" size={14} className="text-c-amber" />
+                          <span className="text-2xs font-bold text-accent">Pinned by the creator</span>
                         </div>
-                      ) : null}
-                      <div className="flex items-center gap-3 mt-1.5">
-                        <p className="text-[11px] text-ink-2 mono">{p.time}</p>
-                        <button onClick={() => togglePostSpark(p.id)} className={`flex items-center gap-1 text-[11px] mono active:scale-90 transition-transform ${postSparked ? "text-ink-2" : "text-ink-2 hover:text-ink-2"}`}>
-                          <Icon name="local_fire_department" size={11} className="text-c-orange" />{p.sparks || 0}
-                        </button>
-                        {isAdmin && (
-                          <button onClick={() => togglePin(p)} className="text-[11px] text-ink-2 hover:text-ink flex items-center gap-0.5">
-                            <Icon name="push_pin" size={11} className="text-c-amber" />{isPinned ? "Unpin" : "Pin"}
-                          </button>
+                      )}
+
+                      <div className="p-4">
+                        <div className="flex items-start gap-3">
+                          <Avatar name={p.who} size={40} />
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-md font-bold text-ink truncate">{p.who}</span>
+                              {byCreator && (
+                                <span className="inline-flex items-center gap-1 h-5 px-2 rounded-full bg-accent-wash text-accent text-[10px] font-bold">
+                                  <Icon name="workspace_premium" size={10} className="text-c-amber" />Creator
+                                </span>
+                              )}
+                              {mine && !byCreator && (
+                                <span className="inline-flex items-center h-5 px-2 rounded-full bg-bg-sunken text-ink-2 text-[10px] font-bold">You</span>
+                              )}
+                              <span className="text-base text-ink-3">· {p.time}</span>
+                            </div>
+
+                            {p.text && (
+                              <p className="text-md text-ink leading-relaxed mt-1.5 whitespace-pre-wrap break-words">
+                                {p.text}
+                              </p>
+                            )}
+                          </div>
+
+                          {(mine || isAdmin) && (
+                            <div className="flex items-center gap-0.5 shrink-0">
+                              {isAdmin && (
+                                <IconButton
+                                  icon="push_pin"
+                                  label={isPinned ? "Unpin" : "Pin"}
+                                  size={17}
+                                  onClick={() => togglePin(p)}
+                                />
+                              )}
+                              <IconButton icon="delete" label="Delete" size={17} onClick={() => deletePost(p)} />
+                            </div>
+                          )}
+                        </div>
+
+                        {p.imageUrl && (
+                          <img
+                            src={p.imageUrl}
+                            alt=""
+                            loading="lazy"
+                            className="w-full max-h-[520px] object-cover rounded-xl border border-line mt-3"
+                          />
                         )}
-                        {(p.authorId === authUserId || isAdmin) && (
-                          <button onClick={() => deletePost(p)} className="text-[11px] text-ink-2 hover:text-ink-2 flex items-center gap-0.5">
-                            <Icon name="delete" size={11} className="text-c-red" />
+
+                        <div className="flex items-center gap-2 mt-3.5">
+                          <button
+                            onClick={() => togglePostSpark(p.id)}
+                            aria-pressed={postSparked}
+                            className={cx(
+                              "inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-xs font-semibold transition-colors",
+                              postSparked
+                                ? "bg-accent-wash text-accent"
+                                : "bg-bg-sunken text-ink-2 hover:text-ink"
+                            )}
+                          >
+                            <Icon name="local_fire_department" size={15} className="text-c-orange" />
+                            <span className="tabular-nums">{p.sparks || 0}</span>
                           </button>
-                        )}
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                    </article>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
         {tab === "members" && (
