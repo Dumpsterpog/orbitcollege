@@ -68,31 +68,50 @@ service cloud.firestore {
           && get(/databases/$(database)/documents/communities/$(communityId)/members/$(request.auth.uid)).data.role == 'admin';
       }
 
-      // Only the counter fields, and nothing else, changed in this write.
-      function onlyCounters() {
-        return request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['memberCount', 'lastActiveAt']);
+      // Nothing that identifies the community changed in this write.
+      //
+      // This deliberately avoids diff().affectedKeys(). joinCommunity bumps
+      // memberCount with increment() and lastActiveAt with serverTimestamp(),
+      // which reach the server as updateTransforms with an EMPTY updateMask --
+      // the fields are never named in the write itself. What affectedKeys()
+      // reports for a transform-only update is not something to stake a join
+      // on, and when it is wrong the failure is a flat permission-denied with
+      // nothing to read.
+      //
+      // Comparing the identity fields directly has no such ambiguity: whatever
+      // the transforms do to the counters, these six either match the stored
+      // document or they do not. get(key, default) tolerates a field that has
+      // never been set, which a comparison on a missing key would not.
+      function identityUnchanged() {
+        return request.resource.data.get('name', '')       == resource.data.get('name', '')
+          && request.resource.data.get('handle', '')       == resource.data.get('handle', '')
+          && request.resource.data.get('creatorId', '')    == resource.data.get('creatorId', '')
+          && request.resource.data.get('category', '')     == resource.data.get('category', '')
+          && request.resource.data.get('official', false)  == resource.data.get('official', false)
+          && request.resource.data.get('postsAdminOnly', false)
+             == resource.data.get('postsAdminOnly', false);
       }
 
       allow read: if true;
       allow create: if signedIn() && request.resource.data.creatorId == request.auth.uid;
 
-      // The counter clause is what makes joining possible, and it is not
-      // redundant with isMember().
+      // The last clause is what makes joining possible for anyone who is not
+      // the creator.
       //
-      // joinCommunity writes the member document and bumps memberCount in ONE
-      // transaction. Rules evaluate against committed state, so at the moment
-      // this update is checked the member document does not exist yet --
-      // isMember() is false for the very person joining. Only the community's
-      // creator could satisfy the old condition, which is why joining worked
-      // for whoever made the community and silently failed for everyone else.
+      // A join writes the member document and bumps memberCount. Rules
+      // evaluate against committed state, so when the counter write is
+      // checked the member document does not exist yet and isMember() is
+      // false for the very person joining -- only isCreator() could ever pass,
+      // which is why joining worked for whoever made the community and failed
+      // silently for everyone else.
       //
-      // Scoped to the two counter fields so a stranger still cannot rename,
-      // recategorise or unpublish a community. They can still write a wrong
-      // number into memberCount; moving counters to a Cloud Function is the
-      // fix for that, and the upgrade path if it is ever abused.
+      // Scoped by identityUnchanged(), so a stranger can move the counters but
+      // cannot rename, recategorise, reassign or unpublish a community. They
+      // can still write a wrong number into memberCount; moving counters to a
+      // Cloud Function is the fix for that, and the upgrade path if it is ever
+      // abused.
       allow update: if isCreator() || isCommunityAdmin() || isAdmin()
-        || (signedIn() && onlyCounters());
+        || (signedIn() && identityUnchanged());
 
       allow delete: if isCreator() || isAdmin();
 

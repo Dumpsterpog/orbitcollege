@@ -289,29 +289,54 @@ export async function fetchMyJoins(uid) {
 }
 
 // Membership and the count move together, so they cannot disagree.
+// Membership is the fact. memberCount is a cached display of that fact.
+//
+// These were one transaction so they could never disagree, and that is what
+// broke joining: the counter write needs permission on the community document
+// itself, and when it was refused the transaction rolled back the membership
+// too -- trading the entire feature for the accuracy of a number.
+//
+// They are separate now, in that order. A refused counter bump is logged and
+// swallowed, so the worst case is a count that reads low until the next join
+// corrects it. A refused membership write still fails loudly, because that one
+// actually means you did not join.
 export async function joinCommunity(communityId, uid, name) {
   need();
   const memberRef = doc(db, "communities", communityId, "members", uid);
-  await runTransaction(db, async (tx) => {
-    const existing = await tx.get(memberRef);
-    if (existing.exists()) return;
-    tx.set(memberRef, { uid, name: name || "Someone", role: "member", joinedAt: serverTimestamp() });
-    tx.update(doc(db, "communities", communityId), {
+  const existing = await getDoc(memberRef);
+  if (existing.exists()) return;
+
+  await setDoc(memberRef, {
+    uid,
+    name: name || "Someone",
+    role: "member",
+    joinedAt: serverTimestamp(),
+  });
+
+  try {
+    await updateDoc(doc(db, "communities", communityId), {
       memberCount: increment(1),
       lastActiveAt: serverTimestamp(),
     });
-  });
+  } catch (err) {
+    console.warn("[orbit/db] joined, but memberCount was not bumped:", err?.code || err);
+  }
 }
 
+// Same split as joinCommunity, for the same reason.
 export async function leaveCommunity(communityId, uid) {
   need();
   const memberRef = doc(db, "communities", communityId, "members", uid);
-  await runTransaction(db, async (tx) => {
-    const existing = await tx.get(memberRef);
-    if (!existing.exists()) return;
-    tx.delete(memberRef);
-    tx.update(doc(db, "communities", communityId), { memberCount: increment(-1) });
-  });
+  const existing = await getDoc(memberRef);
+  if (!existing.exists()) return;
+
+  await deleteDoc(memberRef);
+
+  try {
+    await updateDoc(doc(db, "communities", communityId), { memberCount: increment(-1) });
+  } catch (err) {
+    console.warn("[orbit/db] left, but memberCount was not decremented:", err?.code || err);
+  }
 }
 
 export async function fetchMembers(communityId) {

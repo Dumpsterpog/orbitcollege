@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      "colors": {
+        "on-primary": "#ffffff",
+        "secondary": "#4b41e1",
+        "inverse-primary": "#b4c5ff",
+        "on-tertiary": "#ffffff",
+        "primary-fixed": "#dbe1ff",
+        "on-primary-fixed": "#00174b",
+        "tertiary": "#784b00",
+        "on-surface-variant": "#434655",
+        "surface-bright": "#faf8ff",
+        "background": "#faf8ff",
+        "on-tertiary-fixed-variant": "#653e00",
+        "on-error": "#ffffff",
+        "surface-container-high": "#e2e7ff",
+        "surface-dim": "#d2d9f4",
+        "primary-container": "#2563eb",
+        "on-surface": "#131b2e",
+        "on-secondary": "#ffffff",
+        "on-secondary-fixed": "#0f0069",
+        "on-primary-container": "#eeefff",
+        "surface-container": "#eaedff",
+        "error-container": "#ffdad6",
+        "on-primary-fixed-variant": "#003ea8",
+        "on-error-container": "#93000a",
+        "surface-container-lowest": "#ffffff",
+        "surface": "#faf8ff",
+        "on-tertiary-container": "#ffeedd",
+        "on-tertiary-fixed": "#2a1700",
+        "inverse-on-surface": "#eef0ff",
+        "tertiary-container": "#996100",
+        "secondary-fixed-dim": "#c3c0ff",
+        "on-background": "#131b2e",
+        "surface-container-low": "#f2f3ff",
+        "on-secondary-fixed-variant": "#3323cc",
+        "on-secondary-container": "#fffbff",
+        "error": "#ba1a1a",
+        "tertiary-fixed-dim": "#ffb95f",
+        "surface-tint": "#0053db",
+        "primary": "#004ac6",
+        "outline": "#737686",
+        "surface-variant": "#dae2fd",
+        "tertiary-fixed": "#ffddb8",
+        "surface-container-highest": "#dae2fd",
+        "secondary-fixed": "#e2dfff",
+        "secondary-container": "#645efb",
+        "primary-fixed-dim": "#b4c5ff",
+        "inverse-surface": "#283044",
+        "outline-variant": "#c3c6d7"
+      },
+      "borderRadius": {
+        "DEFAULT": "1rem",
+        "lg": "2rem",
+        "xl": "3rem",
+        "full": "9999px"
+      },
+      "spacing": {
+        "space-sm": "0.75rem",
+        "space-md": "1rem",
+        "sidebar-width": "275px",
+        "space-2xl": "3rem",
+        "gutter-mobile": "1rem",
+        "space-xl": "2rem",
+        "space-3xl": "4rem",
+        "space-lg": "1.5rem",
+        "space-xs": "0.5rem",
+        "gutter-desktop": "1.5rem",
+        "feed-max-width": "680px",
+        "space-2xs": "0.25rem"
+      },
+      "fontFamily": {
+        "headline-sm": ["Inter"],
+        "headline-lg-mobile": ["Inter"],
+        "caption": ["Inter"],
+        "body-sm": ["Inter"],
+        "headline-md": ["Inter"],
+        "label-md": ["Inter"],
+        "body-md": ["Inter"],
+        "body-lg": ["Inter"],
+        "display-lg": ["Inter"],
+        "headline-lg": ["Inter"],
+        "label-sm": ["Inter"]
+      },
+      "fontSize": {
+        "headline-sm": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+        "headline-lg-mobile": ["22px", {"lineHeight": "28px", "letterSpacing": "-0.015em", "fontWeight": "700"}],
+        "caption": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+        "body-sm": ["13px", {"lineHeight": "18px", "letterSpacing": "0.005em", "fontWeight": "400"}],
+        "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.015em", "fontWeight": "600"}],
+        "label-md": ["13px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+        "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400"}],
+        "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "400"}],
+        "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.025em", "fontWeight": "700"}],
+        "headline-lg": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+        "label-sm": ["11px", {"lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600"}]
+      }
+    }
+  }
+}</script></head><body class="bg-background font-body-md text-body-md text-on-surface"><aside class="fixed left-0 top-0 h-full w-[275px] bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between py-space-md px-space-md"><div class="flex flex-col gap-space-md overflow-y-auto"><div class="flex items-center gap-space-sm px-space-xs py-space-2xs"><img alt="Brand logo. - Primary color: #2563eb
+- Font: inter
+- Mode: light
+- Roundness: rounded-full
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WHqlDxCSKL2Yrt-MulT221KPXAYS-Ys8_2BNqgKBJwvAmRkNwkVP_Dbfhx3yoYx6rYE8OsOhfC3CJPWE-_liMirGpVPce2IkAB6UT0HBye49d0AHyxXsDV0vFdJpUE_Q9bXNv3rwO9ISFDGAbTAT7HJBCVeI2Ka6uyxBrhZYC6codQe1YgjdNQoLX6zN-U9GCTAeo488sDulA4DbwGGha6HF05km7YasuQcWFNPdjqN5ipJvrmU_8NHQ"/><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">Orbit</span></div><button class="w-full flex items-center justify-center gap-space-xs bg-primary-container text-on-primary font-label-md text-label-md py-space-sm px-space-lg rounded-full shadow-[0_1px_8px_rgba(0,0,0,0.04)] hover:bg-primary transition-all active:scale-[0.98]"><span class="material-symbols-outlined text-[18px]">add</span><span>Create Post</span></button><nav class="flex flex-col gap-space-2xs" data-active-classes="bg-surface-container-high text-primary font-label-md rounded-full"><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="feed" href="#"><span class="material-symbols-outlined text-[20px]">home</span><span class="font-label-md text-label-md">Home</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="explore" href="#"><span class="material-symbols-outlined text-[20px]">explore</span><span class="font-label-md text-label-md">Explore</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="search" href="#"><span class="material-symbols-outlined text-[20px]">search</span><span class="font-label-md text-label-md">Search</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="saved" href="#"><span class="material-symbols-outlined text-[20px]">bookmark</span><span class="font-label-md text-label-md">Saved</span></a><div class="pt-space-xs pb-space-2xs px-space-sm"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Campus</span></div><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="campus-events" href="#"><span class="material-symbols-outlined text-[20px]">event</span><span class="font-label-md text-label-md">Events</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="locali-tea" href="#"><span class="material-symbols-outlined text-[20px]">local_cafe</span><span class="font-label-md text-label-md">Locali-Tea</span></a><div class="pt-space-xs pb-space-2xs px-space-sm"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">My Communities</span></div><a aria-current="page" class="flex items-center justify-between px-space-sm py-space-xs transition-colors bg-surface-container-high text-primary font-label-md rounded-full" data-path="codeforfun-community" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">terminal</span><span class="font-label-md text-label-md">Codeforfun</span></div><span class="w-2 h-2 rounded-full bg-primary-container"></span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="notifications" href="#"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="font-label-md text-label-md">Notifications</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">settings</span><span class="font-label-md text-label-md">Settings</span></a></nav></div><div class="bg-surface-container-low p-space-sm rounded-DEFAULT flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="relative"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UM0hELTglL-r0eo7a1gQomQftBhHvC2HUt4IctHUdnmlzK1kcEl8rH7fayVCPi3BvjdR2iZJtC8pzwWq6obulO-T2TSssvOFGTh-beVTTMBhbNUi_2uaYzq1fz23RRpEVvHWU2f_zJzEEFYNmyMPP9bnertx13bMiXl9Q7F9aLPymnubnoSfHFuM8Ccp3ZkjgDi7OI7E_VbF_9rGYJ_un4lY-qBi0tiYcQUKRSuIjBO7_YDVxSIW5DeKM"/><span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-primary-container rounded-full ring-2 ring-surface-container-lowest"></span></div><div class="flex flex-col"><span class="font-label-md text-label-md text-on-surface leading-tight">atharva</span><span class="font-caption text-caption text-on-surface-variant">@atharva</span></div></div><span class="material-symbols-outlined text-on-surface-variant text-[18px]">more_vert</span></div></aside><div class="pl-[275px]"><header class="fixed top-0 left-[275px] right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 px-space-lg flex items-center justify-between"><div class="flex items-center gap-space-lg"><img alt="Brand logo. - Primary color: #2563eb
+- Font: inter
+- Mode: light
+- Roundness: rounded-full
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WHqlDxCSKL2Yrt-MulT221KPXAYS-Ys8_2BNqgKBJwvAmRkNwkVP_Dbfhx3yoYx6rYE8OsOhfC3CJPWE-_liMirGpVPce2IkAB6UT0HBye49d0AHyxXsDV0vFdJpUE_Q9bXNv3rwO9ISFDGAbTAT7HJBCVeI2Ka6uyxBrhZYC6codQe1YgjdNQoLX6zN-U9GCTAeo488sDulA4DbwGGha6HF05km7YasuQcWFNPdjqN5ipJvrmU_8NHQ"/><div class="flex items-center gap-space-xs font-label-md text-label-md text-on-surface-variant"><span class="hover:text-on-surface transition-colors">Communities</span><span class="material-symbols-outlined text-[16px]">chevron_right</span><span class="text-on-surface font-semibold">Codeforfun</span></div><div class="hidden md:flex items-center bg-surface-container-low px-space-sm py-space-2xs rounded-full w-72"><span class="material-symbols-outlined text-on-surface-variant text-[18px] mr-space-xs">search</span><input class="bg-transparent text-on-surface font-body-sm text-body-sm placeholder:text-on-surface-variant outline-none w-full" placeholder="Search in Codeforfun..." type="text"/></div></div><div class="flex items-center gap-space-md"><button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant transition-colors"><span class="material-symbols-outlined text-[20px]">notifications</span></button><button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant transition-colors"><span class="material-symbols-outlined text-[20px]">chat_bubble</span></button><div class="flex items-center pl-space-xs"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UM0hELTglL-r0eo7a1gQomQftBhHvC2HUt4IctHUdnmlzK1kcEl8rH7fayVCPi3BvjdR2iZJtC8pzwWq6obulO-T2TSssvOFGTh-beVTTMBhbNUi_2uaYzq1fz23RRpEVvHWU2f_zJzEEFYNmyMPP9bnertx13bMiXl9Q7F9aLPymnubnoSfHFuM8Ccp3ZkjgDi7OI7E_VbF_9rGYJ_un4lY-qBi0tiYcQUKRSuIjBO7_YDVxSIW5DeKM"/></div></div></header><main class="relative pt-16 w-full bg-background min-h-screen"><div class="flex flex-col w-full">
+<!-- Community Hero Header Banner -->
+<div class="relative w-full bg-surface-container-low overflow-hidden">
+<!-- Cover Backdrop with Technical Grid and Indigo Glow -->
+<div class="relative h-56 sm:h-64 w-full bg-gradient-to-r from-primary via-secondary to-primary-container overflow-hidden">
+<!-- Grid Graphic Overlay -->
+<svg class="absolute inset-0 w-full h-full opacity-20" height="100%" width="100%" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<pattern height="40" id="code-grid" patternunits="userSpaceOnUse" width="40">
+<path d="M 40 0 L 0 0 0 40" fill="none" stroke="#ffffff" stroke-width="0.75"></path>
+</pattern>
+</defs>
+<rect fill="url(#code-grid)" height="100%" width="100%"></rect>
+</svg>
+<!-- Subtle Decorative Floating Blobs -->
+<div class="absolute -top-12 -right-12 w-96 h-96 rounded-full bg-secondary-container/30 blur-3xl pointer-events-none"></div>
+<div class="absolute -bottom-16 left-1/3 w-80 h-80 rounded-full bg-inverse-primary/20 blur-2xl pointer-events-none"></div>
+<!-- Quick Metrics Strip on Cover -->
+<div class="absolute top-4 right-6 hidden md:flex items-center gap-space-xs bg-inverse-surface/60 backdrop-blur-md text-inverse-on-surface px-space-md py-1.5 rounded-full shadow-sm font-caption text-caption">
+<span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+<span class="font-semibold text-on-primary">128 devs live</span>
+<span class="opacity-40">•</span>
+<span class="text-inverse-primary flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span> #3 in Engineering
+        </span>
+</div>
+</div>
+<!-- Community Identity Block Overlap -->
+<div class="max-w-[1240px] mx-auto px-space-lg -mt-16 sm:-mt-20 relative z-10 pb-4">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md">
+<!-- Avatar & Name Info -->
+<div class="flex flex-col sm:flex-row items-start sm:items-end gap-space-md">
+<!-- Main Community Badge Icon -->
+<div class="relative w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-surface-container-lowest p-2 shadow-xl flex items-center justify-center group">
+<div class="w-full h-full rounded-2xl bg-gradient-to-br from-primary-container to-secondary flex items-center justify-center text-on-primary shadow-inner">
+<span class="material-symbols-outlined text-4xl sm:text-5xl font-bold tracking-tighter">terminal</span>
+</div>
+<div class="absolute bottom-1 right-1 w-7 h-7 rounded-full bg-primary-container text-on-primary flex items-center justify-center shadow-md ring-4 ring-surface-container-lowest" title="Verified Community">
+<span class="material-symbols-outlined text-[16px]">verified</span>
+</div>
+</div>
+<!-- Titles & Metadata -->
+<div class="flex flex-col gap-1 pb-1">
+<div class="flex flex-wrap items-center gap-space-xs">
+<h1 class="font-headline-lg text-headline-lg text-on-surface tracking-tight font-bold">Codeforfun</h1>
+<span class="bg-primary/10 text-primary px-space-xs py-0.5 rounded-full font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">shield</span> Public Guild
+              </span>
+<span class="bg-surface-container-high text-on-surface-variant px-2.5 py-0.5 rounded-full font-label-sm text-label-sm font-medium">
+                You created this
+              </span>
+</div>
+<p class="font-body-md text-body-md text-on-surface-variant max-w-xl line-clamp-2">
+              Post good code snippets, dissect scalable architectures, teardown weekend prototypes, and talk shop without the fluff.
+            </p>
+<!-- Quick Metrics Row -->
+<div class="flex flex-wrap items-center gap-space-md pt-1 text-on-surface-variant font-caption text-caption">
+<span class="flex items-center gap-1 text-on-surface font-semibold">
+<span class="material-symbols-outlined text-[16px] text-primary">group</span> 4,219 members
+              </span>
+<span class="flex items-center gap-1">
+<span class="w-2 h-2 rounded-full bg-emerald-500"></span> 128 online now
+              </span>
+<span class="flex items-center gap-1 text-on-surface-variant">
+<span class="material-symbols-outlined text-[16px]">schedule</span> Founded Nov 2023
+              </span>
+<button class="inline-flex items-center gap-1 text-primary hover:underline ml-1">
+<span class="material-symbols-outlined text-[15px]">qr_code_2</span> Share QR
+              </button>
+</div>
+</div>
+</div>
+<!-- Action Buttons Pill Bar -->
+<div class="flex items-center gap-space-xs pb-1 shrink-0">
+<div class="relative inline-flex items-center bg-surface-container rounded-full p-0.5">
+<button class="flex items-center gap-1.5 bg-primary-container text-on-primary px-space-md py-2 rounded-full font-label-md text-label-md shadow-sm hover:bg-primary transition-all active:scale-[0.98]">
+<span class="material-symbols-outlined text-[18px]">check</span>
+<span>Joined</span>
+</button>
+<button class="w-9 h-9 flex items-center justify-center text-on-surface-variant hover:text-on-surface rounded-full transition-colors" title="Notification Preferences">
+<span class="material-symbols-outlined text-[18px]">notifications_active</span>
+</button>
+</div>
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-lowest shadow-sm hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Invite Colleagues">
+<span class="material-symbols-outlined text-[20px]">person_add</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-lowest shadow-sm hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Share Community">
+<span class="material-symbols-outlined text-[20px]">share</span>
+</button>
+<button class="w-10 h-10 flex items-center justify-center rounded-full bg-surface-container-lowest shadow-sm hover:bg-surface-container-high text-on-surface-variant transition-colors" title="Guild Settings">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+</div>
+</div>
+<!-- Secondary Tab Navigation Rail -->
+<div class="flex items-center gap-space-sm mt-6 border-b-0 overflow-x-auto no-scrollbar">
+<button class="relative flex items-center gap-2 px-space-md py-3 text-primary font-headline-sm text-headline-sm transition-colors whitespace-nowrap">
+<span class="material-symbols-outlined text-[20px]">feed</span>
+<span>Feed & Posts</span>
+<span class="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-container rounded-full"></span>
+</button>
+<button class="flex items-center gap-2 px-space-md py-3 text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors whitespace-nowrap">
+<span class="material-symbols-outlined text-[20px]">forum</span>
+<span>Live Lounge</span>
+<span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+</button>
+<button class="flex items-center gap-2 px-space-md py-3 text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors whitespace-nowrap">
+<span class="material-symbols-outlined text-[20px]">code_blocks</span>
+<span>Snippets Vault</span>
+</button>
+<button class="flex items-center gap-2 px-space-md py-3 text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors whitespace-nowrap">
+<span class="material-symbols-outlined text-[20px]">group</span>
+<span>Members <span class="text-caption text-on-surface-variant opacity-80">(4.2k)</span></span>
+</button>
+<button class="flex items-center gap-2 px-space-md py-3 text-on-surface-variant hover:text-on-surface font-label-md text-label-md transition-colors whitespace-nowrap">
+<span class="material-symbols-outlined text-[20px]">verified_user</span>
+<span>Rules & FAQ</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Reference Inspiration Drawer Hint Banner (Desktop context) -->
+<div class="max-w-[1240px] w-full mx-auto px-space-lg pt-4 pb-2">
+<div class="bg-surface-container-high/60 rounded-2xl p-space-sm flex flex-col sm:flex-row items-center justify-between gap-3 text-on-surface-variant">
+<div class="flex items-center gap-3">
+<span class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+<span class="material-symbols-outlined text-[18px]">auto_awesome</span>
+</span>
+<p class="font-body-sm text-body-sm">
+<strong class="text-on-surface font-semibold">Weekend Hackathon Active:</strong> Submissions for <span class="text-primary font-medium">#RetroBuilds2026</span> close in 28 hours. Upvote your favorite community demo below!
+        </p>
+</div>
+<a class="px-space-md py-1.5 rounded-full bg-surface-container-lowest text-primary hover:bg-primary hover:text-on-primary font-label-sm text-label-sm transition-all shadow-sm shrink-0" href="#submit-demo">
+        Submit Prototype →
+      </a>
+</div>
+</div>
+<!-- Main Multi-Column Content Area -->
+<div class="max-w-[1240px] w-full mx-auto px-space-lg py-4">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg items-start">
+<!-- MAIN FEED STAGE (Approx 68% / 8 cols) -->
+<section class="lg:col-span-8 flex flex-col gap-space-md">
+<!-- Interactive Post Creator Box -->
+<div class="bg-surface-container-lowest rounded-3xl p-space-md shadow-sm">
+<div class="flex gap-space-sm">
+<img alt="Current User" class="w-10 h-10 rounded-full object-cover shrink-0 mt-0.5" src="https://lh3.googleusercontent.com/aida/AEtjO1UM0hELTglL-r0eo7a1gQomQftBhHvC2HUt4IctHUdnmlzK1kcEl8rH7fayVCPi3BvjdR2iZJtC8pzwWq6obulO-T2TSssvOFGTh-beVTTMBhbNUi_2uaYzq1fz23RRpEVvHWU2f_zJzEEFYNmyMPP9bnertx13bMiXl9Q7F9aLPymnubnoSfHFuM8Ccp3ZkjgDi7OI7E_VbF_9rGYJ_un4lY-qBi0tiYcQUKRSuIjBO7_YDVxSIW5DeKM"/>
+<div class="flex-1 flex flex-col gap-space-xs">
+<textarea class="w-full bg-surface-container-low rounded-2xl p-space-sm text-on-surface font-body-md text-body-md placeholder:text-on-surface-variant outline-none resize-none focus:bg-surface-container transition-all" placeholder="Share a code snippet, ask for an architecture review, or launch a build update..." rows="3"></textarea>
+<!-- Quick Editor Utilities Toolbar -->
+<div class="flex flex-wrap items-center justify-between gap-2 pt-1">
+<div class="flex items-center gap-1 text-on-surface-variant">
+<button class="p-2 rounded-full hover:bg-surface-container-high hover:text-primary transition-colors" title="Insert Code Block">
+<span class="material-symbols-outlined text-[20px]">code</span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-container-high hover:text-primary transition-colors" title="Upload Media">
+<span class="material-symbols-outlined text-[20px]">image</span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-container-high hover:text-primary transition-colors" title="Create Poll">
+<span class="material-symbols-outlined text-[20px]">poll</span>
+</button>
+<button class="p-2 rounded-full hover:bg-surface-container-high hover:text-primary transition-colors" title="Markdown Reference">
+<span class="material-symbols-outlined text-[20px]">markdown</span>
+</button>
+<span class="h-4 w-px bg-surface-variant mx-1"></span>
+<span class="font-label-sm text-label-sm text-on-surface-variant">Markdown enabled</span>
+</div>
+<div class="flex items-center gap-space-xs">
+<span class="text-caption font-caption text-on-surface-variant hidden sm:inline">Ctrl + Enter</span>
+<button class="px-space-lg py-2 rounded-full bg-primary-container text-on-primary font-label-md text-label-md hover:bg-primary transition-all shadow-sm active:scale-[0.98]">
+                    Post snippet
+                  </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Feed Filtering and Sorting Bar -->
+<div class="flex items-center justify-between px-space-xs py-1">
+<div class="flex items-center gap-space-xs">
+<button class="px-space-md py-1 rounded-full bg-surface-container-high text-on-surface font-label-md text-label-md flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-primary">local_fire_department</span>
+<span>Hot Discussions</span>
+</button>
+<button class="px-space-md py-1 rounded-full hover:bg-surface-container-low text-on-surface-variant font-label-md text-label-md transition-colors">
+              Newest
+            </button>
+<button class="px-space-md py-1 rounded-full hover:bg-surface-container-low text-on-surface-variant font-label-md text-label-md transition-colors">
+              Top Rated
+            </button>
+</div>
+<button class="flex items-center gap-1 text-on-surface-variant hover:text-on-surface font-label-sm text-label-sm">
+<span class="material-symbols-outlined text-[16px]">tune</span>
+<span>Filter Tags</span>
+</button>
+</div>
+<!-- POST 1: PINNED FOUNDER POST WITH SYNTAX HIGHLIGHTED CODE SNIPPET -->
+<article class="bg-surface-container-lowest rounded-3xl p-space-md sm:p-space-lg shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+<!-- Pinned Indicator Header -->
+<div class="flex items-center justify-between pb-3 text-on-surface-variant border-b border-surface-container-low">
+<div class="flex items-center gap-1.5 font-label-sm text-label-sm text-primary font-semibold">
+<span class="material-symbols-outlined text-[16px]">push_pin</span>
+<span>Pinned Announcement by Founder</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="bg-tertiary-fixed text-on-tertiary-fixed-variant px-2 py-0.5 rounded-full font-label-sm text-label-sm font-semibold">Core Library v2</span>
+<button class="text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Author Info Row -->
+<div class="flex items-start justify-between gap-3 pt-3">
+<div class="flex items-center gap-3">
+<img alt="atharva avatar" class="w-11 h-11 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UM0hELTglL-r0eo7a1gQomQftBhHvC2HUt4IctHUdnmlzK1kcEl8rH7fayVCPi3BvjdR2iZJtC8pzwWq6obulO-T2TSssvOFGTh-beVTTMBhbNUi_2uaYzq1fz23RRpEVvHWU2f_zJzEEFYNmyMPP9bnertx13bMiXl9Q7F9aLPymnubnoSfHFuM8Ccp3ZkjgDi7OI7E_VbF_9rGYJ_un4lY-qBi0tiYcQUKRSuIjBO7_YDVxSIW5DeKM"/>
+<div>
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">atharva</span>
+<span class="material-symbols-outlined text-primary text-[16px]">verified</span>
+<span class="bg-primary/10 text-primary font-label-sm text-label-sm px-2 py-0.5 rounded-full font-medium">Founder</span>
+<span class="text-caption font-caption text-on-surface-variant">@atharva</span>
+<span class="text-caption font-caption text-on-surface-variant">• 4h ago</span>
+</div>
+<p class="text-caption font-caption text-on-surface-variant">Staff Infrastructure Engineer</p>
+</div>
+</div>
+<button class="px-3 py-1 rounded-full bg-surface-container-low hover:bg-surface-container-high text-on-surface font-label-sm text-label-sm transition-colors">
+              Follow
+            </button>
+</div>
+<!-- Post Content -->
+<div class="mt-3 space-y-3">
+<p class="font-body-md text-body-md text-on-surface">
+              We finally migrated our multi-region optimistic state synchronization hook to TypeScript 5.8 with full rollbacks. Handles connection dropouts, conflict resolution, and deterministic client hydration in under 4kb.
+            </p>
+<p class="font-body-md text-body-md text-on-surface-variant">
+              Check out the clean implementation below. Feedback on memory leaks in the broadcast channel is very welcome! 👇
+            </p>
+<!-- Syntax-Highlighted Code Enclosure -->
+<div class="rounded-2xl bg-inverse-surface text-inverse-on-surface overflow-hidden shadow-inner">
+<!-- Code block titlebar -->
+<div class="flex items-center justify-between px-space-md py-2.5 bg-inverse-surface/80 border-b border-surface-variant/20">
+<div class="flex items-center gap-2">
+<div class="flex items-center gap-1.5">
+<span class="w-3 h-3 rounded-full bg-red-500/80 inline-block"></span>
+<span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+<span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+</div>
+<span class="ml-2 font-mono text-caption text-inverse-primary">useOptimisticSync.ts</span>
+</div>
+<button class="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-surface-variant/20 hover:bg-surface-variant/40 text-inverse-primary text-caption font-caption transition-colors" onclick="navigator.clipboard.writeText('// Copied');">
+<span class="material-symbols-outlined text-[14px]">content_copy</span>
+<span>Copy code</span>
+</button>
+</div>
+<!-- Monospaced Code Body -->
+<div class="p-space-md overflow-x-auto text-body-sm font-mono leading-relaxed select-all">
+<div class="flex gap-4">
+<div class="select-none text-outline opacity-40 text-right pr-2">
+                    01<br/>02<br/>03<br/>04<br/>05<br/>06<br/>07<br/>08<br/>09<br/>10<br/>11
+                  </div>
+<div class="flex-1 text-on-primary-container">
+<span class="text-secondary-fixed-dim">import</span> { useReducer, useEffect, useCallback } <span class="text-secondary-fixed-dim">from</span> <span class="text-emerald-300">'react'</span>;<br/>
+<br/>
+<span class="text-secondary-fixed-dim">export function</span> <span class="text-inverse-primary font-semibold">useOptimisticSync</span><<span class="text-tertiary-fixed">TRecord</span>>(key: <span class="text-secondary-fixed-dim">string</span>, initial: <span class="text-tertiary-fixed">TRecord</span>) {<br/>
+                      <span class="text-secondary-fixed-dim">const</span> [state, dispatch] = <span class="text-blue-300">useReducer</span>(syncReducer, initial);<br/>
+                      <span class="text-secondary-fixed-dim">const</span> channel = <span class="text-secondary-fixed-dim">new</span> <span class="text-inverse-primary">BroadcastChannel</span>(`guild-state-${key}`);<br/>
+<br/>
+                      <span class="text-secondary-fixed-dim">const</span> mutate = <span class="text-blue-300">useCallback</span>(<span class="text-secondary-fixed-dim">async</span> (payload: <span class="text-tertiary-fixed">Partial</span><<span class="text-tertiary-fixed">TRecord</span>>) => {<br/>
+                        dispatch({ type: <span class="text-emerald-300">'OPTIMISTIC_APPLY'</span>, payload });<br/>
+                        <span class="text-secondary-fixed-dim">await</span> transport.broadcast(payload).<span class="text-blue-300">catch</span>(() => dispatch({ type: <span class="text-emerald-300">'REVERT'</span> }));<br/>
+                      }, [key]);<br/>
+<br/>
+                      <span class="text-secondary-fixed-dim">return</span> { data: state, mutate };<br/>
+                    }
+                  </div>
+</div>
+</div>
+</div>
+<!-- Tags -->
+<div class="flex flex-wrap gap-1.5 pt-1">
+<span class="text-primary font-caption text-caption hover:underline cursor-pointer">#typescript</span>
+<span class="text-primary font-caption text-caption hover:underline cursor-pointer">#stateManagement</span>
+<span class="text-primary font-caption text-caption hover:underline cursor-pointer">#frontend</span>
+<span class="text-primary font-caption text-caption hover:underline cursor-pointer">#performance</span>
+</div>
+</div>
+<!-- Bottom Action Deck (Reactions, Comments, Sharing) -->
+<div class="flex items-center justify-between pt-4 mt-3 border-t border-surface-container-low text-on-surface-variant font-label-md text-label-md">
+<div class="flex items-center gap-2 sm:gap-3">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-primary/10 hover:text-primary transition-all active:scale-95 text-on-surface">
+<span>🔥</span>
+<span>42</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-primary/10 hover:text-primary transition-all active:scale-95 text-on-surface">
+<span>🚀</span>
+<span>28</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[18px]">chat_bubble_outline</span>
+<span>14 comments</span>
+</button>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-low transition-colors" title="Bookmark">
+<span class="material-symbols-outlined text-[18px]">bookmark_border</span>
+</button>
+<button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-low transition-colors" title="Share">
+<span class="material-symbols-outlined text-[18px]">ios_share</span>
+</button>
+</div>
+</div>
+</article>
+<!-- POST 2: ARCHITECTURE DEEP DIVE WITH INTERACTIVE METRICS CHART -->
+<article class="bg-surface-container-lowest rounded-3xl p-space-md sm:p-space-lg shadow-sm transition-all hover:shadow-md">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-full bg-gradient-to-tr from-secondary to-primary flex items-center justify-center text-on-primary font-bold text-headline-sm">
+                SL
+              </div>
+<div>
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Sarah Lin</span>
+<span class="text-caption font-caption text-on-surface-variant">@sarah_arch</span>
+<span class="text-caption font-caption text-on-surface-variant">• 2h ago</span>
+</div>
+<p class="text-caption font-caption text-on-surface-variant">Principal Architect @ Veloce</p>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</div>
+<div class="mt-3 space-y-3">
+<h2 class="font-headline-sm text-headline-sm text-on-surface font-bold">
+              Micro-frontends vs Modern Modular Monoliths in 2026: The Cold Hard Latency Numbers
+            </h2>
+<p class="font-body-md text-body-md text-on-surface-variant">
+              We benchmarked our 8 core enterprise micro-apps after migrating two squads back into an isolated turborepo monolith. Bundle fragmentation penalty was adding <strong class="text-on-surface font-semibold">184ms</strong> of parsing overhead on mobile devices. Here is the measured P95 latency breakdown across 12,000 runs:
+            </p>
+<!-- Visual Bar Comparison Metric Component (SVG inline data visualization) -->
+<div class="bg-surface-container-low rounded-2xl p-space-md space-y-3">
+<div class="flex items-center justify-between font-label-md text-label-md">
+<span class="text-on-surface font-semibold">Cold Start P95 Time-to-Interactive (TTI)</span>
+<span class="text-caption font-caption text-on-surface-variant">Lower is better</span>
+</div>
+<!-- Bar 1 -->
+<div class="space-y-1">
+<div class="flex justify-between font-caption text-caption text-on-surface-variant">
+<span>Micro-frontends (Module Federation via Webpack 5)</span>
+<span class="font-semibold text-error">420 ms</span>
+</div>
+<div class="w-full h-3 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-error rounded-full" style="width: 84%"></div>
+</div>
+</div>
+<!-- Bar 2 -->
+<div class="space-y-1">
+<div class="flex justify-between font-caption text-caption text-on-surface-variant">
+<span>Islands Architecture (Astro + React Hybrid)</span>
+<span class="font-semibold text-amber-600">240 ms</span>
+</div>
+<div class="w-full h-3 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-amber-500 rounded-full" style="width: 48%"></div>
+</div>
+</div>
+<!-- Bar 3 -->
+<div class="space-y-1">
+<div class="flex justify-between font-caption text-caption text-on-surface">
+<span class="font-medium">Modern Modular Monolith (Turborepo + RSC)</span>
+<span class="font-semibold text-emerald-600">112 ms (-73%)</span>
+</div>
+<div class="w-full h-3 bg-surface-container-high rounded-full overflow-hidden">
+<div class="h-full bg-emerald-500 rounded-full" style="width: 22%"></div>
+</div>
+</div>
+<div class="pt-2 flex items-center justify-between text-caption font-caption text-on-surface-variant">
+<span>Dataset: AWS CloudFront Edge logs</span>
+<a class="text-primary hover:underline font-semibold flex items-center gap-1" href="#">
+                  View raw CSV dataset <span class="material-symbols-outlined text-[13px]">open_in_new</span>
+</a>
+</div>
+</div>
+<!-- Tags -->
+<div class="flex flex-wrap gap-1.5">
+<span class="text-primary font-caption text-caption hover:underline cursor-pointer">#architecture</span>
+<span class="text-primary font-caption text-caption hover:underline cursor-pointer">#react</span>
+<span class="text-primary font-caption text-caption hover:underline cursor-pointer">#performance</span>
+<span class="text-primary font-caption text-caption hover:underline cursor-pointer">#systemdesign</span>
+</div>
+</div>
+<!-- Bottom Action Deck -->
+<div class="flex items-center justify-between pt-4 mt-3 border-t border-surface-container-low text-on-surface-variant font-label-md text-label-md">
+<div class="flex items-center gap-2 sm:gap-3">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-primary/10 hover:text-primary transition-all active:scale-95 text-on-surface">
+<span>👏</span>
+<span>86</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-primary/10 hover:text-primary transition-all active:scale-95 text-on-surface">
+<span>💡</span>
+<span>34</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[18px]">chat_bubble_outline</span>
+<span>39 discussions</span>
+</button>
+</div>
+<div class="flex items-center gap-1">
+<button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-low transition-colors" title="Bookmark">
+<span class="material-symbols-outlined text-[18px]">bookmark_border</span>
+</button>
+<button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-low transition-colors" title="Share">
+<span class="material-symbols-outlined text-[18px]">ios_share</span>
+</button>
+</div>
+</div>
+</article>
+<!-- POST 3: VISUAL SHOWCASE POST WITH SLEEK COMPONENT PREVIEW -->
+<article class="bg-surface-container-lowest rounded-3xl p-space-md sm:p-space-lg shadow-sm transition-all hover:shadow-md">
+<div class="flex items-start justify-between gap-3">
+<div class="flex items-center gap-3">
+<div class="w-11 h-11 rounded-full bg-gradient-to-br from-tertiary-container to-secondary flex items-center justify-center text-on-primary font-bold text-headline-sm">
+                ER
+              </div>
+<div>
+<div class="flex items-center gap-1.5 flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface font-bold">Elena Rostova</span>
+<span class="bg-secondary/10 text-secondary font-label-sm text-label-sm px-2 py-0.5 rounded-full font-medium">UI Engineer</span>
+<span class="text-caption font-caption text-on-surface-variant">@elena_ui</span>
+<span class="text-caption font-caption text-on-surface-variant">• 6h ago</span>
+</div>
+<p class="text-caption font-caption text-on-surface-variant">Building GlassUI primitives</p>
+</div>
+</div>
+<button class="text-on-surface-variant hover:text-on-surface">
+<span class="material-symbols-outlined text-[18px]">more_horiz</span>
+</button>
+</div>
+<div class="mt-3 space-y-3">
+<p class="font-body-md text-body-md text-on-surface">
+              Designed a real-time glass telemetry HUD for server clusters using CSS backdrop filters, hardware-accelerated SVG dials, and sub-pixel antialiasing. Runs at a rock-solid 120fps. Open sourced today! 🧪✨
+            </p>
+<!-- Visual Component Preview Card -->
+<div class="rounded-2xl bg-gradient-to-tr from-surface-container-high via-surface-variant to-primary-fixed p-4 sm:p-6 overflow-hidden relative">
+<div class="relative z-10 bg-surface-container-lowest/90 backdrop-blur-xl rounded-2xl p-5 shadow-lg max-w-md mx-auto">
+<div class="flex items-center justify-between pb-3 border-b border-surface-variant/30">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+<span class="font-mono text-label-md text-label-md text-on-surface font-bold">cluster-us-east-04</span>
+</div>
+<span class="font-mono text-caption text-caption text-primary font-semibold">ONLINE 99.98%</span>
+</div>
+<div class="grid grid-cols-2 gap-3 pt-3">
+<div class="bg-surface-container-low p-3 rounded-xl">
+<span class="text-caption font-caption text-on-surface-variant">CPU LOAD</span>
+<p class="text-headline-md font-headline-md text-on-surface font-bold mt-1">28.4%</p>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full mt-2 overflow-hidden">
+<div class="bg-primary h-full rounded-full" style="width: 28%"></div>
+</div>
+</div>
+<div class="bg-surface-container-low p-3 rounded-xl">
+<span class="text-caption font-caption text-on-surface-variant">MEM USAGE</span>
+<p class="text-headline-md font-headline-md text-on-surface font-bold mt-1">4.2 GB</p>
+<div class="w-full bg-surface-container-high h-1.5 rounded-full mt-2 overflow-hidden">
+<div class="bg-secondary h-full rounded-full" style="width: 52%"></div>
+</div>
+</div>
+</div>
+<div class="mt-3 pt-2 flex items-center justify-between text-caption font-caption text-on-surface-variant border-t border-surface-variant/20">
+<span>Throughput: 14.8k req/s</span>
+<span class="text-emerald-600 font-medium">0 packet drops</span>
+</div>
+</div>
+</div>
+<!-- Tags -->
+<div class="flex flex-wrap gap-1.5">
+<span class="text-primary font-caption text-caption hover:underline cursor-pointer">#css</span>
+<span class="text-primary font-caption text-caption hover:underline cursor-pointer">#webdesign</span>
+<span class="text-primary font-caption text-caption hover:underline cursor-pointer">#opensource</span>
+</div>
+</div>
+<!-- Bottom Action Deck -->
+<div class="flex items-center justify-between pt-4 mt-3 border-t border-surface-container-low text-on-surface-variant font-label-md text-label-md">
+<div class="flex items-center gap-2 sm:gap-3">
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-primary/10 hover:text-primary transition-all active:scale-95 text-on-surface">
+<span>❤️</span>
+<span>64</span>
+</button>
+<button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[18px]">chat_bubble_outline</span>
+<span>18 replies</span>
+</button>
+</div>
+<div class="flex items-center gap-2">
+<a class="flex items-center gap-1 text-primary hover:underline font-label-sm text-label-sm font-semibold" href="https://github.com" target="_blank">
+<span>Source Repo</span>
+<span class="material-symbols-outlined text-[14px]">arrow_outward</span>
+</a>
+</div>
+</div>
+</article>
+</section>
+<!-- RIGHT RAIL WIDGET COLUMN (Approx 32% / 4 cols) -->
+<aside class="lg:col-span-4 flex flex-col gap-space-md">
+<!-- About Community Widget Card -->
+<div class="bg-surface-container-lowest rounded-3xl p-space-md shadow-sm">
+<div class="flex items-center justify-between pb-3">
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">About Guild</h3>
+<span class="text-caption font-caption text-on-surface-variant font-mono">id: #cff-001</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            A focused collective for curious software craftspeople. No spam, no beginner syntax tutorials, just solid systems, architecture discussions, and open demo retrospectives.
+          </p>
+<div class="grid grid-cols-2 gap-2 mt-4 pt-3 border-t border-surface-container-low">
+<div class="bg-surface-container-low p-2.5 rounded-2xl">
+<span class="text-caption font-caption text-on-surface-variant">Founded</span>
+<p class="font-label-md text-label-md text-on-surface font-semibold mt-0.5">Nov 12, 2023</p>
+</div>
+<div class="bg-surface-container-low p-2.5 rounded-2xl">
+<span class="text-caption font-caption text-on-surface-variant">Rank</span>
+<p class="font-label-md text-label-md text-primary font-semibold mt-0.5">#3 in Tech</p>
+</div>
+<div class="bg-surface-container-low p-2.5 rounded-2xl">
+<span class="text-caption font-caption text-on-surface-variant">Moderators</span>
+<p class="font-label-md text-label-md text-on-surface font-semibold mt-0.5">4 Active</p>
+</div>
+<div class="bg-surface-container-low p-2.5 rounded-2xl">
+<span class="text-caption font-caption text-on-surface-variant">Weekly Posts</span>
+<p class="font-label-md text-label-md text-on-surface font-semibold mt-0.5">140+ Snippets</p>
+</div>
+</div>
+<div class="mt-4 pt-3 border-t border-surface-container-low flex flex-col gap-2">
+<a class="flex items-center justify-between text-on-surface font-label-md text-label-md hover:text-primary transition-colors" href="#">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary">policy</span>
+<span>Community Manifesto</span>
+</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</a>
+<a class="flex items-center justify-between text-on-surface font-label-md text-label-md hover:text-primary transition-colors" href="#">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[18px] text-primary">rss_feed</span>
+<span>RSS Feed Subscription</span>
+</span>
+<span class="material-symbols-outlined text-[16px]">chevron_right</span>
+</a>
+</div>
+</div>
+<!-- Active Online Members Stack -->
+<div class="bg-surface-container-lowest rounded-3xl p-space-md shadow-sm">
+<div class="flex items-center justify-between pb-3">
+<div class="flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Online Devs</h3>
+</div>
+<span class="bg-surface-container-high text-primary font-label-sm text-label-sm px-2 py-0.5 rounded-full font-semibold">128 Live</span>
+</div>
+<div class="flex items-center -space-x-2 overflow-hidden py-1">
+<img alt="Member 1" class="inline-block h-9 w-9 rounded-full ring-2 ring-surface-container-lowest object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UM0hELTglL-r0eo7a1gQomQftBhHvC2HUt4IctHUdnmlzK1kcEl8rH7fayVCPi3BvjdR2iZJtC8pzwWq6obulO-T2TSssvOFGTh-beVTTMBhbNUi_2uaYzq1fz23RRpEVvHWU2f_zJzEEFYNmyMPP9bnertx13bMiXl9Q7F9aLPymnubnoSfHFuM8Ccp3ZkjgDi7OI7E_VbF_9rGYJ_un4lY-qBi0tiYcQUKRSuIjBO7_YDVxSIW5DeKM"/>
+<div class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-primary ring-2 ring-surface-container-lowest text-on-primary font-bold text-caption">JD</div>
+<div class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-secondary ring-2 ring-surface-container-lowest text-on-primary font-bold text-caption">MK</div>
+<div class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-tertiary-container ring-2 ring-surface-container-lowest text-on-primary font-bold text-caption">AL</div>
+<div class="inline-flex h-9 w-9 items-center justify-center rounded-full bg-surface-container-high ring-2 ring-surface-container-lowest text-on-surface-variant font-semibold text-caption">+124</div>
+</div>
+<div class="mt-3 pt-3 border-t border-surface-container-low flex items-center justify-between">
+<span class="font-body-sm text-body-sm text-on-surface-variant">Join live voice lounge:</span>
+<button class="px-space-sm py-1 rounded-full bg-emerald-600 text-on-primary font-label-sm text-label-sm hover:bg-emerald-700 transition-colors flex items-center gap-1 shadow-sm">
+<span class="material-symbols-outlined text-[15px]">headset_mic</span>
+<span>Hop In</span>
+</button>
+</div>
+</div>
+<!-- Community Guidelines / Rules Card with Expandable Feel -->
+<div class="bg-surface-container-lowest rounded-3xl p-space-md shadow-sm">
+<div class="flex items-center justify-between pb-3">
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">Guild Rules</h3>
+<span class="material-symbols-outlined text-primary text-[20px]">gavel</span>
+</div>
+<ol class="space-y-2.5">
+<li class="p-2.5 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-colors">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface font-semibold">1. Respect Code Authors</span>
+<span class="text-caption text-primary font-mono font-semibold">#core</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                Constructive feedback only. Critique architectural trade-offs, never the author.
+              </p>
+</li>
+<li class="p-2.5 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-colors">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface font-semibold">2. No Unsolicited Sales</span>
+<span class="text-caption text-primary font-mono font-semibold">#spam</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                Self-promotion without reproducible code or open architectural insights will be deleted.
+              </p>
+</li>
+<li class="p-2.5 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-colors">
+<div class="flex items-center justify-between">
+<span class="font-label-md text-label-md text-on-surface font-semibold">3. Tag Your Stack</span>
+<span class="text-caption text-primary font-mono font-semibold">#tags</span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+                Always specify the language, framework, and runtime environment in code snippets.
+              </p>
+</li>
+</ol>
+</div>
+<!-- Trending Community Tags & Topics -->
+<div class="bg-surface-container-lowest rounded-3xl p-space-md shadow-sm">
+<h3 class="font-headline-sm text-headline-sm text-on-surface font-bold pb-3">Trending Topics</h3>
+<div class="flex flex-wrap gap-2">
+<a class="px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-primary/10 hover:text-primary text-on-surface-variant font-label-md text-label-md transition-all flex items-center gap-1.5" href="#">
+<span>#rust</span>
+<span class="text-caption font-caption text-on-surface-variant opacity-70">312</span>
+</a>
+<a class="px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-primary/10 hover:text-primary text-on-surface-variant font-label-md text-label-md transition-all flex items-center gap-1.5" href="#">
+<span>#nextjs15</span>
+<span class="text-caption font-caption text-on-surface-variant opacity-70">284</span>
+</a>
+<a class="px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-primary/10 hover:text-primary text-on-surface-variant font-label-md text-label-md transition-all flex items-center gap-1.5" href="#">
+<span>#systemdesign</span>
+<span class="text-caption font-caption text-on-surface-variant opacity-70">190</span>
+</a>
+<a class="px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-primary/10 hover:text-primary text-on-surface-variant font-label-md text-label-md transition-all flex items-center gap-1.5" href="#">
+<span>#webgl</span>
+<span class="text-caption font-caption text-on-surface-variant opacity-70">98</span>
+</a>
+<a class="px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-primary/10 hover:text-primary text-on-surface-variant font-label-md text-label-md transition-all flex items-center gap-1.5" href="#">
+<span>#distributed</span>
+<span class="text-caption font-caption text-on-surface-variant opacity-70">87</span>
+</a>
+<a class="px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-primary/10 hover:text-primary text-on-surface-variant font-label-md text-label-md transition-all flex items-center gap-1.5" href="#">
+<span>#tailwind</span>
+<span class="text-caption font-caption text-on-surface-variant opacity-70">65</span>
+</a>
+</div>
+</div>
+<!-- Footer / Micro Disclaimer -->
+<div class="px-space-xs text-caption font-caption text-on-surface-variant space-y-1">
+<p>© 2026 Orbit Communities Inc. • Codeforfun Guild</p>
+<div class="flex flex-wrap gap-2 text-primary">
+<a class="hover:underline" href="#">Privacy</a>
+<span>•</span>
+<a class="hover:underline" href="#">Terms</a>
+<span>•</span>
+<a class="hover:underline" href="#">API & Bot Hooks</a>
+<span>•</span>
+<a class="hover:underline" href="#">Contact Guild Admins</a>
+</div>
+</div>
+</aside>
+</div>
+</div>
+</div></main></div></body></html>
