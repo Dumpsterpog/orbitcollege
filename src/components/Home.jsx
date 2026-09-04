@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from "react";
 import { CATEGORIES } from "../data/constants.js";
 import { Icon, Avatar, Button, IconButton, Textarea, cx } from "./ui/Primitives.jsx";
 import { Screen, Modal } from "./ui/Layout.jsx";
+import { PostComments } from "./Common.jsx";
 
 // Home is the campus feed: every post from every community, newest first.
 //
@@ -225,13 +226,13 @@ export function ComposerModal({ user, communities, onClose, onSubmit }) {
 // A feed post carries its source, not just its author: which community it came
 // from is the first thing you need in a campus-wide feed, and for a campus post
 // there is no community, so the author takes that slot instead.
-function Post({ post, community, liked, onLike, onOpen, onShare }) {
+function Post({ post, community, liked, onLike, onOpen, onShare, authUserId, myName, canWrite, onBlocked }) {
   const cat = CATEGORIES.find((x) => x.name === community?.category);
   const source = community ? nameHead(community.name) : (post.who || "Someone");
 
   return (
-    <article className="rounded-2xl border border-line hover:border-line-strong transition-colors overflow-hidden">
-      <div className="p-4">
+    <article className="border-b border-line last:border-0 transition-colors hover:bg-bg-sunken/40">
+      <div className="px-1 pt-4 pb-0">
         <div className="flex items-start gap-3">
           <button onClick={() => community && onOpen(community)} className="shrink-0">
             {community ? (
@@ -278,15 +279,17 @@ function Post({ post, community, liked, onLike, onOpen, onShare }) {
       </div>
 
       {post.imageUrl && (
-        <img
-          src={post.imageUrl}
-          alt=""
-          loading="lazy"
-          className="w-full max-h-[560px] object-cover border-y border-line"
-        />
+        <div className="px-1">
+          <img
+            src={post.imageUrl}
+            alt=""
+            loading="lazy"
+            className="w-full max-h-[560px] object-cover rounded-xl border border-line mt-3"
+          />
+        </div>
       )}
 
-      <div className="flex items-center gap-1 px-4 py-2.5">
+      <div className="flex items-center flex-wrap gap-1 px-1 py-2.5">
         <button
           onClick={() => onLike(post.id)}
           aria-pressed={liked}
@@ -307,14 +310,15 @@ function Post({ post, community, liked, onLike, onOpen, onShare }) {
           <span className="hidden sm:inline">Share</span>
         </button>
 
-        {community && (
-          <button
-            onClick={() => onOpen(community)}
-            className="ml-auto text-xs font-semibold text-accent hover:opacity-70 shrink-0"
-          >
-            Open
-          </button>
-        )}
+        <PostComments
+          communityId={post.communityId}
+          postId={post.id}
+          count={post.comments}
+          authUserId={authUserId}
+          myName={myName}
+          canWrite={canWrite}
+          onBlocked={onBlocked}
+        />
       </div>
     </article>
   );
@@ -407,7 +411,7 @@ function EventRow({ e, onRegister, onOpen }) {
 /* --------------------------------------------------------------- Screen */
 
 export function HomeScreen({
-  communities, joinedIds, onOpen, onCreateClick,
+  communities, joinedIds, onOpen, onCreateClick, authUserId,
   feedPosts, feedSparkIds, onSparkPost, onCreatePost,
   userName, user, onJoinToggle, onGoToExplore, onSearchClick,
   events = [], registeredEventIds = [], onRegisterEvent, onGoToEvents,
@@ -519,7 +523,7 @@ export function HomeScreen({
             </div>
           )}
 
-          <div className={cx("space-y-4", !showScope && "mt-4")}>
+          <div className={cx(!showScope && "mt-4")}>
             {loading ? (
               <><PostSkeleton /><PostSkeleton /></>
             ) : posts.length === 0 ? (
@@ -572,6 +576,10 @@ export function HomeScreen({
                   liked={(feedSparkIds || []).includes(p.id)}
                   onLike={onSparkPost}
                   onOpen={onOpen}
+                  authUserId={authUserId}
+                  myName={userName}
+                  canWrite={!!user?.verified}
+                  onBlocked={() => onJoinToggle?.(null)}
                 />
               ))
             )}
@@ -645,12 +653,6 @@ export function HomeScreen({
               </RailCard>
             )}
 
-            <nav className="px-1 pt-1 flex flex-wrap gap-x-3 gap-y-1 text-2xs text-ink-3">
-              <a href="/terms" className="hover:text-ink-2 hover:underline transition-colors">Terms</a>
-              <a href="/privacy" className="hover:text-ink-2 hover:underline transition-colors">Privacy</a>
-              <button onClick={onGoToExplore} className="hover:text-ink-2 hover:underline transition-colors">Explore</button>
-              <span className="w-full">&copy; 2026 Orbit</span>
-            </nav>
           </div>
         </aside>
       </div>

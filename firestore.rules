@@ -138,6 +138,20 @@ service cloud.firestore {
           allow read: if true;
           allow create, delete: if isSelf(sparkUid);
         }
+
+        // Comments. Readable by anyone who can read the post, which is
+        // everyone; writable by anyone signed in. Removal is the author, the
+        // community's leadership, or an app admin.
+        match /comments/{commentId} {
+          allow read: if true;
+          allow create: if signedIn()
+            && request.resource.data.authorId == request.auth.uid
+            && request.resource.data.text is string
+            && request.resource.data.text.size() > 0
+            && request.resource.data.text.size() <= 1000;
+          allow delete: if (signedIn() && resource.data.authorId == request.auth.uid)
+            || isCreator() || isCommunityAdmin() || isAdmin();
+        }
       }
 
       match /messages/{messageId} {
@@ -190,6 +204,10 @@ service cloud.firestore {
       // increment(), which arrives as a transform with an empty updateMask, so
       // this asserts the fields that must NOT change instead of diffing the
       // ones that may.
+      // Counters only: sparkCount and commentCount move, the post itself does
+      // not. Stated as what must hold rather than what may change, for the
+      // same reason as everywhere else in this file -- both counters arrive as
+      // increment() transforms, which a diff cannot see reliably.
       allow update: if signedIn()
         && request.resource.data.text == resource.data.text
         && request.resource.data.authorId == resource.data.authorId
@@ -201,6 +219,16 @@ service cloud.firestore {
       match /sparks/{sparkUid} {
         allow read: if true;
         allow create, delete: if isSelf(sparkUid);
+      }
+
+      match /comments/{commentId} {
+        allow read: if true;
+        allow create: if signedIn()
+          && request.resource.data.authorId == request.auth.uid
+          && request.resource.data.text is string
+          && request.resource.data.text.size() > 0
+          && request.resource.data.text.size() <= 1000;
+        allow delete: if (signedIn() && resource.data.authorId == request.auth.uid) || isAdmin();
       }
     }
 

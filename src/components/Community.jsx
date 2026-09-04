@@ -6,6 +6,7 @@ import { Icon, Avatar, Button, IconButton, Input, Textarea, Field, Spinner, cx }
 import { Switch } from "./ui/Primitives.jsx";
 import { Screen, PageHeader, Modal } from "./ui/Layout.jsx";
 import { EmptyState } from "./EmptyState.jsx";
+import { PostComments } from "./Common.jsx";
 import * as db from "../lib/db.js";
 
 export function CommunitySettings({ c, onSave, onDelete, onClose }) {
@@ -946,7 +947,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                           />
                         )}
 
-                        <div className="flex items-center gap-2 mt-4 pt-3 border-t border-line">
+                        <div className="flex items-center flex-wrap gap-2 mt-4 pt-3 border-t border-line">
                           <button
                             onClick={() => togglePostSpark(p.id)}
                             aria-pressed={postSparked}
@@ -969,6 +970,16 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                             <Icon name="share" size={16} className="text-c-teal" />
                             <span className="hidden sm:inline">Share</span>
                           </button>
+
+                          <PostComments
+                            communityId={c.id}
+                            postId={p.id}
+                            count={p.comments}
+                            authUserId={authUserId}
+                            myName={myName}
+                            canWrite={!!authUserId}
+                            onBlocked={onBlocked}
+                          />
                         </div>
                       </div>
                     </article>

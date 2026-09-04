@@ -69,13 +69,17 @@ function NavRow({ icon, tint, label, active, onClick, badge }) {
       <span
         className={cx(
           "absolute left-0 top-1/2 -translate-y-1/2 w-1 rounded-r-full transition-all duration-200",
-          active ? cx("h-5 opacity-100", BAR[tint] || "bg-accent") : "h-0 opacity-0"
+          active ? "h-5 opacity-100 bg-ink" : "h-0 opacity-0"
         )}
       />
       <Icon
         name={icon}
-        size={25}
-        className={cx("shrink-0 transition-transform duration-150 group-hover:scale-110", tint)}
+        thin
+        size={27}
+        className={cx(
+          "shrink-0 transition-colors duration-150",
+          active ? "text-ink" : "text-ink-2 group-hover:text-ink"
+        )}
       />
       <span
         className={cx(
@@ -182,8 +186,8 @@ export function Sidebar({
           onClick={onPostClick}
           title="Write a post"
           className="w-full mt-5 flex items-center justify-center gap-2 rounded-full
-            px-3 py-3 bg-accent text-accent-ink font-bold text-md shadow-lift
-            hover:bg-accent-press active:scale-[0.98] transition-[background-color,transform] duration-150"
+            px-3 py-3 bg-solid text-solid-ink font-bold text-md shadow-lift
+            hover:opacity-90 active:scale-[0.98] transition-[opacity,transform] duration-150"
         >
           <Icon name="add" size={22} />
           <span className="hidden xl:inline">Post</span>
@@ -210,7 +214,7 @@ export function Sidebar({
                     <span className="grid place-items-center w-7 h-7 rounded-lg overflow-hidden bg-bg-sunken shrink-0">
                       {c.avatarUrl
                         ? <img src={c.avatarUrl} alt="" className="w-full h-full object-cover" />
-                        : <Icon name={cat?.msr || "groups"} size={15} className={cat?.tint || "text-ink-3"} />}
+                        : <Icon name={cat?.msr || "groups"} thin size={16} className="text-ink-2" />}
                     </span>
                     <span className="hidden xl:block text-base font-medium text-ink truncate flex-1 text-left">
                       {head}

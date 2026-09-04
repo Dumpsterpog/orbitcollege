@@ -115,6 +115,7 @@ export const mapPost = (d) => {
     hasImage: !!r.imageUrl,
     imageUrl: r.imageUrl || null,
     sparks: r.sparkCount ?? 0,
+    comments: r.commentCount ?? 0,
     pinned: !!r.pinned,
   };
 };
@@ -445,6 +446,67 @@ export async function createPost({ communityId = null, authorId, authorName, tex
   if (communityId) await updateDoc(doc(db, "communities", communityId), { lastActiveAt: serverTimestamp() });
   const snap = await getDoc(ref);
   return mapPost(snap);
+}
+
+/* ---------------------------------------------------------- comments */
+
+// Comments hang off whichever post document they belong to, so the same code
+// serves a community post and a campus post -- postRef already knows the
+// difference.
+
+export const mapComment = (d) => {
+  const r = d.data();
+  return {
+    id: d.id,
+    authorId: r.authorId,
+    who: r.authorName || "Someone",
+    text: r.text || "",
+    time: timeAgoFrom(r.createdAt),
+    createdAt: toDate(r.createdAt),
+  };
+};
+
+export function watchPostComments(communityId, postId, cb) {
+  if (!firebaseReady) { cb([]); return () => {}; }
+  return onSnapshot(
+    query(collection(postRef(communityId, postId), "comments"), orderBy("createdAt", "asc")),
+    (snap) => cb(snap.docs.map(mapComment)),
+    (err) => { watchFailed(err); cb([]); }
+  );
+}
+
+// The comment and the count move together, so a thread cannot show a number
+// that disagrees with what is under it.
+export async function addPostComment({ communityId, postId, authorId, authorName, text }) {
+  need();
+  const body = (text || "").trim();
+  if (!body) return null;
+  const target = postRef(communityId, postId);
+  const ref = await addDoc(collection(target, "comments"), {
+    authorId,
+    authorName: authorName || "Someone",
+    text: body.slice(0, 1000),
+    createdAt: serverTimestamp(),
+  });
+  try {
+    await updateDoc(target, { commentCount: increment(1) });
+  } catch (err) {
+    // The comment is the fact; the count is a cached display of it. A refused
+    // bump must not take the comment down with it.
+    console.warn("[orbit/db] comment saved, count not bumped:", err?.code || err);
+  }
+  return mapComment(await getDoc(ref));
+}
+
+export async function deletePostComment(communityId, postId, commentId) {
+  need();
+  const target = postRef(communityId, postId);
+  await deleteDoc(doc(target, "comments", commentId));
+  try {
+    await updateDoc(target, { commentCount: increment(-1) });
+  } catch (err) {
+    console.warn("[orbit/db] comment deleted, count not decremented:", err?.code || err);
+  }
 }
 
 export async function deletePost(communityId, postId) {

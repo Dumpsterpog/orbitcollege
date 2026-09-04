@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import * as db from "../lib/db.js";
 import { Icon, Avatar, Button, cx } from "./ui/Primitives.jsx";
 
 export { Avatar };
@@ -140,5 +141,114 @@ export function GuestBanner({ onVerify }) {
         </button>
       </div>
     </div>
+  );
+}
+
+// Comment thread.
+//
+// Collapsed by default and only subscribed once opened: a feed of twenty posts
+// should not hold twenty live listeners for threads nobody has looked at.
+// Shared by the campus feed and a community's own posts, which is why it takes
+// communityId rather than assuming one.
+export function PostComments({ communityId, postId, count = 0, authUserId, myName, canWrite, onBlocked }) {
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState([]);
+  const [draft, setDraft] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    return db.watchPostComments(communityId, postId, setItems);
+  }, [open, communityId, postId]);
+
+  // The stored count can lag a failed increment, so once the thread is open
+  // the list itself is the count.
+  const shown = open ? items.length : count;
+
+  const send = async () => {
+    const text = draft.trim();
+    if (!text) return;
+    if (!canWrite) { onBlocked?.(); return; }
+    setBusy(true);
+    setDraft("");
+    try {
+      await db.addPostComment({ communityId, postId, authorId: authUserId, authorName: myName, text });
+    } catch (err) {
+      console.error("[orbit] comment failed", err);
+      setDraft(text);
+    }
+    setBusy(false);
+  };
+
+  return (
+    <>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className={cx(
+          "inline-flex items-center gap-2 h-9 px-3.5 rounded-full text-xs font-semibold transition-colors",
+          open ? "bg-bg-sunken text-ink" : "text-ink-2 hover:text-ink hover:bg-bg-sunken"
+        )}
+      >
+        <Icon name="mode_comment" size={16} className="text-c-blue" />
+        <span className="tabular-nums">{shown}</span>
+        <span className="hidden sm:inline">{shown === 1 ? "comment" : "comments"}</span>
+      </button>
+
+      {open && (
+        <div className="w-full mt-3 pt-3 border-t border-line space-y-3">
+          {items.map((cm) => (
+            <div key={cm.id} className="flex gap-2.5 group">
+              <Avatar name={cm.who} size={28} />
+              <div className="min-w-0 flex-1">
+                <p className="text-base">
+                  <span className="font-semibold text-ink">{cm.who}</span>
+                  <span className="text-ink-3 text-2xs ml-1.5">{cm.time}</span>
+                </p>
+                <p className="text-base text-ink-2 leading-relaxed whitespace-pre-wrap break-words">{cm.text}</p>
+              </div>
+              {cm.authorId === authUserId && (
+                <button
+                  onClick={() => db.deletePostComment(communityId, postId, cm.id)}
+                  aria-label="Delete comment"
+                  className="opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity shrink-0 self-start"
+                >
+                  <Icon name="delete" size={15} className="text-c-red" />
+                </button>
+              )}
+            </div>
+          ))}
+
+          {items.length === 0 && (
+            <p className="text-base text-ink-3">No comments yet.</p>
+          )}
+
+          <div className="flex items-center gap-2.5 pt-1">
+            <Avatar name={myName || "You"} size={28} />
+            <input
+              value={draft}
+              maxLength={1000}
+              onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); send(); } }}
+              placeholder={canWrite ? "Write a comment…" : "Sign in to comment"}
+              disabled={!canWrite || busy}
+              className="flex-1 min-w-0 h-9 px-3.5 rounded-full bg-bg-sunken text-ink placeholder:text-ink-3 text-base
+                border border-transparent focus:outline-none focus:border-line-strong transition-colors
+                disabled:opacity-60"
+            />
+            <Button
+              tone="blue"
+              size="sm"
+              onClick={send}
+              disabled={!draft.trim() || busy}
+              loading={busy}
+              className="shrink-0"
+            >
+              Reply
+            </Button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

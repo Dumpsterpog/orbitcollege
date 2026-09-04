@@ -711,6 +711,7 @@ export default function App() {
         />
       ) : activeTab === "home" ? (
         <HomeScreen
+          authUserId={authUser?.id}
           communities={allGroups} joinedIds={joinedIds}
           onOpen={setSelectedCommunity}
           feedPosts={feedPosts} feedSparkIds={feedSparkIds} onSparkPost={handleSparkPost}
