@@ -167,19 +167,29 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read: if true;
 
-      // communityId must be null. A post claiming to belong to a community
-      // while sitting outside it would show a byline the community's own
-      // rules never authorised.
+      // The post must not claim a community.
+      //
+      // Checked with `in` rather than `== null`. A campus post omits the field
+      // entirely (see createPost), and asking whether a key is present is
+      // unambiguous, where comparing a stored null against null in rules is
+      // not -- and when that comparison goes the wrong way the result is a
+      // flat permission-denied with nothing in it to debug.
       allow create: if signedIn()
         && request.resource.data.authorId == request.auth.uid
-        && request.resource.data.communityId == null
+        && !('communityId' in request.resource.data)
         && request.resource.data.text is string
         && request.resource.data.text.size() <= 2000;
 
       // Sparks only. Nobody edits someone else's post text.
+      //
+      // Same reasoning as the community counters: sparkCount moves by
+      // increment(), which arrives as a transform with an empty updateMask, so
+      // this asserts the fields that must NOT change instead of diffing the
+      // ones that may.
       allow update: if signedIn()
-        && request.resource.data.diff(resource.data).affectedKeys()
-             .hasOnly(['sparkCount']);
+        && request.resource.data.text == resource.data.text
+        && request.resource.data.authorId == resource.data.authorId
+        && request.resource.data.get('imageUrl', '') == resource.data.get('imageUrl', '');
 
       allow delete: if (signedIn() && resource.data.authorId == request.auth.uid)
         || isAdmin();

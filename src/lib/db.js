@@ -416,7 +416,14 @@ const postRef = (communityId, postId) =>
 export async function createPost({ communityId = null, authorId, authorName, text, imageUrl = null }) {
   need();
   const ref = await addDoc(postsRef(communityId), {
-    communityId: communityId || null,
+    // A campus post omits communityId entirely rather than writing null.
+    // The rule that keeps a root post from claiming a community checks
+    // `!('communityId' in request.resource.data)`, which is unambiguous;
+    // comparing a stored null against null in rules is not, and getting it
+    // wrong costs a flat permission-denied with nothing to read.
+    // mapPost already recovers the id from the document path, so a missing
+    // field maps back to null on the way out.
+    ...(communityId ? { communityId } : {}),
     authorId,
     authorName: authorName || "Someone", // denormalised: Firestore has no join
     text: text || "",
