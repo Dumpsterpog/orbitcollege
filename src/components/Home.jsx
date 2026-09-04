@@ -494,24 +494,6 @@ export function HomeScreen({
 
             {canPost && <ComposerBar user={{ ...user, name: userName }} onOpen={openComposer} />}
 
-            {joined.length > 0 && (
-              <div className="card p-3">
-                <div className="flex gap-3.5 overflow-x-auto no-scrollbar">
-                  {joined.map((c) => (
-                    <button
-                      key={c.id}
-                      onClick={() => onOpen(c)}
-                      className="flex flex-col items-center gap-1.5 w-[68px] shrink-0 group"
-                    >
-                      <Avatar src={c.avatarUrl} name={nameHead(c.name)} size={48} ring={c.lastActive <= 30} />
-                      <span className="text-2xs text-ink truncate max-w-full group-hover:opacity-70">
-                        {nameHead(c.name)}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {showScope && (
