@@ -24,3 +24,6 @@ android/.idea
 
 # JetBrains IDE config — machine-specific
 .idea/
+firebase-debug.log
+*firebase-debug.log
+.firebase/
