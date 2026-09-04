@@ -88,6 +88,7 @@ export const mapCommunity = (d) => {
     avatarUrl: r.avatarUrl || null,
     postsAdminOnly: !!r.postsAdminOnly,
     lastActive: minutesSince(r.lastActiveAt || r.createdAt),
+    createdAt: toDate(r.createdAt),
   };
 };
 

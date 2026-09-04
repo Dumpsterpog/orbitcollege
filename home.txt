@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+
+<html lang="en"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1.0" name="viewport"/><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet"/><style>@layer base{html,body{margin:0;padding:0;}body{overscroll-behavior:none;}main>:first-child{margin-top:0!important;}main>:last-child{margin-bottom:0!important;}}::-webkit-scrollbar{display:none;}</style><script src="https://cdn.tailwindcss.com"></script><script id="tailwind-config">tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      "colors": {
+        "on-primary": "#ffffff",
+        "secondary": "#4b41e1",
+        "inverse-primary": "#b4c5ff",
+        "on-tertiary": "#ffffff",
+        "primary-fixed": "#dbe1ff",
+        "on-primary-fixed": "#00174b",
+        "tertiary": "#784b00",
+        "on-surface-variant": "#434655",
+        "surface-bright": "#faf8ff",
+        "background": "#faf8ff",
+        "on-tertiary-fixed-variant": "#653e00",
+        "on-error": "#ffffff",
+        "surface-container-high": "#e2e7ff",
+        "surface-dim": "#d2d9f4",
+        "primary-container": "#2563eb",
+        "on-surface": "#131b2e",
+        "on-secondary": "#ffffff",
+        "on-secondary-fixed": "#0f0069",
+        "on-primary-container": "#eeefff",
+        "surface-container": "#eaedff",
+        "error-container": "#ffdad6",
+        "on-primary-fixed-variant": "#003ea8",
+        "on-error-container": "#93000a",
+        "surface-container-lowest": "#ffffff",
+        "surface": "#faf8ff",
+        "on-tertiary-container": "#ffeedd",
+        "on-tertiary-fixed": "#2a1700",
+        "inverse-on-surface": "#eef0ff",
+        "tertiary-container": "#996100",
+        "secondary-fixed-dim": "#c3c0ff",
+        "on-background": "#131b2e",
+        "surface-container-low": "#f2f3ff",
+        "on-secondary-fixed-variant": "#3323cc",
+        "on-secondary-container": "#fffbff",
+        "error": "#ba1a1a",
+        "tertiary-fixed-dim": "#ffb95f",
+        "surface-tint": "#0053db",
+        "primary": "#004ac6",
+        "outline": "#737686",
+        "surface-variant": "#dae2fd",
+        "tertiary-fixed": "#ffddb8",
+        "surface-container-highest": "#dae2fd",
+        "secondary-fixed": "#e2dfff",
+        "secondary-container": "#645efb",
+        "primary-fixed-dim": "#b4c5ff",
+        "inverse-surface": "#283044",
+        "outline-variant": "#c3c6d7"
+      },
+      "borderRadius": {
+        "DEFAULT": "1rem",
+        "lg": "2rem",
+        "xl": "3rem",
+        "full": "9999px"
+      },
+      "spacing": {
+        "space-sm": "0.75rem",
+        "space-md": "1rem",
+        "sidebar-width": "275px",
+        "space-2xl": "3rem",
+        "gutter-mobile": "1rem",
+        "space-xl": "2rem",
+        "space-3xl": "4rem",
+        "space-lg": "1.5rem",
+        "space-xs": "0.5rem",
+        "gutter-desktop": "1.5rem",
+        "feed-max-width": "680px",
+        "space-2xs": "0.25rem"
+      },
+      "fontFamily": {
+        "headline-sm": ["Inter"],
+        "headline-lg-mobile": ["Inter"],
+        "caption": ["Inter"],
+        "body-sm": ["Inter"],
+        "headline-md": ["Inter"],
+        "label-md": ["Inter"],
+        "body-md": ["Inter"],
+        "body-lg": ["Inter"],
+        "display-lg": ["Inter"],
+        "headline-lg": ["Inter"],
+        "label-sm": ["Inter"]
+      },
+      "fontSize": {
+        "headline-sm": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.01em", "fontWeight": "600"}],
+        "headline-lg-mobile": ["22px", {"lineHeight": "28px", "letterSpacing": "-0.015em", "fontWeight": "700"}],
+        "caption": ["12px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "500"}],
+        "body-sm": ["13px", {"lineHeight": "18px", "letterSpacing": "0.005em", "fontWeight": "400"}],
+        "headline-md": ["20px", {"lineHeight": "28px", "letterSpacing": "-0.015em", "fontWeight": "600"}],
+        "label-md": ["13px", {"lineHeight": "16px", "letterSpacing": "0.01em", "fontWeight": "600"}],
+        "body-md": ["14px", {"lineHeight": "20px", "letterSpacing": "0em", "fontWeight": "400"}],
+        "body-lg": ["16px", {"lineHeight": "24px", "letterSpacing": "-0.005em", "fontWeight": "400"}],
+        "display-lg": ["36px", {"lineHeight": "44px", "letterSpacing": "-0.025em", "fontWeight": "700"}],
+        "headline-lg": ["28px", {"lineHeight": "36px", "letterSpacing": "-0.02em", "fontWeight": "700"}],
+        "label-sm": ["11px", {"lineHeight": "14px", "letterSpacing": "0.02em", "fontWeight": "600"}]
+      }
+    }
+  }
+}</script></head><body class="bg-background font-body-md text-body-md text-on-surface"><aside class="fixed left-0 top-0 h-full w-[275px] bg-surface-container-lowest shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between py-space-md px-space-md"><div class="flex flex-col gap-space-md overflow-y-auto"><div class="flex items-center gap-space-sm px-space-xs py-space-2xs"><img alt="Brand logo. - Primary color: #2563eb
+- Font: inter
+- Mode: light
+- Roundness: rounded-full
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WHqlDxCSKL2Yrt-MulT221KPXAYS-Ys8_2BNqgKBJwvAmRkNwkVP_Dbfhx3yoYx6rYE8OsOhfC3CJPWE-_liMirGpVPce2IkAB6UT0HBye49d0AHyxXsDV0vFdJpUE_Q9bXNv3rwO9ISFDGAbTAT7HJBCVeI2Ka6uyxBrhZYC6codQe1YgjdNQoLX6zN-U9GCTAeo488sDulA4DbwGGha6HF05km7YasuQcWFNPdjqN5ipJvrmU_8NHQ"/><span class="font-headline-sm text-headline-sm text-on-surface tracking-tight font-bold">Orbit</span></div><button class="w-full flex items-center justify-center gap-space-xs bg-primary-container text-on-primary font-label-md text-label-md py-space-sm px-space-lg rounded-full shadow-[0_1px_8px_rgba(0,0,0,0.04)] hover:bg-primary transition-all active:scale-[0.98]"><span class="material-symbols-outlined text-[18px]">add</span><span>Create Post</span></button><nav class="flex flex-col gap-space-2xs" data-active-classes="bg-surface-container-high text-primary font-label-md rounded-full"><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="feed" href="#"><span class="material-symbols-outlined text-[20px]">home</span><span class="font-label-md text-label-md">Home</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="explore" href="#"><span class="material-symbols-outlined text-[20px]">explore</span><span class="font-label-md text-label-md">Explore</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="search" href="#"><span class="material-symbols-outlined text-[20px]">search</span><span class="font-label-md text-label-md">Search</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="saved" href="#"><span class="material-symbols-outlined text-[20px]">bookmark</span><span class="font-label-md text-label-md">Saved</span></a><div class="pt-space-xs pb-space-2xs px-space-sm"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">Campus</span></div><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="campus-events" href="#"><span class="material-symbols-outlined text-[20px]">event</span><span class="font-label-md text-label-md">Events</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="locali-tea" href="#"><span class="material-symbols-outlined text-[20px]">local_cafe</span><span class="font-label-md text-label-md">Locali-Tea</span></a><div class="pt-space-xs pb-space-2xs px-space-sm"><span class="font-label-sm text-label-sm uppercase tracking-wider text-on-surface-variant">My Communities</span></div><a aria-current="page" class="flex items-center justify-between px-space-sm py-space-xs transition-colors bg-surface-container-high text-primary font-label-md rounded-full" data-path="codeforfun-community" href="#"><div class="flex items-center gap-space-sm"><span class="material-symbols-outlined text-[20px]">terminal</span><span class="font-label-md text-label-md">Codeforfun</span></div><span class="w-2 h-2 rounded-full bg-primary-container"></span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="notifications" href="#"><span class="material-symbols-outlined text-[20px]">notifications</span><span class="font-label-md text-label-md">Notifications</span></a><a class="flex items-center gap-space-sm px-space-sm py-space-xs rounded-full text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface transition-colors" data-path="settings" href="#"><span class="material-symbols-outlined text-[20px]">settings</span><span class="font-label-md text-label-md">Settings</span></a></nav></div><div class="bg-surface-container-low p-space-sm rounded-DEFAULT flex items-center justify-between"><div class="flex items-center gap-space-sm"><div class="relative"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UM0hELTglL-r0eo7a1gQomQftBhHvC2HUt4IctHUdnmlzK1kcEl8rH7fayVCPi3BvjdR2iZJtC8pzwWq6obulO-T2TSssvOFGTh-beVTTMBhbNUi_2uaYzq1fz23RRpEVvHWU2f_zJzEEFYNmyMPP9bnertx13bMiXl9Q7F9aLPymnubnoSfHFuM8Ccp3ZkjgDi7OI7E_VbF_9rGYJ_un4lY-qBi0tiYcQUKRSuIjBO7_YDVxSIW5DeKM"/><span class="absolute bottom-0 right-0 w-2.5 h-2.5 bg-primary-container rounded-full ring-2 ring-surface-container-lowest"></span></div><div class="flex flex-col"><span class="font-label-md text-label-md text-on-surface leading-tight">atharva</span><span class="font-caption text-caption text-on-surface-variant">@atharva</span></div></div><span class="material-symbols-outlined text-on-surface-variant text-[18px]">more_vert</span></div></aside><div class="pl-[275px]"><header class="fixed top-0 left-[275px] right-0 h-16 bg-surface-container-lowest/90 backdrop-blur-xl shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 px-space-lg flex items-center justify-between"><div class="flex items-center gap-space-lg"><img alt="Brand logo. - Primary color: #2563eb
+- Font: inter
+- Mode: light
+- Roundness: rounded-full
+" class="h-8 w-auto object-contain" src="https://lh3.googleusercontent.com/aida/AEtjO1WHqlDxCSKL2Yrt-MulT221KPXAYS-Ys8_2BNqgKBJwvAmRkNwkVP_Dbfhx3yoYx6rYE8OsOhfC3CJPWE-_liMirGpVPce2IkAB6UT0HBye49d0AHyxXsDV0vFdJpUE_Q9bXNv3rwO9ISFDGAbTAT7HJBCVeI2Ka6uyxBrhZYC6codQe1YgjdNQoLX6zN-U9GCTAeo488sDulA4DbwGGha6HF05km7YasuQcWFNPdjqN5ipJvrmU_8NHQ"/><div class="flex items-center gap-space-xs font-label-md text-label-md text-on-surface-variant"><span class="hover:text-on-surface transition-colors">Communities</span><span class="material-symbols-outlined text-[16px]">chevron_right</span><span class="text-on-surface font-semibold">Codeforfun</span></div><div class="hidden md:flex items-center bg-surface-container-low px-space-sm py-space-2xs rounded-full w-72"><span class="material-symbols-outlined text-on-surface-variant text-[18px] mr-space-xs">search</span><input class="bg-transparent text-on-surface font-body-sm text-body-sm placeholder:text-on-surface-variant outline-none w-full" placeholder="Search in Codeforfun..." type="text"/></div></div><div class="flex items-center gap-space-md"><button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant transition-colors"><span class="material-symbols-outlined text-[20px]">notifications</span></button><button class="w-9 h-9 flex items-center justify-center rounded-full hover:bg-surface-container-high hover:text-on-surface text-on-surface-variant transition-colors"><span class="material-symbols-outlined text-[20px]">chat_bubble</span></button><div class="flex items-center pl-space-xs"><img alt="Profile" class="w-8 h-8 rounded-full object-cover" src="https://lh3.googleusercontent.com/aida/AEtjO1UM0hELTglL-r0eo7a1gQomQftBhHvC2HUt4IctHUdnmlzK1kcEl8rH7fayVCPi3BvjdR2iZJtC8pzwWq6obulO-T2TSssvOFGTh-beVTTMBhbNUi_2uaYzq1fz23RRpEVvHWU2f_zJzEEFYNmyMPP9bnertx13bMiXl9Q7F9aLPymnubnoSfHFuM8Ccp3ZkjgDi7OI7E_VbF_9rGYJ_un4lY-qBi0tiYcQUKRSuIjBO7_YDVxSIW5DeKM"/></div></div></header><main class="relative pt-16 w-full bg-background min-h-screen"><div class="flex flex-col w-full">
+<div class="max-w-[1140px] mx-auto w-full px-space-md lg:px-space-lg py-space-lg flex flex-col lg:flex-row gap-space-lg items-start">
+<!-- Central Feed Stage (Max 680px constrained) -->
+<div class="w-full lg:max-w-[680px] flex-1 flex flex-col gap-space-md">
+<!-- Top Search & Quick Filters Bar -->
+<div class="w-full flex flex-col sm:flex-row items-center gap-space-xs bg-surface-container-lowest p-space-xs rounded-full shadow-sm">
+<div class="flex items-center gap-space-xs px-space-sm py-space-xs flex-1 w-full bg-surface-container-low rounded-full">
+<span class="material-symbols-outlined text-outline text-[20px]">search</span>
+<input class="bg-transparent text-on-surface font-body-sm text-body-sm placeholder:text-on-surface-variant outline-none w-full" placeholder="Search communities, clubs, events or topics..." type="text"/>
+<span class="hidden sm:inline-flex items-center text-[10px] font-semibold text-outline px-space-2xs py-[2px] bg-surface-container rounded tracking-wider">⌘K</span>
+</div>
+<div class="flex items-center gap-space-2xs px-space-xs">
+<button class="px-space-sm py-space-2xs rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm hover:bg-surface-container-highest transition-colors">All</button>
+<button class="px-space-sm py-space-2xs rounded-full text-on-surface-variant hover:bg-surface-container-low font-label-sm text-label-sm transition-colors">Tech</button>
+<button class="px-space-sm py-space-2xs rounded-full text-on-surface-variant hover:bg-surface-container-low font-label-sm text-label-sm transition-colors">Clubs</button>
+<button class="px-space-sm py-space-2xs rounded-full text-on-surface-variant hover:bg-surface-container-low font-label-sm text-label-sm transition-colors">Events</button>
+</div>
+</div>
+<!-- Modern Interactive Post Composer -->
+<div class="w-full bg-surface-container-lowest rounded-DEFAULT p-space-md shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-start gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-primary-container text-on-primary font-headline-sm text-headline-sm flex items-center justify-center shrink-0 shadow-sm">
+            F
+          </div>
+<div class="flex-1 flex flex-col">
+<textarea class="w-full bg-transparent text-on-surface font-body-md text-body-md placeholder:text-on-surface-variant outline-none resize-none pt-space-2xs" placeholder="What's happening on campus, forksai?" rows="2"></textarea>
+</div>
+</div>
+<div class="flex flex-wrap items-center justify-between gap-space-xs pt-space-xs bg-surface-container-low/40 px-space-sm py-space-xs rounded-full">
+<div class="flex items-center gap-space-2xs text-outline">
+<button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-high hover:text-primary transition-colors" title="Add media">
+<span class="material-symbols-outlined text-[19px]">image</span>
+</button>
+<button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-high hover:text-primary transition-colors" title="Code block">
+<span class="material-symbols-outlined text-[19px]">code_blocks</span>
+</button>
+<button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-high hover:text-primary transition-colors" title="Create poll">
+<span class="material-symbols-outlined text-[19px]">poll</span>
+</button>
+<button class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-high hover:text-primary transition-colors" title="Campus tag">
+<span class="material-symbols-outlined text-[19px]">tag</span>
+</button>
+<div class="h-4 w-[1px] bg-surface-container-high mx-space-2xs"></div>
+<button class="flex items-center gap-space-2xs px-space-sm py-space-2xs rounded-full bg-surface-container text-on-surface font-label-sm text-label-sm hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined text-[15px] text-primary">group</span>
+<span>Campus Feed</span>
+<span class="material-symbols-outlined text-[14px]">expand_more</span>
+</button>
+</div>
+<button class="bg-primary-container text-on-primary font-label-md text-label-md px-space-lg py-space-xs rounded-full shadow-sm hover:bg-primary active:scale-[0.98] transition-all">
+            Post
+          </button>
+</div>
+</div>
+<!-- Feed Segmented Tabs & Filters -->
+<div class="flex items-center justify-between pb-space-2xs">
+<div class="flex items-center gap-space-2xs overflow-x-auto pb-1">
+<button class="px-space-md py-space-xs bg-surface-container-high text-primary font-label-md text-label-md rounded-full shadow-sm transition-all whitespace-nowrap">
+            Campus Feed
+          </button>
+<button class="px-space-md py-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low font-label-md text-label-md rounded-full transition-all whitespace-nowrap">
+            My Communities
+          </button>
+<button class="px-space-md py-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low font-label-md text-label-md rounded-full transition-all whitespace-nowrap">
+            Trending Discussions
+          </button>
+<button class="px-space-md py-space-xs text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low font-label-md text-label-md rounded-full transition-all whitespace-nowrap">
+            Showcases
+          </button>
+</div>
+<div class="hidden sm:flex items-center gap-space-2xs text-on-surface-variant font-label-sm text-label-sm">
+<span>Sort:</span>
+<button class="flex items-center gap-1 font-semibold text-on-surface hover:text-primary transition-colors">
+<span>Latest</span>
+<span class="material-symbols-outlined text-[16px]">keyboard_arrow_down</span>
+</button>
+</div>
+</div>
+<!-- Pinned Spotlight Card (Campus Hackathon Event Announcement) -->
+<div class="w-full bg-gradient-to-r from-primary-fixed to-surface-container-high rounded-DEFAULT p-space-md relative overflow-hidden shadow-sm">
+<div class="flex items-center justify-between mb-space-xs">
+<div class="flex items-center gap-space-xs">
+<span class="px-space-xs py-[2px] rounded-full bg-primary-container text-on-primary font-label-sm text-label-sm flex items-center gap-1">
+<span class="material-symbols-outlined text-[13px]">push_pin</span>
+              Campus Spotlight
+            </span>
+<span class="font-caption text-caption text-on-surface-variant">Sponsored by CS Dept</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[18px] cursor-pointer hover:text-on-surface">close</span>
+</div>
+<div class="flex flex-col sm:flex-row gap-space-md items-start sm:items-center justify-between">
+<div class="flex flex-col gap-space-2xs max-w-[430px]">
+<h2 class="font-headline-sm text-headline-sm text-on-primary-fixed">Orbit 2026 Spring Hackathon & Builder Mixer</h2>
+<p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+              48 hours, 30k in team grants, and direct mentor matching with YC founders. Open to all students & self-taught creators.
+            </p>
+<div class="flex items-center gap-space-md mt-space-2xs text-on-surface font-caption text-caption">
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-primary">calendar_month</span>
+                April 12-14
+              </span>
+<span class="flex items-center gap-1">
+<span class="material-symbols-outlined text-[15px] text-primary">location_on</span>
+                Grand Student Commons
+              </span>
+</div>
+</div>
+<div class="flex flex-col items-start sm:items-end gap-space-xs w-full sm:w-auto">
+<div class="flex items-center -space-x-2">
+<div class="w-7 h-7 rounded-full bg-primary text-on-primary text-[10px] font-bold flex items-center justify-center ring-2 ring-surface-container-lowest">JD</div>
+<div class="w-7 h-7 rounded-full bg-secondary text-on-secondary text-[10px] font-bold flex items-center justify-center ring-2 ring-surface-container-lowest">AL</div>
+<div class="w-7 h-7 rounded-full bg-tertiary-container text-on-tertiary text-[10px] font-bold flex items-center justify-center ring-2 ring-surface-container-lowest">+86</div>
+</div>
+<button class="w-full sm:w-auto px-space-md py-space-xs bg-primary text-on-primary font-label-md text-label-md rounded-full shadow-sm hover:bg-on-primary-fixed-variant transition-colors">
+              RSVP Now
+            </button>
+</div>
+</div>
+</div>
+<!-- Post Card 1: Codeforfun (Community Showcase + Code Preview) -->
+<article class="w-full bg-surface-container-lowest rounded-DEFAULT p-space-md shadow-sm flex flex-col gap-space-sm hover:shadow-md transition-shadow">
+<!-- Post Header -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary font-bold">
+<span class="material-symbols-outlined text-[20px]">terminal</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface">Codeforfun</span>
+<span class="px-space-xs py-[2px] bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm rounded-full">Community</span>
+<span class="text-outline font-caption text-caption">• 2h ago</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant">Posted by <span class="text-on-surface font-semibold">@alex_dev</span> (Lead Architect)</span>
+</div>
+</div>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</div>
+<!-- Post Body -->
+<div class="flex flex-col gap-space-xs">
+<p class="font-body-md text-body-md text-on-surface leading-relaxed">
+            Just pushed the new lightweight state manager for the campus room tracker app! Tested it on 10,000 live WebSocket subscriptions. Here is how clean the consumption looks in React 19:
+          </p>
+<!-- Interactive Code Box -->
+<div class="w-full bg-inverse-surface text-inverse-on-surface rounded-DEFAULT p-space-md font-mono text-[12px] leading-5 overflow-x-auto my-space-xs">
+<div class="flex items-center justify-between pb-space-xs text-outline-variant text-[11px] mb-space-xs">
+<span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-error"></span> roomStore.ts</span>
+<span>TypeScript</span>
+</div>
+<pre><code><span class="text-primary-fixed">import</span> { createOrbitSignal } <span class="text-primary-fixed">from</span> <span class="text-tertiary-fixed">'@orbit/runtime'</span>;
+
+<span class="text-outline-variant">// Real-time campus room broadcast signal</span>
+<span class="text-primary-fixed">export const</span> useRoomPulse = createOrbitSignal({
+  channel: <span class="text-tertiary-fixed">'hall-b-quiet-study'</span>,
+  syncInterval: <span class="text-tertiary-fixed-dim">250</span>,
+  onCollision: (node) => node.reconcile()
+});</code></pre>
+</div>
+<!-- Tags -->
+<div class="flex items-center gap-space-xs flex-wrap pt-space-2xs">
+<span class="px-space-xs py-[2px] bg-surface-container-low text-primary font-label-sm text-label-sm rounded-full">#react</span>
+<span class="px-space-xs py-[2px] bg-surface-container-low text-primary font-label-sm text-label-sm rounded-full">#webdev</span>
+<span class="px-space-xs py-[2px] bg-surface-container-low text-primary font-label-sm text-label-sm rounded-full">#opensource</span>
+</div>
+</div>
+<!-- Post Action Toolbar -->
+<div class="flex items-center justify-between pt-space-xs text-on-surface-variant font-label-sm text-label-sm">
+<div class="flex items-center gap-space-md">
+<button class="flex items-center gap-space-xs hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-[18px] group-hover:scale-110 transition-transform">thumb_up</span>
+<span>142</span>
+</button>
+<button class="flex items-center gap-space-xs hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-[18px] group-hover:scale-110 transition-transform">chat_bubble_outline</span>
+<span>38 comments</span>
+</button>
+<button class="flex items-center gap-space-xs hover:text-primary transition-colors group">
+<span class="material-symbols-outlined text-[18px] group-hover:scale-110 transition-transform">share</span>
+<span>Share</span>
+</button>
+</div>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:text-primary hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[19px]">bookmark_border</span>
+</button>
+</div>
+</article>
+<!-- Post Card 2: cycling community (Rich Event + Visual Route) -->
+<article class="w-full bg-surface-container-lowest rounded-DEFAULT p-space-md shadow-sm flex flex-col gap-space-sm hover:shadow-md transition-shadow">
+<!-- Post Header -->
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary font-bold">
+<span class="material-symbols-outlined text-[20px]">directions_bike</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface">cycling community</span>
+<span class="px-space-xs py-[2px] bg-secondary-fixed text-on-secondary-fixed font-label-sm text-label-sm rounded-full">Club</span>
+<span class="text-outline font-caption text-caption">• 5h ago</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant">Organized by <span class="text-on-surface font-semibold">@sam_rides</span></span>
+</div>
+</div>
+<div class="flex items-center gap-space-xs">
+<button class="px-space-sm py-[4px] bg-surface-container-high text-primary font-label-sm text-label-sm rounded-full hover:bg-primary hover:text-on-primary transition-colors">
+              Join Club
+            </button>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</div>
+</div>
+<!-- Post Content -->
+<div class="flex flex-col gap-space-xs">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Saturday Sunrise Coastal Loop (28km) 🌅</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+            Pace is casual (20-22 km/h), no drops! We will grab espresso and baked pastries at Bay Roast around kilometer 18. Helmets mandatory, lights recommended.
+          </p>
+<!-- Rich Visual Mockup / Route Graphic -->
+<div class="w-full h-48 bg-surface-container-low rounded-DEFAULT relative overflow-hidden flex items-center justify-center shadow-inner">
+<img class="w-full h-full object-cover" data-alt="Scenic elevated cycling road during clear morning sunrise with a soft golden hour glow, coastal pine trees, ocean vistas in the background, professional cycling photography with blue sky and sharp vibrant contrast" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDnG6gTKENZY1jHGRMFc05LIzlvph9ya4NDz5A5PK56urn_BSBvPW2J9gCv6VYcbvhrzcHo7RfeNmPOjpwuRrYY1hpwf_0D6t9qF6uTevqADbzpB8M9eBIx2rFXPQ6aEb6DEPVBc_cP5PUbvz7cfnbLR5_k3cPXFh6QFnvLaVMnYubXQ1EQnrroAeNHuGVLswqrM6BA520OMXj3FuXrZ79pke-lB4gg63kLlg3mVIpLeYUjK1KARHA0"/>
+<div class="absolute bottom-3 left-3 bg-surface-container-lowest/90 backdrop-blur-md px-space-sm py-space-2xs rounded-full flex items-center gap-space-sm shadow-sm">
+<span class="font-label-sm text-label-sm text-on-surface font-bold">28.4 km</span>
+<span class="text-outline font-caption text-caption">• 310m elev</span>
+<span class="text-primary font-label-sm text-label-sm font-semibold">Starts 6:45 AM</span>
+</div>
+</div>
+</div>
+<!-- Interactive Engagement -->
+<div class="flex items-center justify-between pt-space-xs text-on-surface-variant font-label-sm text-label-sm">
+<div class="flex items-center gap-space-md">
+<button class="flex items-center gap-space-xs hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">favorite_border</span>
+<span>89</span>
+</button>
+<button class="flex items-center gap-space-xs hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">forum</span>
+<span>24 cyclists going</span>
+</button>
+</div>
+<button class="px-space-md py-space-2xs rounded-full bg-primary-container text-on-primary font-label-sm text-label-sm hover:bg-primary transition-all">
+            Join Ride
+          </button>
+</div>
+</article>
+<!-- Post Card 3: Locali-Tea Campus Brew (Campus Culture & Meetup) -->
+<article class="w-full bg-surface-container-lowest rounded-DEFAULT p-space-md shadow-sm flex flex-col gap-space-sm hover:shadow-md transition-shadow">
+<div class="flex items-center justify-between">
+<div class="flex items-center gap-space-sm">
+<div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary font-bold">
+<span class="material-symbols-outlined text-[20px]">local_cafe</span>
+</div>
+<div class="flex flex-col">
+<div class="flex items-center gap-space-xs flex-wrap">
+<span class="font-headline-sm text-headline-sm text-on-surface">Locali-Tea</span>
+<span class="px-space-xs py-[2px] bg-tertiary-fixed text-on-tertiary-fixed font-label-sm text-label-sm rounded-full">Campus Buzz</span>
+<span class="text-outline font-caption text-caption">• 8h ago</span>
+</div>
+<span class="font-caption text-caption text-on-surface-variant">Shared by <span class="text-on-surface font-semibold">@charlotte_k</span></span>
+</div>
+</div>
+<button class="w-8 h-8 rounded-full flex items-center justify-center text-outline hover:bg-surface-container-low transition-colors">
+<span class="material-symbols-outlined text-[20px]">more_horiz</span>
+</button>
+</div>
+<div class="flex flex-col gap-space-xs">
+<p class="font-body-md text-body-md text-on-surface leading-relaxed">
+            The North Library coffee lounge just installed the cold brew nitro tap! Plus free oat milk upgrades all finals week for Orbit student badge holders. ☕️⚡️
+          </p>
+<div class="w-full h-40 bg-surface-container-low rounded-DEFAULT overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Modern minimalist aesthetic campus coffee shop interior with wooden brew bar, brass nitro cold brew taps, warm ambient cafe lighting, and students studying with laptops in background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCwXb_FAHGnDUJ-0qvV6hGjebs_5czuXq3-G_R_K2ANBmgfhCu3-0yvuvvRAd4R0Zc2wBkLb13VnwOYtBuAKnC6p_2ETe37T6qPISnTjAPiiLNzGzIiMKFzlfZDtVU17UG-IHe8IOhTi5oC4JSmm9xzUyJgsMa5Y5eDUzznpzsmEZutCVQ6PCbpun4WPQSnX_VHjql42yte0VfufHQe8pPtUY-Pk0iOppGE5biQZklmXN3Fai5f5vHJ"/>
+</div>
+</div>
+<div class="flex items-center justify-between pt-space-xs text-on-surface-variant font-label-sm text-label-sm">
+<div class="flex items-center gap-space-md">
+<button class="flex items-center gap-space-xs hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">thumb_up</span>
+<span>215</span>
+</button>
+<button class="flex items-center gap-space-xs hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">chat_bubble_outline</span>
+<span>45 comments</span>
+</button>
+</div>
+<span class="font-caption text-caption text-outline">Library Commons Ground Fl</span>
+</div>
+</article>
+</div>
+<!-- Right Rail Inspector Widgets (340px sticky) -->
+<div class="w-full lg:w-[340px] flex flex-col gap-space-md shrink-0 lg:sticky lg:top-20">
+<!-- Widget 1: Start Here / Suggested Communities (Polished from Original) -->
+<div class="w-full bg-surface-container-lowest rounded-DEFAULT p-space-md shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between pb-space-2xs">
+<div class="flex items-center gap-space-xs">
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Start here</h3>
+<span class="px-space-xs py-[1px] bg-surface-container-high text-primary font-label-sm text-label-sm rounded-full">4</span>
+</div>
+<a class="font-label-sm text-label-sm text-primary hover:underline font-semibold" href="#">See All</a>
+</div>
+<div class="flex flex-col gap-space-xs">
+<!-- Community Item 1 -->
+<div class="flex items-center justify-between p-space-xs rounded-DEFAULT hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center font-headline-sm text-headline-sm text-primary shrink-0">
+                CC
+              </div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface truncate group-hover:text-primary transition-colors">cycling community</span>
+<span class="font-caption text-caption text-on-surface-variant">1,240 members • Active</span>
+</div>
+</div>
+<button class="px-space-md py-space-2xs rounded-full bg-surface-container-high text-primary hover:bg-primary hover:text-on-primary font-label-sm text-label-sm transition-all shrink-0">
+              Join
+            </button>
+</div>
+<!-- Community Item 2 -->
+<div class="flex items-center justify-between p-space-xs rounded-DEFAULT hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center font-headline-sm text-headline-sm text-secondary shrink-0">
+                O
+              </div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface truncate group-hover:text-primary transition-colors">Orbit Builders</span>
+<span class="font-caption text-caption text-on-surface-variant">3,890 members • Official</span>
+</div>
+</div>
+<button class="px-space-md py-space-2xs rounded-full bg-surface-container-high text-primary hover:bg-primary hover:text-on-primary font-label-sm text-label-sm transition-all shrink-0">
+              Join
+            </button>
+</div>
+<!-- Community Item 3 -->
+<div class="flex items-center justify-between p-space-xs rounded-DEFAULT hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-full bg-surface-container flex items-center justify-center font-headline-sm text-headline-sm text-tertiary-container shrink-0">
+                C
+              </div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface truncate group-hover:text-primary transition-colors">Codeforfun</span>
+<span class="font-caption text-caption text-on-surface-variant">4,210 members • Coding</span>
+</div>
+</div>
+<button class="px-space-md py-space-2xs rounded-full bg-primary-container text-on-primary font-label-sm text-label-sm hover:bg-primary transition-all shrink-0">
+              Joined
+            </button>
+</div>
+<!-- Community Item 4 -->
+<div class="flex items-center justify-between p-space-xs rounded-DEFAULT hover:bg-surface-container-low transition-colors group">
+<div class="flex items-center gap-space-sm">
+<div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center font-headline-sm text-headline-sm text-secondary-container shrink-0">
+                LT
+              </div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-md text-label-md text-on-surface truncate group-hover:text-primary transition-colors">Locali-Tea</span>
+<span class="font-caption text-caption text-on-surface-variant">850 members • Campus</span>
+</div>
+</div>
+<button class="px-space-md py-space-2xs rounded-full bg-surface-container-high text-primary hover:bg-primary hover:text-on-primary font-label-sm text-label-sm transition-all shrink-0">
+              Join
+            </button>
+</div>
+</div>
+<div class="pt-space-xs text-center">
+<p class="font-caption text-caption text-on-surface-variant">Cannot find your club? <a class="text-primary font-semibold hover:underline" href="#">Start it yourself</a></p>
+</div>
+</div>
+<!-- Widget 2: Upcoming Events & Meetups (Upgraded from Empty) -->
+<div class="w-full bg-surface-container-lowest rounded-DEFAULT p-space-md shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between pb-space-2xs">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-primary text-[19px]">event</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Upcoming Events</h3>
+</div>
+<span class="font-caption text-caption text-outline">This Week</span>
+</div>
+<div class="flex flex-col gap-space-sm">
+<!-- Event 1 -->
+<div class="flex items-start gap-space-sm p-space-xs rounded-DEFAULT bg-surface-container-low/60 hover:bg-surface-container-low transition-colors">
+<div class="w-11 h-11 rounded-DEFAULT bg-surface-container-lowest flex flex-col items-center justify-center shadow-xs shrink-0">
+<span class="text-[10px] font-bold uppercase text-primary leading-tight">TOM</span>
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight">19</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<span class="font-label-md text-label-md text-on-surface font-semibold truncate">Web3 & Rust Hack Night</span>
+<span class="font-caption text-caption text-on-surface-variant">7:00 PM • Campus Innovation Hub</span>
+<div class="flex items-center gap-space-xs mt-space-2xs">
+<span class="text-[11px] text-primary font-medium">32 builders attending</span>
+</div>
+</div>
+<button class="w-7 h-7 rounded-full flex items-center justify-center text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">bookmark_add</span>
+</button>
+</div>
+<!-- Event 2 -->
+<div class="flex items-start gap-space-sm p-space-xs rounded-DEFAULT bg-surface-container-low/60 hover:bg-surface-container-low transition-colors">
+<div class="w-11 h-11 rounded-DEFAULT bg-surface-container-lowest flex flex-col items-center justify-center shadow-xs shrink-0">
+<span class="text-[10px] font-bold uppercase text-primary leading-tight">SAT</span>
+<span class="font-headline-sm text-headline-sm text-on-surface leading-tight">22</span>
+</div>
+<div class="flex flex-col flex-1 min-w-0">
+<span class="font-label-md text-label-md text-on-surface font-semibold truncate">Weekend Morning Ride</span>
+<span class="font-caption text-caption text-on-surface-variant">8:00 AM • North Gate Arch</span>
+<div class="flex items-center gap-space-xs mt-space-2xs">
+<span class="text-[11px] text-primary font-medium">18 cyclists attending</span>
+</div>
+</div>
+<button class="w-7 h-7 rounded-full flex items-center justify-center text-outline hover:text-primary transition-colors">
+<span class="material-symbols-outlined text-[18px]">bookmark_add</span>
+</button>
+</div>
+</div>
+<button class="w-full py-space-xs rounded-full bg-surface-container-high text-primary font-label-sm text-label-sm hover:bg-surface-container-highest transition-colors flex items-center justify-center gap-1">
+<span>View Campus Calendar</span>
+<span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+</button>
+</div>
+<!-- Widget 3: Trending Topics & Tags -->
+<div class="w-full bg-surface-container-lowest rounded-DEFAULT p-space-md shadow-sm flex flex-col gap-space-sm">
+<div class="flex items-center justify-between pb-space-2xs">
+<div class="flex items-center gap-space-xs">
+<span class="material-symbols-outlined text-secondary text-[19px]">trending_up</span>
+<h3 class="font-headline-sm text-headline-sm text-on-surface">Trending on Campus</h3>
+</div>
+</div>
+<div class="flex flex-col gap-space-xs">
+<a class="flex items-center justify-between py-space-2xs px-space-xs rounded-DEFAULT hover:bg-surface-container-low transition-colors" href="#">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">#hackathon2026</span>
+<span class="font-caption text-caption text-on-surface-variant">520 posts • Trending in Tech</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[16px]">chevron_right</span>
+</a>
+<a class="flex items-center justify-between py-space-2xs px-space-xs rounded-DEFAULT hover:bg-surface-container-low transition-colors" href="#">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">#react-compiler</span>
+<span class="font-caption text-caption text-on-surface-variant">248 posts • Codeforfun</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[16px]">chevron_right</span>
+</a>
+<a class="flex items-center justify-between py-space-2xs px-space-xs rounded-DEFAULT hover:bg-surface-container-low transition-colors" href="#">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">#campus-rides</span>
+<span class="font-caption text-caption text-on-surface-variant">189 posts • Sports</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[16px]">chevron_right</span>
+</a>
+<a class="flex items-center justify-between py-space-2xs px-space-xs rounded-DEFAULT hover:bg-surface-container-low transition-colors" href="#">
+<div class="flex flex-col">
+<span class="font-label-md text-label-md text-on-surface font-semibold">#study-playlists</span>
+<span class="font-caption text-caption text-on-surface-variant">94 posts • Locali-Tea</span>
+</div>
+<span class="material-symbols-outlined text-outline text-[16px]">chevron_right</span>
+</a>
+</div>
+</div>
+<!-- Quick Footer Metadata for Orbit Rail -->
+<div class="px-space-xs flex flex-wrap items-center gap-x-space-sm gap-y-1 text-on-surface-variant font-caption text-caption">
+<a class="hover:underline" href="#">About</a>
+<span>•</span>
+<a class="hover:underline" href="#">Guidelines</a>
+<span>•</span>
+<a class="hover:underline" href="#">API & Docs</a>
+<span>•</span>
+<a class="hover:underline" href="#">Privacy</a>
+<span>•</span>
+<span>© 2026 Orbit Inc.</span>
+</div>
+</div>
+</div>
+</div></main></div></body></html>

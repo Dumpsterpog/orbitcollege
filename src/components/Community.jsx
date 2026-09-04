@@ -193,6 +193,41 @@ function mapMessageRow(row) {
   };
 }
 
+// Banner wash per category, written as whole class strings so Tailwind's
+// scanner keeps them.
+const BANNER = {
+  "text-c-blue":   "from-c-blue/70 to-c-violet/60",
+  "text-c-violet": "from-c-violet/70 to-c-pink/55",
+  "text-c-pink":   "from-c-pink/70 to-c-orange/55",
+  "text-c-orange": "from-c-orange/70 to-c-amber/55",
+  "text-c-amber":  "from-c-amber/70 to-c-orange/55",
+  "text-c-green":  "from-c-green/70 to-c-teal/55",
+  "text-c-teal":   "from-c-teal/70 to-c-blue/55",
+  "text-c-red":    "from-c-red/70 to-c-pink/55",
+  default:         "from-c-blue/70 to-c-violet/60",
+};
+
+// A community name may carry a subtitle after an em dash; the head is the name.
+const nameHead = (name = "") => name.split(" \u2014 ")[0];
+
+function RailPanel({ title, children }) {
+  return (
+    <section className="rounded-2xl border border-line p-4">
+      <h3 className="text-base font-bold text-ink mb-3">{title}</h3>
+      {children}
+    </section>
+  );
+}
+
+function Stat({ label, value }) {
+  return (
+    <div className="bg-bg px-3 py-2.5">
+      <p className="text-2xs text-ink-3">{label}</p>
+      <p className="text-md font-semibold text-ink tabular-nums mt-0.5 truncate">{value}</p>
+    </div>
+  );
+}
+
 export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, verified, onBlocked, sparked, onSpark, onUpdate, onDelete, trendRank, interests, authUserId, myName }) {
   const cat = CATEGORIES.find((x) => x.name === c.category);
     const sparks = baseSparks(c) + (sparked ? 1 : 0);
@@ -413,132 +448,178 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
   };
 
   const TABS = [
-    { key: "posts", label: "Posts" },
-    { key: "chat", label: "Chat" },
-    { key: "members", label: "Members", count: total },
+    { key: "posts", label: "Posts", icon: "feed" },
+    { key: "chat", label: "Chat", icon: "forum" },
+    { key: "members", label: "Members", icon: "group", count: total },
   ];
 
   return (
     <Screen>
       <PageHeader
         title={c.name}
-        subtitle={`@${handle}`}
+        subtitle={"@" + handle}
         onBack={onClose}
         actions={
-          <>
-            {trendRank && (
-              <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full bg-accent-wash text-accent text-2xs font-semibold"><Icon name="trending_up" size={10} className="text-c-green" />#{trendRank}</span>
-            )}
-            {isAdmin
-              ? <IconButton icon="settings" label="Community settings" size={20} onClick={() => setSettingsOpen(true)} />
-              : <Button variant="ghost" size="sm" icon="flag" onClick={onReport}>Report</Button>}
-          </>
+          isAdmin
+            ? <IconButton icon="settings" label="Community settings" size={20} onClick={() => setSettingsOpen(true)} />
+            : <Button variant="ghost" size="sm" icon="flag" onClick={onReport}>Report</Button>
         }
       />
 
-      <div className="flex-1 min-h-0 overflow-y-auto flex flex-col">
-        <div className="max-w-3xl w-full mx-auto px-5 lg:px-8 pt-5 w-full">
-          {/* Identity block */}
-          <div className="flex items-start gap-4">
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        {/* Banner. A community rarely has cover art, so the fallback is a wash
+            in its own category colour rather than a grey slab or a stock photo. */}
+        <div className={cx("relative h-32 sm:h-40 overflow-hidden bg-gradient-to-br", BANNER[cat.tint] || BANNER.default)}>
+          {c.avatarUrl && (
+            <img src={c.avatarUrl} alt="" aria-hidden="true"
+                 className="absolute inset-0 w-full h-full object-cover opacity-25 blur-xl scale-110" />
+          )}
+          <div className="absolute top-3 right-4 flex items-center gap-2">
+            {isLive && (
+              <span className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-black/35 backdrop-blur-sm text-white text-2xs font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-c-green animate-pulse" />
+                Active now
+              </span>
+            )}
+            {trendRank && (
+              <span className="inline-flex items-center gap-1.5 h-7 px-3 rounded-full bg-black/35 backdrop-blur-sm text-white text-2xs font-semibold">
+                <Icon name="trending_up" size={13} />
+                #{trendRank} in {c.category}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="max-w-6xl w-full mx-auto px-5 lg:px-8">
+          {/* Identity. The avatar straddles the banner edge, which is what stops
+              the header reading as two unrelated bands. */}
+          <div className="flex items-end gap-4 -mt-11 sm:-mt-12">
             <div className="relative shrink-0">
-              <div className="w-14 h-14 rounded-lg overflow-hidden border border-line bg-bg-sunken grid place-items-center">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden ring-4 ring-bg bg-bg-sunken grid place-items-center">
                 {c.avatarUrl
                   ? <img src={c.avatarUrl} alt="" className="w-full h-full object-cover" />
-                  : <Icon name={cat.msr} size={26} className={cat.tint} />}
+                  : <Icon name={cat.msr} size={38} className={cat.tint} />}
               </div>
-              {isLive && (
-                <span className="absolute -bottom-1 -right-1 flex items-center gap-1 bg-solid text-solid-ink text-[8px] font-bold px-1.5 h-4 rounded-full ring-2 ring-surface">
-                  <span className="w-1 h-1 rounded-full bg-solid-fg animate-pulse" />LIVE
+              {c.official && (
+                <span className="absolute -bottom-1 -right-1 grid place-items-center w-6 h-6 rounded-full bg-bg">
+                  <Icon name="verified" size={19} className="text-c-blue" />
                 </span>
               )}
             </div>
 
-            <div className="min-w-0 flex-1">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h2 className="text-xl font-semibold text-ink leading-tight">{c.name}</h2>
-                  <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-                    <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full bg-bg-sunken text-ink-2 text-2xs font-semibold">{c.category}</span>
-                    {c.official && <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full bg-accent-wash text-accent text-2xs font-semibold"><Icon name="verified" size={10} className="text-c-blue" />Official club</span>}
-                    {isAdmin && <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full bg-bg-sunken text-ink-2 text-2xs font-semibold"><Icon name="workspace_premium" size={10} className="text-c-amber" />You created this</span>}
-                  </div>
-                </div>
-                <Button
-                  variant={joined ? "secondary" : "primary"}
-                  size="md"
-                  className="shrink-0"
-                  onClick={() => { if (!verified) { onBlocked(); return; } onJoinToggle(c.id); }}
-                >
-                  {joined ? "Joined" : "Join"}
-                </Button>
-              </div>
+            <div className="min-w-0 flex-1 pb-1 hidden sm:flex justify-end gap-1.5">
+              <Button variant="secondary" size="sm" icon="qr_code_2" onClick={() => setQrOpen(true)}>Share</Button>
+              <Button
+                variant={joined ? "secondary" : "primary"}
+                size="sm"
+                icon={joined ? "check" : undefined}
+                onClick={() => { if (!verified) { onBlocked(); return; } onJoinToggle(c.id); }}
+              >
+                {joined ? "Joined" : "Join"}
+              </Button>
             </div>
           </div>
 
-          {c.desc && <p className="text-sm text-ink-2 leading-relaxed mt-3.5">{c.desc}</p>}
+          <div className="mt-3.5 flex items-start justify-between gap-4">
+            <div className="min-w-0">
+              <h2 className="text-2xl font-bold text-ink leading-tight">{nameHead(c.name)}</h2>
+              <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full bg-bg-sunken text-ink-2 text-2xs font-semibold">
+                  <Icon name={cat.msr} size={11} className={cat.tint} />{c.category}
+                </span>
+                {c.official && (
+                  <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full bg-accent-wash text-accent text-2xs font-semibold">
+                    <Icon name="verified" size={11} className="text-c-blue" />Official club
+                  </span>
+                )}
+                {isAdmin && (
+                  <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full bg-bg-sunken text-ink-2 text-2xs font-semibold">
+                    <Icon name="workspace_premium" size={11} className="text-c-amber" />You created this
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="sm:hidden shrink-0">
+              <Button
+                variant={joined ? "secondary" : "primary"}
+                size="sm"
+                onClick={() => { if (!verified) { onBlocked(); return; } onJoinToggle(c.id); }}
+              >
+                {joined ? "Joined" : "Join"}
+              </Button>
+            </div>
+          </div>
 
-          <div className="flex items-center gap-1.5 mt-3.5 flex-wrap">
-            <Button variant="secondary" size="sm" icon="qr_code_2" onClick={() => setQrOpen(true)}>QR</Button>
-            <button
-              onClick={() => onSpark(c.id)}
-              aria-pressed={sparked}
-              className={cx(
-                "inline-flex items-center gap-1.5 h-7 px-2.5 rounded-sm border text-xs font-medium transition-colors",
-                sparked
-                  ? "bg-accent-wash border-accent/30 text-accent"
-                  : "bg-bg-sunken border-line text-ink-2 hover:border-line-strong hover:text-ink"
-              )}
-            >
-              <Icon name="local_fire_department" size={13} className="text-c-orange" />
-              <span className="tabular-nums">{sparks}</span> interested
-            </button>
-            <button
-              onClick={() => setTab("members")}
-              className="inline-flex items-center gap-2 h-7 px-1.5 rounded-sm hover:bg-bg-sunken transition-colors"
-            >
+          {c.desc && <p className="text-md text-ink-2 leading-relaxed mt-3 max-w-2xl">{c.desc}</p>}
+
+          {/* Meta strip. Every figure on it is real; nothing is invented to
+              fill the row out. */}
+          <div className="flex items-center gap-x-5 gap-y-2 mt-3.5 flex-wrap text-base text-ink-2">
+            <button onClick={() => setTab("members")} className="inline-flex items-center gap-2 hover:text-ink transition-colors">
               <span className="flex -space-x-1.5">
                 {faceStack.map((m, i) => (
-                  <span key={m.userId || i} className="ring-2 ring-surface rounded-full">
+                  <span key={m.userId || i} className="ring-2 ring-bg rounded-full">
                     <Avatar name={m.name} size={20} />
                   </span>
                 ))}
               </span>
-              <span className="text-xs text-ink-2">
-                <span className="text-ink font-medium tabular-nums">{total}</span> members
+              <span><span className="font-semibold text-ink tabular-nums">{total}</span> members</span>
+            </button>
+
+            <button onClick={() => onSpark(c.id)} aria-pressed={sparked}
+              className={cx("inline-flex items-center gap-1.5 transition-colors", sparked ? "text-accent" : "hover:text-ink")}>
+              <Icon name="local_fire_department" size={16} className="text-c-orange" />
+              <span className="tabular-nums font-semibold text-ink">{sparks}</span> interested
+            </button>
+
+            {c.createdAt && (
+              <span className="inline-flex items-center gap-1.5">
+                <Icon name="schedule" size={16} className="text-ink-3" />
+                Since {c.createdAt.toLocaleDateString(undefined, { month: "short", year: "numeric" })}
               </span>
+            )}
+
+            <button onClick={() => setQrOpen(true)} className="inline-flex items-center gap-1.5 sm:hidden hover:text-ink transition-colors">
+              <Icon name="qr_code_2" size={16} className="text-ink-3" />Share
             </button>
           </div>
 
           {matchedMembers.length > 0 && (
-            <div className="mt-3.5 flex items-center gap-2.5 bg-accent-wash border border-accent/20 rounded px-3 py-2">
-              <Avatar name={matchedMembers[0].name} size={22} />
-              <p className="text-xs text-ink-2 leading-snug min-w-0">
-                <span className="font-medium text-ink">{matchedMembers[0].name}</span> shares your interest in {matchedMembers[0].overlap.join(", ")}
+            <div className="mt-4 flex items-center gap-2.5 bg-accent-wash rounded-xl px-3.5 py-2.5">
+              <Avatar name={matchedMembers[0].name} size={24} />
+              <p className="text-base text-ink-2 leading-snug min-w-0">
+                <span className="font-semibold text-ink">{matchedMembers[0].name}</span> shares your interest in {matchedMembers[0].overlap.join(", ")}
                 {matchedMembers.length > 1 && <> · +{matchedMembers.length - 1} more here</>}
               </p>
             </div>
           )}
 
           {/* Tabs */}
-          <div className="flex items-center gap-0.5 border-b border-line mt-5">
+          <div className="flex items-center gap-1 border-b border-line mt-6 overflow-x-auto no-scrollbar">
             {TABS.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
                 aria-current={tab === t.key ? "page" : undefined}
                 className={cx(
-                  "inline-flex items-center gap-1.5 px-3 h-9 -mb-px border-b-2 text-xs font-medium transition-colors",
+                  "inline-flex items-center gap-1.5 px-3.5 h-11 -mb-px border-b-2 text-base font-semibold shrink-0 transition-colors",
                   tab === t.key
-                    ? "border-content text-ink"
+                    ? "border-accent text-ink"
                     : "border-transparent text-ink-2 hover:text-ink"
                 )}
               >
+                <Icon name={t.icon} size={17} className={tab === t.key ? cat.tint : "text-ink-3"} />
                 {t.label}
-                {typeof t.count === "number" && <span className="text-ink-3 tabular-nums">{t.count}</span>}
+                {typeof t.count === "number" && <span className="text-ink-3 tabular-nums font-mono text-xs">{t.count}</span>}
               </button>
             ))}
           </div>
         </div>
+
+        {/* Body: content beside a rail carrying everything about the community
+            that is not a post. The rail is what lets the header stay short. */}
+        <div className="max-w-6xl w-full mx-auto lg:px-8 grid lg:grid-cols-[minmax(0,1fr)_310px] gap-x-8 items-start">
+          <div className="min-w-0">
         {tab === "chat" && (
           <div className="flex flex-col h-[420px]">
             {(() => {
@@ -772,6 +853,62 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
           </div>
         )}
       </div>
+          </div>
+
+          <aside className="hidden lg:block pt-5 pb-16">
+            <div className="sticky top-4 space-y-4">
+              <RailPanel title="About">
+                <p className="text-base text-ink-2 leading-relaxed">
+                  {c.desc || "No description yet."}
+                </p>
+                <div className="grid grid-cols-2 gap-px mt-4 bg-line rounded-xl overflow-hidden">
+                  <Stat label="Members" value={total} />
+                  <Stat label="Posts" value={posts.length} />
+                  <Stat label="Founded" value={c.createdAt ? c.createdAt.toLocaleDateString(undefined, { month: "short", year: "numeric" }) : "Unknown"} />
+                  <Stat label="Rank" value={trendRank ? "#" + trendRank : "Unranked"} />
+                </div>
+              </RailPanel>
+
+              {c.rules?.length > 0 && (
+                <RailPanel title="House rules">
+                  <ol className="space-y-3.5">
+                    {c.rules.map((r, i) => (
+                      <li key={i}>
+                        <p className="text-base font-semibold text-ink">
+                          <span className="font-mono text-ink-3 mr-1.5">{i + 1}.</span>{r.title}
+                        </p>
+                        {r.body && <p className="text-base text-ink-2 leading-relaxed mt-0.5 pl-5">{r.body}</p>}
+                      </li>
+                    ))}
+                  </ol>
+                </RailPanel>
+              )}
+
+              {isAdmin && !c.rules?.length && (
+                <RailPanel title="House rules">
+                  <p className="text-base text-ink-2 leading-relaxed">
+                    None set yet. A community with rules gets reported a lot less than one without.
+                  </p>
+                </RailPanel>
+              )}
+
+              {c.tags?.length > 0 && (
+                <RailPanel title="Topics">
+                  <div className="flex flex-wrap gap-1.5">
+                    {c.tags.map((t) => {
+                      const tc = CATEGORIES.find((x) => x.name === t);
+                      return (
+                        <span key={t} className="inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-bg-sunken text-ink-2 text-2xs font-semibold">
+                          {tc && <Icon name={tc.msr} size={12} className={tc.tint} />}{t}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </RailPanel>
+              )}
+            </div>
+          </aside>
+        </div>
       {settingsOpen && (
         <CommunitySettings
           c={c}
