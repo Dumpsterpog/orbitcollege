@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { CATEGORIES } from "../data/constants.js";
 import { Icon, Avatar, cx } from "./ui/Primitives.jsx";
 
 // Navigation rail.
@@ -36,14 +37,7 @@ const GROUPS = [
       { key: "events", label: "Events", icon: "confirmation_number", tint: "text-c-orange" },
       { key: "tea", label: "Locali-Tea", icon: "local_cafe", tint: "text-c-pink", action: "tea" },
       { key: "communities", label: "My communities", icon: "groups", tint: "text-c-green", action: "communities" },
-    ],
-  },
-  {
-    label: "You",
-    items: [
-      { key: "profile", label: "Profile", icon: "account_circle", tint: "text-c-blue" },
       { key: "notifications", label: "Notifications", icon: "notifications", tint: "text-c-red", action: "notifications" },
-      { key: "settings", label: "Settings", icon: "settings", tint: "text-c-violet" },
     ],
   },
 ];
@@ -110,7 +104,7 @@ function GroupLabel({ children }) {
 
 export function Sidebar({
   active, setActive, onTeaClick, onSearchClick, onCreateClick, onPostClick,
-  verified, user, theme, onToggleTheme, onOpenSettings, joinedCount = 0, onUnbuilt,
+  verified, user, onUnbuilt, joinedCommunities = [], onOpenCommunity, onSupport, onSignOut,
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef(null);
@@ -195,75 +189,110 @@ export function Sidebar({
           <span className="hidden xl:inline">Post</span>
         </button>
 
-        {joinedCount > 0 && (
-          <p className="hidden xl:block px-4 pt-5 text-2xs text-ink-3 leading-relaxed">
-            You're in <span className="font-bold text-ink tabular-nums">{joinedCount}</span>{" "}
-            {joinedCount === 1 ? "community" : "communities"}.
-          </p>
+        {/* Communities you are in, reachable in one click.
+            A rail that lists every destination except the ones you actually
+            visit is a table of contents for someone else's app. */}
+        {joinedCommunities.length > 0 && (
+          <div className="mt-4 pt-3 border-t border-line">
+            <GroupLabel>My communities</GroupLabel>
+            <div className="space-y-0.5">
+              {joinedCommunities.slice(0, 8).map((c) => {
+                const cat = CATEGORIES.find((x) => x.name === c.category);
+                const head = (c.name || "").split(" \u2014 ")[0];
+                return (
+                  <button
+                    key={c.id}
+                    onClick={() => onOpenCommunity?.(c)}
+                    title={head}
+                    className="group w-full flex items-center gap-3 rounded-full px-3 py-2
+                      hover:bg-black/[0.04] dark:hover:bg-white/[0.06] transition-colors"
+                  >
+                    <span className="grid place-items-center w-7 h-7 rounded-lg overflow-hidden bg-bg-sunken shrink-0">
+                      {c.avatarUrl
+                        ? <img src={c.avatarUrl} alt="" className="w-full h-full object-cover" />
+                        : <Icon name={cat?.msr || "groups"} size={15} className={cat?.tint || "text-ink-3"} />}
+                    </span>
+                    <span className="hidden xl:block text-base font-medium text-ink truncate flex-1 text-left">
+                      {head}
+                    </span>
+                  </button>
+                );
+              })}
+              {joinedCommunities.length > 8 && (
+                <button
+                  onClick={() => setActive("explore")}
+                  className="hidden xl:block w-full text-left px-3 py-1.5 text-2xs font-semibold text-accent hover:opacity-70"
+                >
+                  +{joinedCommunities.length - 8} more
+                </button>
+              )}
+            </div>
+          </div>
         )}
       </nav>
 
-      {/* Foot: account + legal */}
       <div className="shrink-0 px-2 xl:px-2.5 pt-2 pb-3 border-t border-line relative" ref={menuRef}>
+        {/* Account menu. Opens upward, because this row sits at the bottom of
+            the viewport and a downward menu would open off-screen. */}
         {menuOpen && (
-          <div className="absolute bottom-full left-2 right-2 mb-2 z-40 bg-bg-raised rounded-lg shadow-pop overflow-hidden animate-pop">
-            <button
-              onClick={() => { onOpenSettings(); setMenuOpen(false); }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-base font-medium text-ink hover:bg-bg-sunken transition-colors"
-            >
-              <Icon name="settings" size={20} className="text-c-violet" />Settings
-            </button>
-            <button
-              onClick={() => { onToggleTheme(); setMenuOpen(false); }}
-              className="w-full flex items-center gap-3 px-4 py-3 text-base font-medium text-ink hover:bg-bg-sunken transition-colors"
-            >
-              <Icon name={theme === "dark" ? "light_mode" : "dark_mode"} size={20} className="text-c-amber" />
-              {theme === "dark" ? "Light mode" : "Dark mode"}
-            </button>
-            <a
-              href="mailto:team.orbit@gmail.com?subject=Orbit%20feedback"
-              className="w-full flex items-center gap-3 px-4 py-3 text-base font-medium text-ink hover:bg-bg-sunken transition-colors border-t border-line"
-            >
-              <Icon name="help" size={20} className="text-c-teal" />Feedback
-            </a>
+          <div
+            role="menu"
+            className="absolute bottom-full left-2 right-2 mb-1.5 bg-bg-raised border border-line rounded-2xl shadow-pop overflow-hidden animate-pop z-50"
+          >
+            {(verified
+              ? [
+                  { icon: "account_circle", tint: "text-c-blue", label: "Profile", go: () => setActive("profile") },
+                  { icon: "settings", tint: "text-c-violet", label: "Settings", go: () => setActive("settings") },
+                  { icon: "help", tint: "text-c-teal", label: "Support", go: () => onSupport?.() },
+                  { icon: "logout", tint: "text-c-red", label: "Sign out", go: () => onSignOut?.(), danger: true },
+                ]
+              : [
+                  { icon: "login", tint: "text-c-blue", label: "Sign in", go: () => onSignOut?.() },
+                  { icon: "help", tint: "text-c-teal", label: "Support", go: () => onSupport?.() },
+                ]
+            ).map((it) => (
+              <button
+                key={it.label}
+                role="menuitem"
+                onClick={() => { setMenuOpen(false); it.go(); }}
+                className={cx(
+                  "w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors",
+                  "hover:bg-black/[0.04] dark:hover:bg-white/[0.06]",
+                  it.danger ? "text-c-red" : "text-ink"
+                )}
+              >
+                <Icon name={it.icon} size={20} className={it.tint} />
+                <span className="text-base font-medium">{it.label}</span>
+              </button>
+            ))}
           </div>
         )}
 
-        {/* Account row. Doubles as the Profile nav item and the menu trigger:
-            the avatar goes to the profile, the chevron opens preferences. */}
-        <div
+        <button
+          onClick={() => setMenuOpen((v) => !v)}
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          title={user?.name || "Account"}
           className={cx(
-            "flex items-center gap-2.5 rounded-full p-1.5 transition-colors",
-            active === "profile" ? "bg-black/[0.05] dark:bg-white/[0.08]" : "hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
+            "w-full flex items-center gap-2.5 rounded-full p-1.5 transition-colors",
+            menuOpen || active === "profile"
+              ? "bg-black/[0.05] dark:bg-white/[0.08]"
+              : "hover:bg-black/[0.04] dark:hover:bg-white/[0.06]"
           )}
         >
-          <button
-            onClick={() => setActive("profile")}
-            title="Profile"
-            className="flex items-center gap-2.5 min-w-0 flex-1 text-left"
-          >
-            <Avatar name={user?.name || "Guest"} size={32} ring={active === "profile"} />
-            <span className="hidden xl:block min-w-0 leading-tight">
-              <span className="block text-base font-bold text-ink truncate">{user?.name || "Guest"}</span>
-              <span className={cx("block text-2xs truncate", verified ? "text-c-green font-semibold" : "text-ink-2")}>
-                {verified ? "Signed in" : "Browsing as guest"}
-              </span>
+          <Avatar name={user?.name || "Guest"} size={32} ring={verified} />
+          <span className="hidden xl:block min-w-0 leading-tight flex-1 text-left">
+            <span className="block text-base font-bold text-ink truncate">{user?.name || "Guest"}</span>
+            <span className={cx("block text-2xs truncate", verified ? "text-c-green font-semibold" : "text-ink-2")}>
+              {verified ? "Signed in" : "Browsing as guest"}
             </span>
-          </button>
-          <button
-            onClick={() => setMenuOpen((v) => !v)}
-            aria-label="Preferences"
-            aria-expanded={menuOpen}
-            title="Preferences"
-            className={cx(
-              "grid place-items-center w-8 h-8 rounded-full shrink-0 transition-colors",
-              "hover:bg-black/[0.06] dark:hover:bg-white/[0.10]",
-              menuOpen && "bg-black/[0.06] dark:bg-white/[0.10]"
-            )}
-          >
-            <Icon name={menuOpen ? "expand_more" : "expand_less"} size={20} className="text-ink-2" />
-          </button>
-        </div>
+          </span>
+          <Icon
+            name={menuOpen ? "expand_more" : "expand_less"}
+            size={20}
+            className="hidden xl:block text-ink-2 shrink-0 mr-1"
+          />
+        </button>
 
         {/* Legal — moved here from the Home rail so it sits at the bottom of
             the app chrome instead of at the bottom of one page's sidebar. */}

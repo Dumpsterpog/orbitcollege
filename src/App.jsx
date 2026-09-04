@@ -651,13 +651,21 @@ export default function App() {
   return (
     <div className={shellClassApp} style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
       <style>{FONT_IMPORT}</style>
-      <Sidebar
-        active={activeTab} setActive={goToTab}
-        onTeaClick={openTea} onSearchClick={openSearch} onCreateClick={openCreate} onPostClick={openComposer}
-        onOpenSettings={() => goToTab("settings")}
-        verified={user.verified} user={user} theme={theme} onToggleTheme={toggleTheme}
-        joinedCount={joinedIds.length}
-        onUnbuilt={(m) => showToast(m)} />
+        <Sidebar
+          active={activeTab}
+          setActive={goToTab}
+          onTeaClick={openTea}
+          onSearchClick={openSearch}
+          onCreateClick={openCreate}
+          onPostClick={openComposer}
+          verified={user.verified}
+          user={user}
+          onUnbuilt={showToast}
+          joinedCommunities={joinedCommunities}
+          onOpenCommunity={setSelectedCommunity}
+          onSupport={() => showToast("Email team.orbit@gmail.com and we will answer")}
+          onSignOut={goToInitialPage}
+        />
       <div className="flex-1 flex flex-col overflow-hidden lg:h-full min-w-0">
       {!showingSubPage && (
         <TopBar notifOpen={notifOpen} setNotifOpen={setNotifOpen}
