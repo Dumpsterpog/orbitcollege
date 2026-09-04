@@ -274,7 +274,13 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
   //   reconciliation. onSnapshot delivers the whole current list.
   useEffect(() => {
     const stopPosts = db.watchCommunityPosts(c.id, setPosts);
-    const stopMessages = db.watchMessages(c.id, setChatMessages);
+    // Chat is members-only by rule, so subscribing as a non-member is a query
+    // we already know will be refused. Issuing it anyway produced a
+    // permission-denied in the console on every community you had not joined,
+    // which buried the denials that actually meant something.
+    const stopMessages = joined
+      ? db.watchMessages(c.id, setChatMessages)
+      : (setChatMessages([]), () => {});
 
     let cancelled = false;
     db.fetchMembers(c.id).then((m) => { if (!cancelled) setMembers(m); });
@@ -284,7 +290,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
 
     return () => { cancelled = true; stopPosts(); stopMessages(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [c.id, authUserId]);
+  }, [joined, c.id, authUserId]);
 
   const total = members.length || c.members;
   const filteredMembers = useMemo(() => {

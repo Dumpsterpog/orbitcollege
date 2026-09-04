@@ -98,7 +98,15 @@ export const mapPost = (d) => {
     id: d.id,
     // A collectionGroup query loses the parent path unless it is read back
     // off the ref, which is how a feed post knows which community it is in.
-    communityId: r.communityId || d.ref.parent.parent?.id || null,
+    // Taken from the document path, never from the stored field.
+    //
+    // The path cannot lie about where a document lives; a field duplicating it
+    // can. Reading the field first meant a root post could set communityId to
+    // any community and be rendered as though it belonged there, which is why
+    // the create rule had to police the field -- and policing it coupled the
+    // rules to the exact shape of one client write, so publishing new rules
+    // against an older deployed bundle refused every post.
+    communityId: d.ref.parent.parent?.id || null,
     authorId: r.authorId,
     who: r.authorName || "Someone",
     text: r.text || "",
@@ -416,13 +424,9 @@ const postRef = (communityId, postId) =>
 export async function createPost({ communityId = null, authorId, authorName, text, imageUrl = null }) {
   need();
   const ref = await addDoc(postsRef(communityId), {
-    // A campus post omits communityId entirely rather than writing null.
-    // The rule that keeps a root post from claiming a community checks
-    // `!('communityId' in request.resource.data)`, which is unambiguous;
-    // comparing a stored null against null in rules is not, and getting it
-    // wrong costs a flat permission-denied with nothing to read.
-    // mapPost already recovers the id from the document path, so a missing
-    // field maps back to null on the way out.
+    // Kept for a community post because the admin tool reads it when listing
+    // across communities. Never written for a campus post, and never read back
+    // by the app: mapPost takes the community from the document path.
     ...(communityId ? { communityId } : {}),
     authorId,
     authorName: authorName || "Someone", // denormalised: Firestore has no join

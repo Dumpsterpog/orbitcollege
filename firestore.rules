@@ -167,16 +167,20 @@ service cloud.firestore {
     match /posts/{postId} {
       allow read: if true;
 
-      // The post must not claim a community.
+      // No condition on communityId, deliberately.
       //
-      // Checked with `in` rather than `== null`. A campus post omits the field
-      // entirely (see createPost), and asking whether a key is present is
-      // unambiguous, where comparing a stored null against null in rules is
-      // not -- and when that comparison goes the wrong way the result is a
-      // flat permission-denied with nothing in it to debug.
+      // Two earlier versions of this rule policed that field -- first
+      // `== null`, then `!('communityId' in ...)` -- to stop a root post
+      // claiming to belong to a community. Both worked only against one exact
+      // client write, so publishing rules against an older deployed bundle
+      // refused every post, with a flat permission-denied naming nothing.
+      //
+      // The check is gone because the problem is gone: mapPost now takes a
+      // post's community from its document path instead of this field. A path
+      // cannot lie about where a document lives. The field is no longer read
+      // by the app at all, so there is nothing left to forge.
       allow create: if signedIn()
         && request.resource.data.authorId == request.auth.uid
-        && !('communityId' in request.resource.data)
         && request.resource.data.text is string
         && request.resource.data.text.size() <= 2000;
 
