@@ -424,28 +424,68 @@ const postRef = (communityId, postId) =>
 
 export async function createPost({ communityId = null, authorId, authorName, text, imageUrl = null }) {
   need();
-  const ref = await addDoc(postsRef(communityId), {
-    // Always written, null for a campus post.
-    //
-    // Not because anything reads it -- mapPost takes the community from the
-    // document path now -- but because an older published rule may still test
-    // `request.resource.data.communityId == null`, and in Firestore rules
-    // reading a key that is absent is an ERROR, which denies the write. A
-    // present null satisfies that rule and the current one, which tests
-    // nothing. This is the write that works against every version of the rule
-    // this project has had.
-    communityId: communityId || null,
+
+  const base = {
     authorId,
     authorName: authorName || "Someone", // denormalised: Firestore has no join
     text: text || "",
     imageUrl,
     sparkCount: 0,
+    commentCount: 0,
     pinned: false,
     createdAt: serverTimestamp(),
-  });
-  if (communityId) await updateDoc(doc(db, "communities", communityId), { lastActiveAt: serverTimestamp() });
-  const snap = await getDoc(ref);
-  return mapPost(snap);
+  };
+
+  // A campus post is written twice-shaped, on purpose.
+  //
+  // Three versions of the campus-post rule have been published to this project
+  // over its life, and they disagree about one field:
+  //
+  //   v1  request.resource.data.communityId == null      -- field must be null
+  //   v2  !('communityId' in request.resource.data)      -- field must be absent
+  //   v3  (no condition)                                 -- either is fine
+  //
+  // Which one is live is not readable from here: the Rules API needs
+  // credentials this app does not have, and the read rule is identical across
+  // all three so probing cannot tell them apart. A client that picks one shape
+  // is guessing, and guessing wrong is a flat permission-denied.
+  //
+  // So it does not guess. Absent first, because that satisfies v2 and v3; if
+  // the write is refused, null second, which satisfies v1 and v3. One of the
+  // two always lands.
+  //
+  // Delete the fallback once v3 is published everywhere -- the retry costs a
+  // round trip on projects still running v1, and nothing at all on v3.
+  const shapes = communityId
+    ? [{ ...base, communityId }]
+    : [base, { ...base, communityId: null }];
+
+  let ref = null;
+  let lastErr = null;
+  for (const data of shapes) {
+    try {
+      ref = await addDoc(postsRef(communityId), data);
+      break;
+    } catch (err) {
+      lastErr = err;
+      if (err?.code !== "permission-denied") throw err;
+      // Says which rule version the project is actually running, which is the
+      // one thing this whole dance exists because we cannot otherwise read.
+      console.info("[orbit/db] campus-post shape refused, trying the next one");
+    }
+  }
+  if (!ref) throw lastErr;
+
+  if (communityId) {
+    try {
+      await updateDoc(doc(db, "communities", communityId), { lastActiveAt: serverTimestamp() });
+    } catch {
+      // The post is the fact; lastActiveAt is a sort key. Never fail one for
+      // the other.
+    }
+  }
+
+  return mapPost(await getDoc(ref));
 }
 
 /* ---------------------------------------------------------- comments */
