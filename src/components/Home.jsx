@@ -45,15 +45,19 @@ function PostSkeleton() {
 
 /* --------------------------------------------------------------- Search */
 
-// Opens the real search surface rather than filtering in place. Typing into
-// a field that then throws the keystrokes away on navigation would be worse
-// than not looking like a field, so it hands off on the first key.
+// Lives at the top of the rail, the way X's does, rather than above the feed.
+// A feed column should start with the feed; search is a tool you reach for, so
+// it belongs in the column of tools.
+//
+// Still a button rather than a field: typing here and having the keystrokes
+// thrown away on navigation is worse than not looking like a field at all, so
+// it hands off to the real search surface on the first key.
 function SearchBar({ onOpen }) {
   return (
     <div className="relative">
       <Icon
         name="search"
-        size={20}
+        size={19}
         className="absolute left-4 top-1/2 -translate-y-1/2 text-ink-3 pointer-events-none"
       />
       <input
@@ -61,8 +65,8 @@ function SearchBar({ onOpen }) {
         onFocus={onOpen}
         onClick={onOpen}
         onKeyDown={(e) => { if (e.key !== "Tab") onOpen(); }}
-        placeholder="Search communities, clubs or events"
-        className="w-full h-11 pl-12 pr-4 rounded-full bg-bg-sunken text-ink placeholder:text-ink-3 text-base
+        placeholder="Search Orbit"
+        className="w-full h-11 pl-11 pr-4 rounded-full bg-bg-sunken text-ink placeholder:text-ink-3 text-base
           border border-transparent cursor-pointer transition-colors
           hover:bg-black/[0.06] dark:hover:bg-white/[0.10]
           focus:outline-none focus:border-line-strong focus:bg-bg"
@@ -454,15 +458,39 @@ export function HomeScreen({
     [communities, joinedIds]
   );
 
+  // Which topics campus is actually posting in, counted from the feed itself.
+  // The mock shows hashtags with post counts; Orbit has no hashtags, but it
+  // does know every post's community and every community's category, and that
+  // answers the same question honestly.
+  const trending = useMemo(() => {
+    const counts = new Map();
+    for (const post of allPosts) {
+      const c = communities.find((x) => x.id === post.communityId);
+      if (!c?.category) continue;
+      const prev = counts.get(c.category) || { posts: 0, communities: new Set() };
+      prev.posts += 1;
+      prev.communities.add(c.id);
+      counts.set(c.category, prev);
+    }
+    return [...counts.entries()]
+      .map(([name, v]) => ({ name, posts: v.posts, communities: v.communities.size }))
+      .sort((x, y) => y.posts - x.posts)
+      .slice(0, 4);
+  }, [allPosts, communities]);
+
   const showScope = allPosts.length > 0 && joined.length > 0;
 
   return (
     <Screen>
-      <div className="w-full mx-auto px-5 sm:px-6 grid justify-center gap-8 xl:gap-10 grid-cols-1 max-w-[1000px] lg:grid-cols-[minmax(0,620px)_300px]">
+      <div className="w-full mx-auto px-5 sm:px-6 grid justify-center gap-8 xl:gap-10 grid-cols-1 max-w-[1060px] lg:grid-cols-[minmax(0,620px)_350px]">
         {/* Feed */}
         <div className="min-w-0 pt-6 pb-20">
           <div className="space-y-3">
-            <SearchBar onOpen={onSearchClick} />
+            {/* Search moved to the rail; on narrow screens there is no rail,
+                so it stays reachable here. */}
+            <div className="lg:hidden">
+              <SearchBar onOpen={onSearchClick} />
+            </div>
 
             {canPost && <ComposerBar user={{ ...user, name: userName }} onOpen={openComposer} />}
 
@@ -572,7 +600,9 @@ export function HomeScreen({
             empty campus and a busy one. Each block hides only when it has
             genuinely nothing to say. */}
         <aside className="hidden lg:block pt-6 pb-20">
-          <div className="sticky top-6 max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar pr-1 space-y-8">
+          <div className="sticky top-6 max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar pr-1 space-y-4">
+            <SearchBar onOpen={onSearchClick} />
+
             {suggested.length > 0 && (
               <RailCard
                 title={joined.length ? "More to join" : "Start here"}
@@ -604,6 +634,41 @@ export function HomeScreen({
                 </p>
               )}
             </RailCard>
+
+            {trending.length > 0 && (
+              <RailCard title="Trending on campus" action="Explore" onAction={onGoToExplore}>
+                {trending.map((t) => {
+                  const cat = CATEGORIES.find((x) => x.name === t.name);
+                  return (
+                    <button
+                      key={t.name}
+                      onClick={onGoToExplore}
+                      className="group w-full flex items-center gap-3 px-4 py-3 text-left
+                        border-b border-line last:border-0 hover:bg-bg-sunken/60 transition-colors"
+                    >
+                      <Icon name={cat?.msr || "tag"} size={20} className={cat?.tint || "text-ink-3"} />
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-base font-semibold text-ink truncate group-hover:opacity-70 transition-opacity">
+                          {t.name}
+                        </span>
+                        <span className="block text-2xs text-ink-2 mt-0.5">
+                          {t.posts} {t.posts === 1 ? "post" : "posts"} · {t.communities}{" "}
+                          {t.communities === 1 ? "community" : "communities"}
+                        </span>
+                      </span>
+                      <Icon name="chevron_right" size={18} className="text-ink-3 shrink-0" />
+                    </button>
+                  );
+                })}
+              </RailCard>
+            )}
+
+            <nav className="px-1 pt-1 flex flex-wrap gap-x-3 gap-y-1 text-2xs text-ink-3">
+              <a href="/terms" className="hover:text-ink-2 hover:underline transition-colors">Terms</a>
+              <a href="/privacy" className="hover:text-ink-2 hover:underline transition-colors">Privacy</a>
+              <button onClick={onGoToExplore} className="hover:text-ink-2 hover:underline transition-colors">Explore</button>
+              <span className="w-full">&copy; 2026 Orbit</span>
+            </nav>
           </div>
         </aside>
       </div>
