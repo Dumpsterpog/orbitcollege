@@ -430,8 +430,8 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
               <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full bg-accent-wash text-accent text-2xs font-semibold"><Icon name="trending_up" size={10} className="text-c-green" />#{trendRank}</span>
             )}
             {isAdmin
-              ? <IconButton icon={Settings} label="Community settings" size="sm" onClick={() => setSettingsOpen(true)} />
-              : <Button variant="ghost" size="sm" icon={Flag} onClick={onReport}>Report</Button>}
+              ? <IconButton icon="settings" label="Community settings" size={20} onClick={() => setSettingsOpen(true)} />
+              : <Button variant="ghost" size="sm" icon="flag" onClick={onReport}>Report</Button>}
           </>
         }
       />
@@ -478,7 +478,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
           {c.desc && <p className="text-sm text-ink-2 leading-relaxed mt-3.5">{c.desc}</p>}
 
           <div className="flex items-center gap-1.5 mt-3.5 flex-wrap">
-            <Button variant="secondary" size="sm" icon={QrCode} onClick={() => setQrOpen(true)}>QR</Button>
+            <Button variant="secondary" size="sm" icon="qr_code_2" onClick={() => setQrOpen(true)}>QR</Button>
             <button
               onClick={() => onSpark(c.id)}
               aria-pressed={sparked}

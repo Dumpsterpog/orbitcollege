@@ -203,6 +203,43 @@ service cloud.firestore {
       allow update, delete: if isAdmin();
     }
 
+    /* ------------------------------------------ collection-group queries */
+
+    // These six blocks are not duplicates of the nested rules above. They are
+    // the only thing that authorises a collectionGroup() query, and without
+    // them every cross-community read in db.js fails.
+    //
+    // A nested `match /communities/{id}/posts/{postId}` authorises reading
+    // posts *of one known community*. It does NOT authorise
+    // `collectionGroup(db, "posts")`, which reads across every community at
+    // once and is matched only by the `/{path=**}/posts/{postId}` form. Miss
+    // this and the failure is maximally confusing: permission-denied on a
+    // collection whose nested rule plainly says the read is allowed, and a UI
+    // that renders as an empty database rather than as an error.
+    //
+    // Each one mirrors the permission of its nested twin, so nothing is
+    // widened here. Where the nested rule is owner-only, the group rule
+    // requires the query to filter on uid -- Firestore only permits a query
+    // it can prove matches solely documents the rule allows, so the
+    // constraint in db.js and the condition here have to agree.
+
+    // Public campus content: the home feed, member lists, spark and
+    // registration counts. All `if true` above, all `if true` here.
+    match /{path=**}/posts/{postId}   { allow read: if true; }
+    match /{path=**}/members/{uid}    { allow read: if true; }
+    match /{path=**}/sparks/{uid}     { allow read: if true; }
+    match /{path=**}/registrations/{uid} { allow read: if true; }
+
+    // Private: your own Locali-Tea votes and reactions, and nobody else's.
+    // fetchMyTeaVotes/fetchMyTeaReactions filter on uid, which is what makes
+    // this satisfiable.
+    match /{path=**}/votes/{uid} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+    match /{path=**}/reactions/{uid} {
+      allow read: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
     // Anything not named above is denied. New collections have to be added
     // here deliberately rather than inheriting a permissive default.
     match /{document=**} {

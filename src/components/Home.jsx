@@ -91,15 +91,37 @@ function ComposerBar({ user, onOpen }) {
 function ComposerModal({ user, communities, onClose, onSubmit }) {
   const [communityId, setCommunityId] = useState(communities[0]?.id || null);
   const [text, setText] = useState("");
+  const [file, setFile] = useState(null);
+  const [preview, setPreview] = useState(null);
   const [busy, setBusy] = useState(false);
 
+  // An object URL is a live handle into memory, not a string. Dropping the
+  // reference without revoking it leaks the whole image for the tab's life.
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
+
   const target = communities.find((c) => c.id === communityId);
-  const canPost = !!text.trim() && !!communityId && !busy;
+  // A photo on its own is a post. Requiring text as well would make the
+  // attach button useless for the case people actually want it for.
+  const canPost = (!!text.trim() || !!file) && !!communityId && !busy;
+
+  const attach = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (preview) URL.revokeObjectURL(preview);
+    setFile(f);
+    setPreview(URL.createObjectURL(f));
+  };
+
+  const clearPhoto = () => {
+    if (preview) URL.revokeObjectURL(preview);
+    setFile(null);
+    setPreview(null);
+  };
 
   const submit = async () => {
     if (!canPost) return;
     setBusy(true);
-    const ok = await onSubmit(communityId, text);
+    const ok = await onSubmit(communityId, text, file);
     setBusy(false);
     if (ok) onClose();
   };
@@ -110,9 +132,19 @@ function ComposerModal({ user, communities, onClose, onSubmit }) {
       onClose={onClose}
       width="max-w-lg"
       footer={
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <label
+            title="Add a photo"
+            className="inline-grid place-items-center w-9 h-9 rounded-full shrink-0 cursor-pointer
+              text-c-teal hover:bg-black/[0.05] dark:hover:bg-white/[0.08] transition-colors"
+          >
+            <Icon name="photo_camera" size={20} />
+            <input type="file" accept="image/*" className="hidden" onChange={attach} />
+          </label>
           <span className="text-xs text-ink-3 tabular-nums">{text.length}/2000</span>
-          <Button tone="blue" size="md" onClick={submit} disabled={!canPost} loading={busy}>Post</Button>
+          <Button tone="blue" size="md" onClick={submit} disabled={!canPost} loading={busy} className="ml-auto">
+            Post
+          </Button>
         </div>
       }
     >
@@ -137,11 +169,25 @@ function ComposerModal({ user, communities, onClose, onSubmit }) {
             })}
           </div>
           <Textarea
-            autoFocus rows={6} maxLength={2000} value={text}
+            autoFocus rows={preview ? 3 : 6} maxLength={2000} value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder={target ? `Share something with ${nameHead(target.name)}…` : "Pick a community first"}
             className="bg-transparent px-0 text-md"
           />
+
+          {preview && (
+            <div className="relative mt-1">
+              <img src={preview} alt="" className="w-full max-h-72 object-cover rounded-xl border border-line" />
+              <button
+                onClick={clearPhoto}
+                aria-label="Remove photo"
+                className="absolute top-2 right-2 grid place-items-center w-7 h-7 rounded-full
+                  bg-black/60 text-white backdrop-blur-sm hover:bg-black/75 transition-colors"
+              >
+                <Icon name="close" size={15} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </Modal>
@@ -475,19 +521,25 @@ export function HomeScreen({
               </section>
             )}
 
-            {openEvents.length > 0 && (
-              <section>
-                <RailHead
-                  title="Upcoming"
-                  count={openEvents.length}
-                  action="All"
-                  onAction={onGoToEvents}
-                />
-                {openEvents.slice(0, 5).map((e) => (
+            {/* Always rendered, even empty. An events box that vanishes when
+                there are no events teaches nobody that events exist. */}
+            <section>
+              <RailHead
+                title="Upcoming"
+                count={openEvents.length}
+                action={openEvents.length > 0 ? "All" : undefined}
+                onAction={onGoToEvents}
+              />
+              {openEvents.length > 0 ? (
+                openEvents.slice(0, 5).map((e) => (
                   <EventRow key={e.id} e={e} onRegister={onRegisterEvent} onOpen={onGoToEvents} />
-                ))}
-              </section>
-            )}
+                ))
+              ) : (
+                <p className="text-base text-ink-2 py-5 leading-relaxed">
+                  No upcoming events.
+                </p>
+              )}
+            </section>
           </div>
         </aside>
       </div>

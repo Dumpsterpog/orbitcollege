@@ -240,18 +240,28 @@ export default function App() {
   // except the community is chosen in the composer instead of being implied
   // by which page you're on — which is what makes Home a feed you can post
   // to rather than a feed you can only read.
-  const handleCreatePost = async (communityId, text) => {
+  const handleCreatePost = async (communityId, text, file = null) => {
     if (!user.verified || !authUser) { handleBlocked(); return false; }
     const body = text.trim();
-    if (!body || !communityId) return false;
+    // A photo with no caption is a valid post, so only the pair being empty
+    // is a reason to refuse.
+    if ((!body && !file) || !communityId) return false;
 
     let created;
     try {
+      // Upload first. A post that references an image which failed to upload
+      // is worse than no post, and this way a storage failure costs nothing.
+      let imageUrl = null;
+      if (file) {
+        showToast("Uploading photo…");
+        ({ url: imageUrl } = await db.uploadImage("community-media", file, authUser.id));
+      }
       created = await db.createPost({
         communityId,
         authorId: authUser.id,
         authorName: user.name,
         text: body,
+        imageUrl,
       });
     } catch {
       showToast("Couldn't post, try again");
