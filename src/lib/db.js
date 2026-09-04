@@ -257,10 +257,35 @@ export async function deleteCommunity(id) {
 
 /* ---------------------------------------------------------- members */
 
+
+// The three "what has this person done" lookups below are collectionGroup
+// queries filtered on uid, and each needs its own index. Without it Firestore
+// throws failed-precondition, which surfaced as an unhandled promise rejection
+// and left the app believing you had joined nothing.
+//
+// So: try the indexed query, and if the index is missing, walk the parents
+// instead. That is N+1 reads rather than one, which is the wrong shape at
+// scale and completely fine for one campus -- and it means a fresh project
+// works before anyone has opened the Firebase console.
+async function groupByUid(groupName, parentPath, uid, pick) {
+  try {
+    const snap = await getDocs(query(collectionGroup(db, groupName), where("uid", "==", uid)));
+    return snap.docs.map(pick).filter(Boolean);
+  } catch (err) {
+    if (err?.code !== "failed-precondition") { watchFailed(err); return []; }
+    const parents = await getDocs(collection(db, parentPath));
+    const hits = await Promise.all(parents.docs.map(async (p) => {
+      const d = await getDoc(doc(db, parentPath, p.id, groupName, uid));
+      return d.exists() ? { id: p.id, doc: d } : null;
+    }));
+    return hits.filter(Boolean);
+  }
+}
+
 export async function fetchMyJoins(uid) {
   if (!firebaseReady || !uid) return [];
-  const snap = await getDocs(query(collectionGroup(db, "members"), where("uid", "==", uid)));
-  return snap.docs.map((d) => d.ref.parent.parent?.id).filter(Boolean);
+  const rows = await groupByUid("members", "communities", uid, (d) => d.ref.parent.parent?.id);
+  return rows.map((r) => (typeof r === "string" ? r : r.id));
 }
 
 // Membership and the count move together, so they cannot disagree.
@@ -310,9 +335,25 @@ export async function setMemberRole(communityId, uid, role) {
 // print a click-to-create link the first time this runs.
 export function watchFeed(cb, max = 40) {
   if (!firebaseReady) { cb([]); return () => {}; }
+  // Deliberately no orderBy.
+  //
+  // Sorting a collectionGroup on the server needs a COLLECTION_GROUP_DESC
+  // index, which does not exist on a fresh project and cannot be created from
+  // code -- and the failure renders as an empty feed rather than an error, so
+  // it reads as "nothing posted yet". Sorting here is one pass over at most a
+  // few hundred documents and removes that setup step entirely.
+  //
+  // The index is still the right answer once this outgrows a single campus;
+  // firestore.indexes.json documents it. Add it and this can go back to an
+  // ordered, server-limited query.
   return onSnapshot(
-    query(collectionGroup(db, "posts"), orderBy("createdAt", "desc"), limit(max)),
-    (snap) => cb(snap.docs.map(mapPost)),
+    query(collectionGroup(db, "posts")),
+    (snap) => cb(
+      snap.docs
+        .map(mapPost)
+        .sort((x, y) => (y.createdAt?.getTime() || 0) - (x.createdAt?.getTime() || 0))
+        .slice(0, max)
+    ),
     (err) => { watchFailed(err); cb([]); }
   );
 }
@@ -369,8 +410,17 @@ export async function setPostPinned(communityId, postId, pinned) {
 
 export async function fetchMySparks(uid) {
   if (!firebaseReady || !uid) return [];
-  const snap = await getDocs(query(collectionGroup(db, "sparks"), where("uid", "==", uid)));
-  return snap.docs.map((d) => d.ref.parent.parent?.id).filter(Boolean);
+  try {
+    const snap = await getDocs(query(collectionGroup(db, "sparks"), where("uid", "==", uid)));
+    return snap.docs.map((d) => d.ref.parent.parent?.id).filter(Boolean);
+  } catch (err) {
+    // Sparks hang off posts, which are spread across every community and the
+    // root collection, so there is no cheap parent walk. Degrade to "nothing
+    // sparked": hearts render unfilled until the index exists, and sparking
+    // still works.
+    watchFailed(err);
+    return [];
+  }
 }
 
 // One spark per person per post, and the count kept in the same transaction.
@@ -453,8 +503,8 @@ export function watchEvents(cb) {
 
 export async function fetchMyRegistrations(uid) {
   if (!firebaseReady || !uid) return [];
-  const snap = await getDocs(query(collectionGroup(db, "registrations"), where("uid", "==", uid)));
-  return snap.docs.map((d) => d.ref.parent.parent?.id).filter(Boolean);
+  const rows = await groupByUid("registrations", "events", uid, (d) => d.ref.parent.parent?.id);
+  return rows.map((r) => (typeof r === "string" ? r : r.id));
 }
 
 // The register_for_event() plpgsql function, as a transaction. Registering is

@@ -124,11 +124,15 @@ export default function App() {
   // silently come back empty (200 OK, not an error) and wipe joinedIds /
   // registeredEventIds, which would visibly flip "Joined ✓" back to "Join"
   // even though the membership/registration row was never actually deleted.
+  // db.js degrades rather than throwing for these, but a rejection here would
+  // otherwise be unhandled and take out whatever called it.
   const fetchMyJoins = useCallback(async (userId) => {
-    setJoinedIds(await db.fetchMyJoins(userId));
+    try { setJoinedIds(await db.fetchMyJoins(userId)); }
+    catch (e) { console.error("[orbit] fetchMyJoins", e); }
   }, []);
   const fetchMyRegistrations = useCallback(async (userId) => {
-    setRegisteredEventIds(await db.fetchMyRegistrations(userId));
+    try { setRegisteredEventIds(await db.fetchMyRegistrations(userId)); }
+    catch (e) { console.error("[orbit] fetchMyRegistrations", e); }
   }, []);
 
   // Communities, events and the feed are all live subscriptions now. In
@@ -147,7 +151,9 @@ export default function App() {
   useEffect(() => {
     if (!authUser) { setFeedSparkIds([]); return; }
     let alive = true;
-    db.fetchMySparks(authUser.id).then((ids) => { if (alive) setFeedSparkIds(ids); });
+    db.fetchMySparks(authUser.id)
+      .then((ids) => { if (alive) setFeedSparkIds(ids); })
+      .catch((e) => console.error("[orbit] fetchMySparks", e));
     return () => { alive = false; };
   }, [authUser]);
 
@@ -265,8 +271,17 @@ export default function App() {
         text: body,
         imageUrl,
       });
-    } catch {
-      showToast("Couldn't post, try again");
+    } catch (err) {
+      // "Try again" is the wrong advice for the two failures that actually
+      // happen here, and retrying makes neither of them better. Say which.
+      console.error("[orbit] post failed", err);
+      showToast(
+        err?.code === "permission-denied"
+          ? "Post refused. Publish firestore.rules, or join the community first"
+          : err?.code === "unauthenticated"
+            ? "Signed out. Sign in and try again"
+            : `Couldn't post (${err?.code || "unknown error"})`
+      );
       return false;
     }
 
