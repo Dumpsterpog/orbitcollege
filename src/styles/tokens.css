@@ -71,6 +71,17 @@
   --c-teal: 0 122 130;
   --c-red: 210 43 43;
 
+  /* Compose.
+   *
+   * Its own token rather than a reuse of --c-blue, because blue is the active
+   * nav state and the one filled action should not look like the row you are
+   * standing on. The --c-* colours cannot serve here either: they are tuned as
+   * text on a page, so the dark-mode values are light enough that white on top
+   * of them fails contrast. This pair is tuned the other way round -- a fill
+   * dark enough for white text in both themes. */
+  --compose: 7 120 94;
+  --compose-ink: 255 255 255;
+
   --radius-sm: 6px;
   --radius: 10px;
   --radius-lg: 16px;
@@ -115,6 +126,12 @@
   --c-amber: 240 190 100;
   --c-green: 92 208 143;
   --c-teal: 90 214 222;
+  /* 4.54:1 against white text and 4.36:1 against the page, so the label is
+     readable and the button is still clearly a button on a near-black
+     background. Lifting it further to make it pop would drop the label below
+     AA, which is the wrong trade on the one control the rail is built around. */
+  --compose: 12 134 104;
+  --compose-ink: 255 255 255;
   --c-red: 255 122 114;
 
 }

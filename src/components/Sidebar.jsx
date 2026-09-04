@@ -112,10 +112,10 @@ export function Sidebar({
       {/* Brand */}
       <div className="px-3 xl:px-4 pt-4 pb-2 shrink-0">
         <button onClick={() => setActive("home")} className="flex items-center gap-2.5 group w-full" aria-label="Orbit home">
-          <span className="grid place-items-center w-8 h-8 rounded-xl shrink-0
-            bg-gradient-to-tr from-c-blue to-c-violet shadow-sm group-hover:scale-105 transition-transform duration-200">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="white"
-                 strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+          <span className="grid place-items-center w-8 h-8 shrink-0 text-ink
+            group-hover:scale-105 transition-transform duration-200">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor"
+                 strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="3" /><circle cx="19" cy="5" r="2" /><circle cx="5" cy="19" r="2" />
               <path d="M10.4 21.9a10 10 0 0 0 9.941-15.416" /><path d="M13.5 2.1a10 10 0 0 0-9.841 15.416" />
             </svg>
@@ -130,11 +130,11 @@ export function Sidebar({
           onClick={onPostClick}
           title="Compose a post"
           className="w-full flex items-center justify-center gap-2 rounded-xl py-2.5 px-4
-            bg-c-blue text-white text-[13px] font-semibold shadow-lift
+            bg-compose text-compose-ink text-[13px] font-semibold shadow-lift
             hover:brightness-110 active:scale-[0.98] transition-all"
         >
           <Icon name="edit_square" size={17} />
-          <span className="hidden xl:inline">Compose Post</span>
+          <span className="hidden xl:inline">Post</span>
         </button>
       </div>
 

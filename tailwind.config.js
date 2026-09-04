@@ -41,6 +41,7 @@ export default {
 
         // Expressive palette — assigned by meaning, used on both icons and
         // text (all values clear 4.5:1 on their theme's surface).
+        compose: { DEFAULT: v("--compose"), ink: v("--compose-ink") },
         c: {
           blue: v("--c-blue"),
           violet: v("--c-violet"),
