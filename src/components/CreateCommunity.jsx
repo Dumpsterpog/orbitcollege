@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CATEGORIES } from "../data/constants.js";
 import { Icon, Button, Input, Textarea, Field, cx } from "./ui/Primitives.jsx";
 import { Screen, Column, Empty } from "./ui/Layout.jsx";
@@ -7,7 +7,7 @@ import { Screen, Column, Empty } from "./ui/Layout.jsx";
 // rather than four bordered step chips — the rule shows how far along you
 // are without adding another component to the page.
 
-const STEPS = ["Topic", "Details", "Interests", "Review"];
+const STEPS = ["Topic", "Details", "Interests", "Rules", "Review"];
 
 function Progress({ step, onJump }) {
   return (
@@ -50,6 +50,27 @@ export function CreateCommunity({ onCreate, onClose, verified, onBlocked, onVeri
   const [name, setName] = useState("");
   const [desc, setDesc] = useState("");
   const [tags, setTags] = useState([]);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  // Three blanks rather than an add-a-rule button. An empty list invites
+  // skipping the step; three prompts invite filling them, and blanks are
+  // dropped on save so nobody is forced to invent a third rule.
+  const [rules, setRules] = useState([
+    { title: "", body: "" }, { title: "", body: "" }, { title: "", body: "" },
+  ]);
+
+  useEffect(() => () => { if (avatarPreview) URL.revokeObjectURL(avatarPreview); }, [avatarPreview]);
+
+  const setRule = (i, key, val) =>
+    setRules((rs) => rs.map((r, j) => (j === i ? { ...r, [key]: val } : r)));
+
+  const pickAvatar = (e) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    if (avatarPreview) URL.revokeObjectURL(avatarPreview);
+    setAvatarFile(f);
+    setAvatarPreview(URL.createObjectURL(f));
+  };
 
   const go = (n) => { setStep(n); setReached((m) => Math.max(m, n)); };
   const toggle = (n) => setTags((t) => (t.includes(n) ? t.filter((x) => x !== n) : [...t, n]));
@@ -132,6 +153,31 @@ export function CreateCommunity({ onCreate, onClose, verified, onBlocked, onVeri
               <Field label="Description" htmlFor="cc-desc" hint="Optional: who it is for and what happens.">
                 <Textarea id="cc-desc" rows={4} maxLength={800} value={desc} onChange={(e) => setDesc(e.target.value)} />
               </Field>
+
+              <Field label="Photo" hint="Optional. A category glyph stands in until you add one.">
+                <div className="flex items-center gap-4">
+                  <span className="shrink-0 w-16 h-16 rounded-2xl overflow-hidden bg-bg-sunken grid place-items-center">
+                    {avatarPreview
+                      ? <img src={avatarPreview} alt="" className="w-full h-full object-cover" />
+                      : <Icon name={CATEGORIES.find((c) => c.name === category)?.msr || "groups"}
+                              size={28} className="text-ink-3" />}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <label className="inline-flex items-center gap-2 h-9 px-4 rounded-full cursor-pointer
+                      text-xs font-semibold bg-bg-sunken text-ink hover:opacity-80 transition-opacity">
+                      <Icon name="photo_camera" size={16} className="text-c-teal" />
+                      {avatarPreview ? "Replace" : "Upload"}
+                      <input type="file" accept="image/*" className="hidden" onChange={pickAvatar} />
+                    </label>
+                    {avatarPreview && (
+                      <Button type="button" variant="ghost" size="sm"
+                        onClick={() => { URL.revokeObjectURL(avatarPreview); setAvatarFile(null); setAvatarPreview(null); }}>
+                        Remove
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </Field>
             </div>
             <div className="flex gap-2 mt-8">
               <Button type="button" variant="soft" size="lg" onClick={() => setStep(1)}>Back</Button>
@@ -173,10 +219,55 @@ export function CreateCommunity({ onCreate, onClose, verified, onBlocked, onVeri
         )}
 
         {step === 4 && (
+          <form onSubmit={(e) => { e.preventDefault(); go(5); }}>
+            <h2 className="text-xl font-semibold text-ink">House rules</h2>
+            <p className="text-base text-ink-2 mt-1 mb-6">
+              Shown on the community page. Leave any blank and it is dropped, but a community
+              with rules gets reported a lot less than one without.
+            </p>
+
+            <div className="space-y-5">
+              {rules.map((r, i) => (
+                <div key={i} className="flex gap-3.5">
+                  <span className="font-mono text-md tabular-nums text-ink-3 pt-2.5 select-none">
+                    {i + 1}
+                  </span>
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <Input
+                      value={r.title}
+                      maxLength={60}
+                      onChange={(e) => setRule(i, "title", e.target.value)}
+                      placeholder={["Be useful", "No self-promotion", "Keep it on topic"][i]}
+                    />
+                    <Textarea
+                      rows={2}
+                      maxLength={200}
+                      value={r.body}
+                      onChange={(e) => setRule(i, "body", e.target.value)}
+                      placeholder="One line on what that means here. Optional."
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2 mt-8">
+              <Button type="button" variant="soft" size="lg" onClick={() => setStep(3)}>Back</Button>
+              <Button type="submit" variant="primary" size="lg" className="flex-1">Continue</Button>
+            </div>
+          </form>
+        )}
+
+        {step === 5 && (
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              onCreate({ name, category, desc, tags: tags.length ? tags : [category] });
+              onCreate({
+                name, category, desc,
+                tags: tags.length ? tags : [category],
+                rules: rules.filter((r) => r.title.trim()),
+                avatarFile,
+              });
             }}
           >
             <h2 className="text-xl font-semibold text-ink">Review</h2>
@@ -214,7 +305,7 @@ export function CreateCommunity({ onCreate, onClose, verified, onBlocked, onVeri
             </dl>
 
             <div className="flex gap-2 mt-8">
-              <Button type="button" variant="soft" size="lg" onClick={() => setStep(3)}>Back</Button>
+              <Button type="button" variant="soft" size="lg" onClick={() => setStep(4)}>Back</Button>
               <Button type="submit" variant="primary" size="lg" className="flex-1">Create community</Button>
             </div>
           </form>

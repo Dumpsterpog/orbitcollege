@@ -98,7 +98,7 @@ function RowSkeleton() {
   );
 }
 
-export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, joinedIds = [], onJoinToggle }) {
+export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, joinedIds = [], onJoinToggle, onCreate }) {
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [scope, setScope] = useState("all");
@@ -175,6 +175,17 @@ export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, j
               </button>
             )}
           </div>
+
+          {/* Creating a community belongs here rather than in the nav rail:
+              this is the page you are on when you go looking for one and do
+              not find it. */}
+          <p className="text-base text-ink-2 text-center mt-4">
+            Not here yet?{" "}
+            <button onClick={onCreate} className="font-semibold text-accent hover:opacity-70">
+              Start a community
+            </button>
+            .
+          </p>
         </div>
 
         {/* Scope + category filters. Pills only — no segmented control with
@@ -233,7 +244,12 @@ export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, j
             icon="search_off"
             title="Nothing found"
             body="Try a different search, or clear the topic filter."
-            action={<Button tone="blue" onClick={() => { setQuery(""); setCat(null); }}>Clear filters</Button>}
+            action={
+              <div className="flex flex-wrap items-center justify-center gap-2">
+                <Button tone="blue" onClick={() => { setQuery(""); setCat(null); }}>Clear filters</Button>
+                <Button variant="outline" onClick={onCreate}>Start a community</Button>
+              </div>
+            }
           />
         ) : (
           <div className="rounded-2xl border border-line overflow-hidden">

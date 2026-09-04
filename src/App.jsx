@@ -306,7 +306,7 @@ export default function App() {
     }
   };
 
-  const handleCreate = async ({ name, category, desc, tags }) => {
+  const handleCreate = async ({ name, category, desc, tags, rules = [], avatarFile = null }) => {
     if (!authUser) { handleBlocked(); return; }
     const handle = `${slugify(name)}-${Math.random().toString(36).slice(2, 8)}`;
     // tags now comes from the creator's own multi-select (CreateCommunity
@@ -317,10 +317,24 @@ export default function App() {
     let mapped;
     try {
       mapped = await db.createCommunity({
-        name, category, desc, tags: finalTags,
+        name, category, desc, tags: finalTags, rules,
         creatorId: authUser.id,
         creatorLabel: user.name || "You",
       });
+      // The photo is uploaded after the fact because Storage paths are keyed
+      // by community id, which does not exist until the document does. A
+      // failed upload leaves a real community with no picture rather than
+      // losing the community, so it is caught separately.
+      if (avatarFile) {
+        try {
+          const { url } = await db.uploadImage("community-avatars", avatarFile, authUser.id);
+          await db.updateCommunity(mapped.id, { avatarUrl: url });
+          mapped = { ...mapped, avatarUrl: url };
+        } catch (err) {
+          console.error("[orbit] community photo upload failed", err);
+          showToast("Community created, but the photo did not upload");
+        }
+      }
     } catch {
       showToast("Couldn't create, try again");
       return;
@@ -709,7 +723,8 @@ export default function App() {
         <ExploreScreen subTab={exploreTab} setSubTab={setExploreTab} clubs={clubs} communities={communities}
           onOpen={setSelectedCommunity}
           joinedIds={joinedIds}
-          onJoinToggle={(id) => { if (!user.verified) { handleBlocked(); return; } handleJoinToggle(id); }} />
+          onJoinToggle={(id) => { if (!user.verified) { handleBlocked(); return; } handleJoinToggle(id); }}
+          onCreate={openCreate} />
       ) : activeTab === "events" ? (
         <EventsScreen
           events={events} interests={user.interests}

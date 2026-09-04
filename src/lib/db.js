@@ -80,6 +80,7 @@ export const mapCommunity = (d) => {
     tags: r.tags?.length ? r.tags : [r.category],
     desc: r.description,
     members: r.memberCount ?? 0,
+    rules: Array.isArray(r.rules) ? r.rules : [],
     creator: r.creatorLabel,
     creatorId: r.creatorId,
     official: !!r.official,
@@ -192,7 +193,7 @@ export function watchCommunities(cb) {
   );
 }
 
-export async function createCommunity({ name, category, desc, tags, creatorId, creatorLabel, official = false }) {
+export async function createCommunity({ name, category, desc, tags, rules = [], creatorId, creatorLabel, official = false }) {
   need();
   const ref = await addDoc(collection(db, "communities"), {
     name,
@@ -205,6 +206,11 @@ export async function createCommunity({ name, category, desc, tags, creatorId, c
     official,
     handle: slugify(name),
     avatarUrl: null,
+    // House rules, set at creation and editable by the creator. Stored on the
+    // community rather than a subcollection: there are three of them, they are
+    // read on every page view, and a subcollection would cost a second query
+    // to display a paragraph of text.
+    rules: Array.isArray(rules) ? rules.filter((r) => r?.title?.trim()) : [],
     postsAdminOnly: false,
     createdAt: serverTimestamp(),
     lastActiveAt: serverTimestamp(),
