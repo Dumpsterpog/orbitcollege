@@ -2,18 +2,18 @@ import { useState, useMemo, useEffect } from "react";
 import { Icon, Avatar, Button, IconButton, Textarea, cx } from "./ui/Primitives.jsx";
 import { Screen, Modal } from "./ui/Layout.jsx";
 
-// Home is the feed. That is the whole page.
+// Home is the campus feed: every post from every community, newest first.
 //
-// Three versions of a community-discovery block lived here — a card grid, a
-// table, a ranked chart — and all three read as filler, because they were.
-// Communities you have not joined are Explore's job; putting a directory of
-// them under an empty feed was the app padding itself out with a list nobody
-// came to Home to read.
+// Discovery lives in the right rail, not in the feed column. Earlier versions
+// put a community directory *inside* the feed whenever it ran dry, which read
+// as filler because it was — the page changed shape depending on whether
+// anyone had posted. The rail fixes that: it is always there, so the layout
+// is the same on an empty campus and a busy one, and the feed column is only
+// ever the feed.
 //
-// So: an empty feed says it is empty in one line and points at Explore. It
-// does not become a magazine. The rail carries events only, because events
-// are time-sensitive and expire whether or not you visit — the one thing
-// that genuinely belongs beside a feed rather than behind a nav item.
+// The rail carries two things and no more. Communities you have not joined,
+// because joining is what makes the feed fill up. And upcoming events, which
+// expire whether or not you visit.
 
 const compact = (n) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : `${n}`);
 
@@ -215,6 +215,49 @@ function Post({ post, community, liked, onLike, onOpen }) {
   );
 }
 
+/* ------------------------------------------------------ Suggestion row */
+
+function SuggestionRow({ c, onOpen, onJoin }) {
+  return (
+    <div className="group flex items-center gap-3 py-3 border-b border-line last:border-0">
+      <button onClick={() => onOpen(c)} className="shrink-0">
+        <Avatar src={c.avatarUrl} name={nameHead(c.name)} size={38} />
+      </button>
+      <button onClick={() => onOpen(c)} className="min-w-0 flex-1 text-left">
+        <span className="block text-base font-semibold text-ink truncate group-hover:opacity-70 transition-opacity">
+          {nameHead(c.name)}
+        </span>
+        <span className="block text-2xs text-ink-2 truncate mt-0.5">
+          {compact(c.memberCount || 0)} {c.memberCount === 1 ? "member" : "members"}
+          {c.official && " · Official"}
+        </span>
+      </button>
+      <Button variant="outline" size="xs" onClick={() => onJoin?.(c)} className="shrink-0">
+        Join
+      </Button>
+    </div>
+  );
+}
+
+/* --------------------------------------------------------- Rail heading */
+
+function RailHead({ title, count, action, onAction }) {
+  return (
+    <div className="flex items-baseline gap-3 pb-2.5 border-b-2 border-ink">
+      <h2 className="text-base font-bold text-ink">{title}</h2>
+      {count > 0 && <span className="font-mono text-xs tabular-nums text-ink-3">{count}</span>}
+      {action && (
+        <button
+          onClick={onAction}
+          className="ml-auto text-xs font-semibold text-accent hover:opacity-70 shrink-0"
+        >
+          {action}
+        </button>
+      )}
+    </div>
+  );
+}
+
 /* ---------------------------------------------------------- Event row */
 
 function EventRow({ e, onRegister, onOpen }) {
@@ -287,18 +330,21 @@ export function HomeScreen({
     setComposing(true);
   };
 
-  const first = (userName || "").split(" ")[0];
+  // Biggest first: the rail is a shortcut for someone who has joined nothing,
+  // and the busiest communities are the likeliest to have a feed worth seeing.
+  const suggested = useMemo(
+    () => communities
+      .filter((c) => !joinedIds.includes(c.id))
+      .sort((a, b) => (b.memberCount || 0) - (a.memberCount || 0))
+      .slice(0, 5),
+    [communities, joinedIds]
+  );
+
   const showScope = allPosts.length > 0 && joined.length > 0;
-  const showRail = openEvents.length > 0;
 
   return (
     <Screen>
-      <div
-        className={cx(
-          "w-full mx-auto px-5 sm:px-6 grid justify-center gap-8 xl:gap-10 grid-cols-1",
-          showRail ? "max-w-[1000px] lg:grid-cols-[minmax(0,620px)_300px]" : "max-w-[620px]"
-        )}
-      >
+      <div className="w-full mx-auto px-5 sm:px-6 grid justify-center gap-8 xl:gap-10 grid-cols-1 max-w-[1000px] lg:grid-cols-[minmax(0,620px)_300px]">
         {/* Feed */}
         <div className="min-w-0 pt-6 pb-20">
           <div className="space-y-3">
@@ -364,75 +410,35 @@ export function HomeScreen({
                   </Button>
                 </div>
               ) : (
-                // A first visit is the one moment the page has to explain
-                // itself. Not a directory of communities, which is Explore's
-                // job and read as filler three redesigns running, but the
-                // three things this app actually does, in order, with the
-                // first one live as a button.
-                <div className="py-10">
-                  <h1 className="text-3xl font-bold text-ink leading-tight">
-                    {first ? `Welcome to Orbit, ${first}.` : "Welcome to Orbit."}
-                  </h1>
-                  <p className="text-md text-ink-2 mt-2.5 max-w-[46ch] leading-relaxed">
-                    Every club, community and event at Manipal University Jaipur, in one place.
-                    Here is how it works.
+                // Nobody on campus has posted yet. This says so in one line
+                // and gets out of the way: the rail beside it is already
+                // showing communities to join and events to register for,
+                // which is what a takeover checklist used to say in ten times
+                // the space.
+                <div className="py-16 text-center">
+                  <p className="text-lg font-bold text-ink">No posts yet</p>
+                  <p className="text-base text-ink-2 mt-2 max-w-[38ch] mx-auto leading-relaxed">
+                    {canPost
+                      ? "Nothing has been posted on campus yet. Yours would be the first."
+                      : joined.length === 0
+                        ? "Join a community and everything it posts lands here."
+                        : "Nothing has been posted on campus yet."}
                   </p>
-
-                  <ol className="mt-9 space-y-7">
-                    {[
-                      {
-                        n: 1,
-                        title: "Join a few communities",
-                        body: "Pick the ones that sound like you. Everything they post lands in this feed.",
-                        cta: "Browse communities",
-                        onClick: onGoToExplore,
-                        primary: true,
-                      },
-                      {
-                        n: 2,
-                        title: "Post something",
-                        body: "Once you have joined one, the box at the top of this page is yours.",
-                      },
-                      {
-                        n: 3,
-                        title: "Register for events",
-                        body: "Registering puts you in that event's group chat automatically.",
-                        cta: "See events",
-                        onClick: onGoToEvents,
-                      },
-                    ].map((step) => (
-                      <li key={step.n} className="flex gap-5">
-                        <span className="font-mono text-lg tabular-nums text-ink-3 leading-none pt-1 shrink-0 select-none">
-                          {String(step.n).padStart(2, "0")}
-                        </span>
-                        <div className="min-w-0">
-                          <p className="text-lg font-bold text-ink leading-snug">{step.title}</p>
-                          <p className="text-base text-ink-2 mt-1.5 max-w-[48ch] leading-relaxed">{step.body}</p>
-                          {step.cta && (
-                            <Button
-                              tone={step.primary ? "blue" : undefined}
-                              variant={step.primary ? undefined : "outline"}
-                              size="md"
-                              onClick={step.onClick}
-                              className="mt-3.5"
-                            >
-                              {step.cta}
-                            </Button>
-                          )}
-                        </div>
-                      </li>
-                    ))}
-                  </ol>
-
-                  <div className="mt-10 pt-6 border-t border-line">
-                    <p className="text-base text-ink-2">
-                      Cannot find your club?{" "}
-                      <button onClick={onCreateClick} className="font-semibold text-accent hover:opacity-70">
-                        Start it yourself
-                      </button>
-                      .
-                    </p>
-                  </div>
+                  <Button
+                    tone="blue"
+                    size="md"
+                    onClick={canPost ? openComposer : onGoToExplore}
+                    className="mt-6"
+                  >
+                    {canPost ? "Write a post" : "Browse communities"}
+                  </Button>
+                  <p className="text-base text-ink-2 mt-8">
+                    Cannot find your club?{" "}
+                    <button onClick={onCreateClick} className="font-semibold text-accent hover:opacity-70">
+                      Start it yourself
+                    </button>
+                    .
+                  </p>
                 </div>
               )
             ) : (
@@ -450,26 +456,40 @@ export function HomeScreen({
           </div>
         </div>
 
-        {/* Rail: events only, and only once there is a feed to sit beside. */}
-        {showRail && (
-          <aside className="hidden lg:block pt-6 pb-20">
-            <div className="sticky top-6 max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar pr-1">
-              <div className="flex items-baseline gap-3 pb-2.5 border-b-2 border-ink">
-                <h2 className="text-base font-bold text-ink">This week</h2>
-                <span className="font-mono text-xs tabular-nums text-ink-3">{openEvents.length}</span>
-                <button
-                  onClick={onGoToEvents}
-                  className="ml-auto text-xs font-semibold text-accent hover:opacity-70 shrink-0"
-                >
-                  All
-                </button>
-              </div>
-              {openEvents.slice(0, 5).map((e) => (
-                <EventRow key={e.id} e={e} onRegister={onRegisterEvent} onOpen={onGoToEvents} />
-              ))}
-            </div>
-          </aside>
-        )}
+        {/* Rail. Always present, so the page does not change shape between an
+            empty campus and a busy one. Each block hides only when it has
+            genuinely nothing to say. */}
+        <aside className="hidden lg:block pt-6 pb-20">
+          <div className="sticky top-6 max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar pr-1 space-y-8">
+            {suggested.length > 0 && (
+              <section>
+                <RailHead
+                  title={joined.length ? "More to join" : "Start here"}
+                  count={suggested.length}
+                  action="All"
+                  onAction={onGoToExplore}
+                />
+                {suggested.map((c) => (
+                  <SuggestionRow key={c.id} c={c} onOpen={onOpen} onJoin={onJoinToggle} />
+                ))}
+              </section>
+            )}
+
+            {openEvents.length > 0 && (
+              <section>
+                <RailHead
+                  title="Upcoming"
+                  count={openEvents.length}
+                  action="All"
+                  onAction={onGoToEvents}
+                />
+                {openEvents.slice(0, 5).map((e) => (
+                  <EventRow key={e.id} e={e} onRegister={onRegisterEvent} onOpen={onGoToEvents} />
+                ))}
+              </section>
+            )}
+          </div>
+        </aside>
       </div>
 
       {composing && (

@@ -270,10 +270,7 @@ export function Sidebar({
             <span className="mx-1">·</span>
             <a href="/privacy" className="hover:text-ink-2 hover:underline transition-colors">Privacy</a>
           </p>
-          <p className="text-2xs text-ink-3 leading-relaxed mt-0.5">
-            Built for Manipal University Jaipur
-          </p>
-          <p className="text-2xs text-ink-3 leading-relaxed">© 2026 Orbit</p>
+          <p className="text-2xs text-ink-3 leading-relaxed mt-0.5">© 2026 Orbit</p>
         </div>
       </div>
     </aside>

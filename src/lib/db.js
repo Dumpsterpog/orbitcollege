@@ -167,12 +167,28 @@ export const mapMember = (d) => {
 
 /* ------------------------------------------------------- communities */
 
+// A failed listener used to be indistinguishable from an empty collection:
+// every watcher swallowed the error and reported []. The two failures that
+// actually happen in this app both look exactly like "nothing here yet" --
+// a collectionGroup query with no index, and rules that have not been
+// published -- so the console message, which carries Firestore's
+// click-to-create index link, is the only way to tell them apart.
+function watchFailed(err) {
+  console.error(
+    `[orbit/db] listener failed (${err?.code || "unknown"}). ` +
+    "The screen will render as empty. If this is failed-precondition, follow " +
+    "the index link in the error below. If permission-denied, publish " +
+    "firestore.rules.",
+    err
+  );
+}
+
 export function watchCommunities(cb) {
   if (!firebaseReady) { cb([]); return () => {}; }
   return onSnapshot(
     query(collection(db, "communities"), orderBy("lastActiveAt", "desc")),
     (snap) => cb(snap.docs.map(mapCommunity)),
-    () => cb([])
+    (err) => { watchFailed(err); cb([]); }
   );
 }
 
@@ -286,6 +302,8 @@ export async function setMemberRole(communityId, uid, role) {
 
 /* ------------------------------------------------------------ posts */
 
+
+
 // The Home feed: newest posts across every community. collectionGroup is the
 // Firestore equivalent of "select from community_posts" with no parent filter,
 // and it needs a composite index on (posts, createdAt desc) — Firestore will
@@ -295,7 +313,7 @@ export function watchFeed(cb, max = 40) {
   return onSnapshot(
     query(collectionGroup(db, "posts"), orderBy("createdAt", "desc"), limit(max)),
     (snap) => cb(snap.docs.map(mapPost)),
-    () => cb([])
+    (err) => { watchFailed(err); cb([]); }
   );
 }
 
@@ -304,7 +322,7 @@ export function watchCommunityPosts(communityId, cb) {
   return onSnapshot(
     query(collection(db, "communities", communityId, "posts"), orderBy("createdAt", "desc")),
     (snap) => cb(snap.docs.map(mapPost)),
-    () => cb([])
+    (err) => { watchFailed(err); cb([]); }
   );
 }
 
@@ -369,7 +387,7 @@ export function watchMessages(communityId, cb) {
   return onSnapshot(
     query(collection(db, "communities", communityId, "messages"), orderBy("createdAt", "asc"), limit(200)),
     (snap) => cb(snap.docs.map(mapMessage)),
-    () => cb([])
+    (err) => { watchFailed(err); cb([]); }
   );
 }
 
@@ -415,7 +433,7 @@ export function watchEvents(cb) {
   return onSnapshot(
     query(collection(db, "events"), orderBy("createdAt", "desc")),
     (snap) => cb(snap.docs.map(mapEvent)),
-    () => cb([])
+    (err) => { watchFailed(err); cb([]); }
   );
 }
 
