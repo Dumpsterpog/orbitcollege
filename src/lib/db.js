@@ -424,10 +424,16 @@ const postRef = (communityId, postId) =>
 export async function createPost({ communityId = null, authorId, authorName, text, imageUrl = null }) {
   need();
   const ref = await addDoc(postsRef(communityId), {
-    // Kept for a community post because the admin tool reads it when listing
-    // across communities. Never written for a campus post, and never read back
-    // by the app: mapPost takes the community from the document path.
-    ...(communityId ? { communityId } : {}),
+    // Always written, null for a campus post.
+    //
+    // Not because anything reads it -- mapPost takes the community from the
+    // document path now -- but because an older published rule may still test
+    // `request.resource.data.communityId == null`, and in Firestore rules
+    // reading a key that is absent is an ERROR, which denies the write. A
+    // present null satisfies that rule and the current one, which tests
+    // nothing. This is the write that works against every version of the rule
+    // this project has had.
+    communityId: communityId || null,
     authorId,
     authorName: authorName || "Someone", // denormalised: Firestore has no join
     text: text || "",

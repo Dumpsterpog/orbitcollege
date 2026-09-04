@@ -507,7 +507,6 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
     <Screen>
       <PageHeader
         title={c.name}
-        subtitle={"@" + handle}
         onBack={onClose}
         actions={
           isAdmin
@@ -1103,7 +1102,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
       {qrOpen && (
         <Modal title={c.name} onClose={() => setQrOpen(false)} max="max-w-xs">
           <div className="text-center">
-            <p className="text-xs text-ink-2 mb-4">@{handle}</p>
+            <p className="text-xs text-ink-2 mb-4">{c.category}</p>
             <div className="bg-white rounded p-3 inline-block">
               <QRCodeSVG value={`https://orbit.app/${c.official ? "club" : "c"}/${handle}`} size={168} />
             </div>
