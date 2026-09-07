@@ -1,1 +1,6 @@
-/*    /index.html   200
+# MAINTENANCE MODE IS ON.
+# To go live again, delete the three rules below and restore:
+#   /*    /index.html   200
+/privacy    /index.html        200
+/terms      /index.html        200
+/*          /maintenance.html  200
