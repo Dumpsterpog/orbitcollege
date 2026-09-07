@@ -17,9 +17,15 @@ export function TopBar({
 }) {
   const ref = useClickOutside(notifOpen, () => setNotifOpen(false));
 
+  // No bottom rule on the header. It, the rail and every card were each
+  // drawing their own hairline, which stacked into a grid of lines competing
+  // with the content. The header sits on the same surface as the page, so it
+  // needs no edge: the search field's own shape is enough to locate it. The
+  // rail keeps its edge, because that one separates two different things
+  // rather than repeating a boundary you can already see.
   return (
     <header
-      className="relative shrink-0 h-16 flex items-center gap-3 px-4 lg:px-6 bg-bg-raised border-b border-line"
+      className="relative shrink-0 h-16 flex items-center gap-3 px-4 lg:px-6 bg-bg-raised"
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       {/* The rail carries the wordmark on desktop. */}
