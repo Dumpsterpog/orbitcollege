@@ -1,24 +1,4 @@
 {
-  "//": [
-    "MAINTENANCE MODE IS ON.",
-    "",
-    "The last rewrite sends every route to the static maintenance page, so the",
-    "React bundle is never requested: no Firebase SDK download, no auth",
-    "listener, no Firestore connection. Nobody can sign in because the code",
-    "that signs people in is never served.",
-    "",
-    "Rewrites match in order, first one wins, and Vercel serves real files from",
-    "the filesystem before any rewrite is considered -- so /assets/* and",
-    "/seed/* keep working without needing an exemption here.",
-    "",
-    "TO GO LIVE AGAIN: delete the maintenance rewrite (the last one) and the",
-    "two passthroughs above it, leaving only the SPA fallback:",
-    "  { \"source\": \"/(.*)\", \"destination\": \"/index.html\" }",
-    "",
-    "/privacy and /terms stay reachable because they are matched first. They",
-    "are static, they touch no data, and a privacy policy that disappears",
-    "during maintenance is the one page you cannot take down."
-  ],
   "rewrites": [
     { "source": "/privacy", "destination": "/index.html" },
     { "source": "/terms", "destination": "/index.html" },
