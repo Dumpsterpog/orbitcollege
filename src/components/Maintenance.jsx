@@ -24,17 +24,7 @@ export function Maintenance() {
           className="grid place-items-center w-16 h-16 mx-auto mb-7 rounded-2xl
             bg-bg-sunken border border-line"
         >
-          <svg
-            viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor"
-            strokeWidth="2.1" strokeLinecap="round" strokeLinejoin="round"
-            className="text-ink motion-safe:animate-[spin_14s_linear_infinite]"
-          >
-            <circle cx="12" cy="12" r="3" />
-            <circle cx="19" cy="5" r="2" />
-            <circle cx="5" cy="19" r="2" />
-            <path d="M10.4 21.9a10 10 0 0 0 9.941-15.416" />
-            <path d="M13.5 2.1a10 10 0 0 0-9.841 15.416" />
-          </svg>
+          <img src="/orbitcollege.png" alt="" width={30} height={30} className="object-contain" style={{ width: 30, height: 30 }} />
         </span>
 
         <h1 className="text-3xl font-bold tracking-tight leading-tight">

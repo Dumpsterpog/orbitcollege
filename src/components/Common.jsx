@@ -4,21 +4,23 @@ import { Icon, Avatar, Button, cx } from "./ui/Primitives.jsx";
 
 export { Avatar };
 
-// Wordmark. The gradient is the one piece of brand expression in the shell,
-// so it is defined here once and reused by both the rail and the mobile bar.
+// Wordmark. One definition, used by the loading screen, onboarding, settings
+// and the maintenance page -- four places that had four hand-drawn copies of
+// an older mark, which is how the loading screen ended up still showing it
+// after the logo changed.
 export function Logo({ size = 24, showWordmark = true }) {
   return (
     <span className="inline-flex items-center gap-2">
-      <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor"
-           strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="text-ink shrink-0">
-        <circle cx="12" cy="12" r="3" /><circle cx="19" cy="5" r="2" /><circle cx="5" cy="19" r="2" />
-        <path d="M10.4 21.9a10 10 0 0 0 9.941-15.416" /><path d="M13.5 2.1a10 10 0 0 0-9.841 15.416" />
-      </svg>
+      <img
+        src="/orbitcollege.png"
+        alt=""
+        width={size}
+        height={size}
+        className="rounded-lg object-contain shrink-0"
+        style={{ width: size, height: size }}
+      />
       {showWordmark && (
-        <span
-          className="font-bold tracking-tight text-ink"
-          style={{ fontSize: size * 0.92 }}
-        >
+        <span className="font-bold tracking-tight text-ink" style={{ fontSize: size * 0.92 }}>
           Orbit
         </span>
       )}

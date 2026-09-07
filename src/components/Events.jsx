@@ -196,23 +196,14 @@ export function EventsScreen({
 
         {/* -------------------------------------------------------- main */}
         <div className="min-w-0 flex flex-col gap-4">
-          <section className="relative w-full rounded-2xl overflow-hidden bg-accent-wash">
+          {/* The artwork carries it. The copy that was here said what the page
+              title and the filters below already say. */}
+          <section className="w-full rounded-2xl overflow-hidden">
             <img
-              src="/muj.png"
-              alt=""
-              aria-hidden="true"
-              className="absolute right-0 bottom-0 h-full w-1/2 object-cover object-left opacity-40"
+              src="/banner.png"
+              alt="Campus events"
+              className="w-full aspect-[3/1] object-cover"
             />
-            <div className="absolute inset-0 bg-gradient-to-r from-accent-wash via-accent-wash/85 to-transparent" />
-            <div className="relative z-10 p-6">
-              <p className="text-[11px] font-bold uppercase tracking-[0.12em] text-accent">Explore &amp; join</p>
-              <h1 className="text-3xl font-bold text-ink tracking-tight mt-1.5">Campus Events</h1>
-              <p className="text-[13.5px] text-ink-2 leading-relaxed mt-2 max-w-[42ch]">
-                Workshops, competitions, meetups and more.
-                <br />
-                Be a part of what&apos;s happening on campus.
-              </p>
-            </div>
           </section>
 
           <div className="flex items-center gap-2 flex-wrap">

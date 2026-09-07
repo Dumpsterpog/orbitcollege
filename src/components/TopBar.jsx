@@ -1,5 +1,6 @@
 import { useClickOutside } from "../utils/hooks.js";
 import { Icon, Avatar, cx } from "./ui/Primitives.jsx";
+import { Weather } from "./Weather.jsx";
 
 // Header at every width.
 //
@@ -46,7 +47,9 @@ export function TopBar({
         </div>
       </div>
 
-      <div ref={ref} className="flex items-center gap-1.5 shrink-0 ml-auto">
+      <div ref={ref} className="flex items-center gap-3 shrink-0 ml-auto">
+        <Weather />
+
         <button
           onClick={() => setNotifOpen(!notifOpen)}
           aria-label="Notifications"

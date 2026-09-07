@@ -383,11 +383,7 @@ export function SettingsScreen({
                 <Card>
                   <div className="flex items-center gap-4">
                     <span className="grid place-items-center w-14 h-14 rounded-lg shrink-0 bg-gradient-to-br from-c-violet via-c-pink to-c-orange">
-                      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="white"
-                           strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
-                        <circle cx="12" cy="12" r="3" /><circle cx="19" cy="5" r="2" /><circle cx="5" cy="19" r="2" />
-                        <path d="M10.4 21.9a10 10 0 0 0 9.941-15.416" /><path d="M13.5 2.1a10 10 0 0 0-9.841 15.416" />
-                      </svg>
+                      <img src="/orbitcollege.png" alt="" width={22} height={22} className="object-contain" style={{ width: 22, height: 22 }} />
                     </span>
                     <div className="min-w-0">
                       <p className="text-lg font-bold text-ink">Orbit</p>
