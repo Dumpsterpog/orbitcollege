@@ -1,3 +1,4 @@
+import { useState, useRef, useEffect } from "react";
 import { CATEGORIES } from "../../data/constants.js";
 import { Icon, Avatar, cx } from "../ui/Primitives.jsx";
 import { PostComments } from "../Common.jsx";
@@ -41,11 +42,36 @@ function withTags(text, onTag) {
 }
 
 export function PostCard({
-  post, community, liked, onLike, onOpen, onShare, onTag,
+  post, community, liked, onLike, onOpen, onShare, onTag, onReport,
   authUserId, myName, canWrite, onBlocked,
 }) {
   const cat = CATEGORIES.find((x) => x.name === community?.category);
   const segments = parseSegments(post.text || "");
+
+  const [commentsOpen, setCommentsOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onDoc = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setMenuOpen(false); };
+    const onKey = (e) => { if (e.key === "Escape") setMenuOpen(false); };
+    document.addEventListener("mousedown", onDoc);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDoc);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
+  // Clicking the post opens its thread. Guarded so it does not fire when the
+  // click was really meant for a control inside the card, or when someone was
+  // selecting text to copy.
+  const openFromBody = (e) => {
+    if (e.target.closest("button, a, input, textarea, img")) return;
+    if (window.getSelection()?.toString()) return;
+    setCommentsOpen(true);
+  };
 
   return (
     <article className="w-full bg-bg-raised rounded-2xl border border-line p-5">
@@ -87,17 +113,68 @@ export function PostCard({
           </div>
         </div>
 
-        <button
-          onClick={() => onShare?.(post, community)}
-          aria-label="More"
-          className="grid place-items-center w-8 h-8 rounded-lg text-ink-3 hover:text-ink
-            hover:bg-bg-sunken transition-colors shrink-0"
-        >
-          <Icon name="more_horiz" size={18} />
-        </button>
+        <div className="relative shrink-0" ref={menuRef}>
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-label="Post options"
+            className="grid place-items-center w-8 h-8 rounded-lg text-ink-3 hover:text-ink
+              hover:bg-bg-sunken transition-colors"
+          >
+            <Icon name="more_horiz" size={18} />
+          </button>
+
+          {menuOpen && (
+            <div
+              role="menu"
+              className="absolute right-0 top-9 w-48 bg-bg-raised border border-line rounded-2xl
+                shadow-pop overflow-hidden animate-pop z-30 p-1"
+            >
+              <button
+                role="menuitem"
+                onClick={() => { setMenuOpen(false); onShare?.(post, community); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left
+                  text-[13px] text-ink hover:bg-bg-sunken transition-colors"
+              >
+                <Icon name="share" size={16} className="text-ink-2" />
+                Share
+              </button>
+              <button
+                role="menuitem"
+                onClick={() => { setMenuOpen(false); setCommentsOpen(true); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left
+                  text-[13px] text-ink hover:bg-bg-sunken transition-colors"
+              >
+                <Icon name="mode_comment" size={16} className="text-ink-2" />
+                {commentsOpen ? "Comments open" : "Show comments"}
+              </button>
+              {community && (
+                <button
+                  role="menuitem"
+                  onClick={() => { setMenuOpen(false); onOpen(community); }}
+                  className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left
+                    text-[13px] text-ink hover:bg-bg-sunken transition-colors"
+                >
+                  <Icon name="groups" size={16} className="text-ink-2" />
+                  Open community
+                </button>
+              )}
+              <button
+                role="menuitem"
+                onClick={() => { setMenuOpen(false); onReport?.(post, community); }}
+                className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-left
+                  text-[13px] text-c-red hover:bg-c-red/10 transition-colors"
+              >
+                <Icon name="flag" size={16} />
+                Report
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className="mt-3 space-y-3">
+      <div onClick={openFromBody} className="mt-3 space-y-3 cursor-pointer">
         {segments.map((seg, i) =>
           seg.type === "code" ? (
             <CodeBlock key={i} lang={seg.lang} value={seg.value} filename={post.codeName} />
@@ -139,15 +216,9 @@ export function PostCard({
           myName={myName}
           canWrite={canWrite}
           onBlocked={onBlocked}
+          open={commentsOpen}
+          onToggle={setCommentsOpen}
         />
-
-        <button
-          onClick={() => onShare?.(post, community)}
-          className="inline-flex items-center gap-2 h-9 px-3 rounded-full text-[12.5px] font-semibold
-            text-ink-2 hover:text-accent hover:bg-accent-wash transition-colors"
-        >
-          <Icon name="share" size={17} />
-        </button>
       </div>
     </article>
   );

@@ -229,6 +229,25 @@ export async function createCommunity({ name, category, desc, tags, rules = [], 
     lastActiveAt: serverTimestamp(),
   });
 
+  // The quota the rules read. It has to be maintained here because rules
+  // cannot count a collection: they can only look at one document, so the
+  // number has to already be on the profile by the time the next create is
+  // checked. setDoc with merge so a profile that has never had the field, or
+  // does not exist yet, both work.
+  if (creatorId) {
+    try {
+      await setDoc(
+        doc(db, "profiles", creatorId),
+        { communitiesCreated: increment(1) },
+        { merge: true }
+      );
+    } catch (err) {
+      // The community exists either way. A failed counter means the cap reads
+      // low for this account, which is the safe direction to fail.
+      console.warn("[orbit/db] community created, quota not bumped:", err?.code || err);
+    }
+  }
+
   // The creator is a member from the moment it exists, and an admin of it.
   if (creatorId) {
     await setDoc(doc(db, "communities", ref.id, "members", creatorId), {

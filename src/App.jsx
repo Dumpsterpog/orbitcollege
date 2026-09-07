@@ -6,6 +6,8 @@ import { communityTrendScore, slugify, timeAgo } from "./utils/helpers.js";
 import { useViewportHeight } from "./utils/useViewportHeight.js";
 import { useTheme } from "./utils/useTheme.js";
 import * as db from "./lib/db.js";
+import { cached, reviveDates, setCacheScope } from "./lib/cache.js";
+import { checkPostLimit, notePost, checkCommunityLimit, MAX_COMMUNITIES } from "./lib/limits.js";
 import { onAuthChange, completeRedirectSignIn, fetchProfile, signOut as fbSignOut } from "./lib/authService.js";
 import { auth } from "./lib/firebase.js";
 import { TopBar } from "./components/TopBar.jsx";
@@ -150,9 +152,18 @@ export default function App() {
   //
   // All three read signed out as well as signed in, so a guest sees the real
   // campus feed instead of an empty page.
-  useEffect(() => db.watchCommunities(setDbCommunities), []);
-  useEffect(() => db.watchEvents(setEvents), []);
-  useEffect(() => db.watchFeed(setFeedPosts), []);
+  // Each watcher paints from the last snapshot first, then live data replaces
+  // it. See lib/cache.js -- the subscription is unchanged, this only fills the
+  // gap that used to be a skeleton on every reload.
+  useEffect(() => db.watchCommunities(
+    cached("communities", setDbCommunities, reviveDates(["createdAt"]))
+  ), []);
+  useEffect(() => db.watchEvents(
+    cached("events", setEvents, reviveDates(["startsAt"]))
+  ), []);
+  useEffect(() => db.watchFeed(
+    cached("feed", setFeedPosts, reviveDates(["createdAt"]))
+  ), []);
 
   // Which of those posts you personally sparked needs a "you", so it stays
   // signed-in only and refetches when the session changes.
@@ -183,6 +194,7 @@ export default function App() {
       if (fbUser) {
         const profile = await fetchProfile(fbUser.uid);
         if (!mounted) return;
+        setCacheScope(fbUser.uid);
         setAuthUser({ id: fbUser.uid, email: fbUser.email });
         setUser({
           name: profile?.name || fbUser.displayName || "",
@@ -194,6 +206,7 @@ export default function App() {
         fetchMyJoins(fbUser.uid);
         fetchMyRegistrations(fbUser.uid);
       } else {
+        setCacheScope(null);
         setAuthUser(null);
       }
       setLoadingSession(false);
@@ -257,6 +270,11 @@ export default function App() {
   // to rather than a feed you can only read.
   const handleCreatePost = async (communityId, text, file = null) => {
     if (!user.verified || !authUser) { handleBlocked(); return false; }
+
+    // Checked before the upload, not after: burning a photo upload on a write
+    // that is about to be refused wastes the slowest part of the operation.
+    const limit = checkPostLimit();
+    if (!limit.ok) { showToast(limit.message); return false; }
     const body = text.trim();
     // A photo with no caption is a valid post, so only the pair being empty
     // is a reason to refuse.
@@ -296,6 +314,7 @@ export default function App() {
     // watchFeed will deliver this too, but optimistically prepending keeps the
     // post on screen in the same frame the composer closes.
     setFeedPosts((ps) => (ps.some((p) => p.id === created.id) ? ps : [created, ...ps]));
+    notePost();
     showToast("Posted");
     return true;
   };
@@ -316,6 +335,13 @@ export default function App() {
 
   const handleCreate = async ({ name, category, desc, tags, rules = [], avatarFile = null }) => {
     if (!authUser) { handleBlocked(); return; }
+
+    // Counted from the live list rather than a stored tally, so it cannot
+    // drift. firestore.rules enforces the same cap server-side; this exists to
+    // say so before the form is filled in rather than after.
+    const owned = dbCommunities.filter((c) => c.creatorId === authUser.id).length;
+    const cap = checkCommunityLimit(owned);
+    if (!cap.ok) { showToast(cap.message); return; }
     const handle = `${slugify(name)}-${Math.random().toString(36).slice(2, 8)}`;
     // tags now comes from the creator's own multi-select (CreateCommunity
     // step 3), not just [category] — this is the real signal a future
@@ -665,6 +691,11 @@ export default function App() {
   // so that row carries no count rather than a decorative one.
   const openEventCount = events.filter((e) => !registeredEventIds.includes(e.id)).length;
 
+  // Surfaced so the create flow can refuse up front instead of at submit.
+  const ownedCommunities = authUser
+    ? dbCommunities.filter((c) => c.creatorId === authUser.id).length
+    : 0;
+
   const ctx = {
     // identity
     user, authUser, verified: user.verified,
@@ -678,6 +709,7 @@ export default function App() {
     // navigation
     goToTab, openTea, openSearch, openCreate, openComposer, setSelectedCommunity,
     goToInitialPage, showToast,
+    ownedCommunities, maxCommunities: MAX_COMMUNITIES,
     // writes
     handleJoinToggle, handleCreate, handleCreatePost, handleSparkPost, handleSpark,
     handleUpdateCommunity, handleDeleteCommunity, handleUpdateProfile, handleRegisterEvent,

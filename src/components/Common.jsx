@@ -150,8 +150,21 @@ export function GuestBanner({ onVerify }) {
 // should not hold twenty live listeners for threads nobody has looked at.
 // Shared by the campus feed and a community's own posts, which is why it takes
 // communityId rather than assuming one.
-export function PostComments({ communityId, postId, count = 0, authUserId, myName, canWrite, onBlocked }) {
-  const [open, setOpen] = useState(false);
+export function PostComments({
+  communityId, postId, count = 0, authUserId, myName, canWrite, onBlocked,
+  open: openProp, onToggle,
+}) {
+  // Controlled when the parent passes `open`, uncontrolled otherwise. The feed
+  // card opens the thread by clicking the post body, so it needs the handle;
+  // anywhere else the button can still own it.
+  const [openSelf, setOpenSelf] = useState(false);
+  const controlled = openProp !== undefined;
+  const open = controlled ? openProp : openSelf;
+  const setOpen = (next) => {
+    const value = typeof next === "function" ? next(open) : next;
+    if (controlled) onToggle?.(value);
+    else setOpenSelf(value);
+  };
   const [items, setItems] = useState([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);

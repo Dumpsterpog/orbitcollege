@@ -31,7 +31,10 @@ service cloud.firestore {
     }
     // Fields a user must never be able to set on themselves.
     function noPrivilegeEscalation() {
-      return !request.resource.data.diff(resource.data).affectedKeys().hasAny(['isAdmin']);
+      // communitiesCreated joins isAdmin here: it is a quota, so letting
+      // someone write their own would make the cap decorative.
+      return !request.resource.data.diff(resource.data).affectedKeys()
+        .hasAny(['isAdmin', 'communitiesCreated']);
     }
 
     /* ------------------------------------------------------- profiles */
@@ -55,6 +58,14 @@ service cloud.firestore {
     /* ---------------------------------------------------- communities */
 
     match /communities/{communityId} {
+      // How many this account has already created. Absent means zero, which is
+      // what every existing profile reads as -- no migration needed.
+      function ownedCommunities() {
+        return exists(/databases/$(database)/documents/profiles/$(request.auth.uid))
+          ? get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.get('communitiesCreated', 0)
+          : 0;
+      }
+
       function isCreator() {
         return signedIn() && resource.data.creatorId == request.auth.uid;
       }
@@ -93,7 +104,23 @@ service cloud.firestore {
       }
 
       allow read: if true;
-      allow create: if signedIn() && request.resource.data.creatorId == request.auth.uid;
+
+      // Two communities per account, enforced here and not only in the client.
+      //
+      // The count lives on the creator's profile because rules cannot query a
+      // collection -- there is no way to ask "how many communities does this
+      // person already own" at evaluation time. db.js bumps
+      // profiles/{uid}.communitiesCreated in the same batch as the create, and
+      // the profile rule below refuses any other write to that field, so it
+      // cannot be edited down to buy more.
+      //
+      // The post limit has no equivalent and is client-side only: it needs a
+      // count of recent documents, which is exactly the query rules cannot do.
+      // Closing that properly means a Cloud Function or an App Check quota;
+      // until then it slows honest users down and stops nobody determined.
+      allow create: if signedIn()
+        && request.resource.data.creatorId == request.auth.uid
+        && ownedCommunities() < 2;
 
       // The last clause is what makes joining possible for anyone who is not
       // the creator.

@@ -41,7 +41,7 @@ const TABS = [
 export function HomeScreen({
   communities, joinedIds, onOpen, onCreateClick, authUserId,
   feedPosts, feedSparkIds, onSparkPost, onCreatePost,
-  userName, user, onJoinToggle, onGoToExplore,
+  userName, user, onJoinToggle, onGoToExplore, onSharePost, onReportPost,
   events = [], registeredEventIds = [], onRegisterEvent, onGoToEvents,
 }) {
   const [loading, setLoading] = useState(() => !(feedPosts || []).length);
@@ -167,6 +167,8 @@ export function HomeScreen({
                 onLike={onSparkPost}
                 onOpen={onOpen}
                 onTag={() => onGoToExplore()}
+                onShare={onSharePost}
+                onReport={onReportPost}
                 authUserId={authUserId}
                 myName={userName}
                 canWrite={canPost}
