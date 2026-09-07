@@ -1,4 +1,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { OrbitProvider } from "./context/OrbitContext.jsx";
+import { ComposerModal } from "./components/Home.jsx";
 import { FONT_IMPORT } from "./data/constants.js";
 import { communityTrendScore, slugify, timeAgo } from "./utils/helpers.js";
 import { useViewportHeight } from "./utils/useViewportHeight.js";
@@ -10,15 +13,6 @@ import { TopBar } from "./components/TopBar.jsx";
 import { BottomNav } from "./components/BottomNav.jsx";
 import { Sidebar } from "./components/Sidebar.jsx";
 import { GuestBanner, Toast, ThemeNotice, Logo } from "./components/Common.jsx";
-import { SearchOverlay } from "./components/SearchOverlay.jsx";
-import { HomeScreen, ComposerModal } from "./components/Home.jsx";
-import { ExploreScreen } from "./components/Explore.jsx";
-import { EventsScreen } from "./components/Events.jsx";
-import { CommunityDetail } from "./components/Community.jsx";
-import { CreateCommunity } from "./components/CreateCommunity.jsx";
-import { LocaliTeaScreen } from "./components/LocaliTea.jsx";
-import { ProfileScreen } from "./components/Profile.jsx";
-import { SettingsScreen } from "./components/Settings.jsx";
 import { Onboarding } from "./components/Onboarding.jsx";
 import { ReportModal } from "./components/ReportModal.jsx";
 
@@ -56,6 +50,8 @@ function saveIdSet(key, set) {
 const SKIP_AUTH = import.meta.env.VITE_SKIP_AUTH === "true";
 
 export default function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
   useViewportHeight(); // keyboard-float fix — see utils/useViewportHeight.js
   const { theme, mode: themeMode, toggleTheme, setThemeMode, themeNotice, dismissThemeNotice } = useTheme(); // see utils/useTheme.js
   const [loadingSession, setLoadingSession] = useState(true);
@@ -79,17 +75,13 @@ export default function App() {
 
   // Still mock/local for this first build — see App architecture notes.
   const [sparkedIds, setSparkedIds] = useState([]);
-  const [activeTab, setActiveTab] = useState("home");
-  const [selectedCommunity, setSelectedCommunity] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
   // Session-only: Settings marks these as unsaved rather than pretending
   // a backend is storing them.
   const [notifPrefs, setNotifPrefs] = useState({ events: true, posts: true, replies: true });
   const [notifOpen, setNotifOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
-  const [showCreate, setShowCreate] = useState(false);
   const [composerOpen, setComposerOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   // "/" opens search, the way the sidebar's kbd hint advertises. Ignored while
   // the user is typing into a field or a contentEditable, otherwise the key
   // would be unusable in every text input in the app.
@@ -100,12 +92,11 @@ export default function App() {
       const tag = el?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el?.isContentEditable) return;
       e.preventDefault();
-      setSearchOpen(true);
+      navigate("/search");
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, []);
-  const [teaOpen, setTeaOpen] = useState(false);
+  }, [navigate]);
   const [teaPosts, setTeaPosts] = useState([]); // real, Firestore-backed — see fetchTea()
   const [myTeaVotes, setMyTeaVotes] = useState({}); // Tea tab: postId -> "true" | "cap"
   const [myTeaReactions, setMyTeaReactions] = useState({}); // Confessions tab: postId -> emoji
@@ -362,7 +353,7 @@ export default function App() {
     setJoinedIds((ids) => [...ids, mapped.id]);
     showToast("Community created");
     setShowCreate(false);
-    setActiveTab("home");
+    navigate("/");
   };
 
   const handleUpdateCommunity = async (id, updates) => {
@@ -463,7 +454,7 @@ export default function App() {
   }, [authUser]);
 
   useEffect(() => {
-    if (!teaOpen) return;
+    if (location.pathname !== "/tea") return;
     fetchTea();
     // Polls instead of Realtime (see the comment on fetchTea above) — still
     // "auto refresh," just on a short interval rather than a live push, so
@@ -471,7 +462,7 @@ export default function App() {
     // manually reopening the screen.
     const id = setInterval(fetchTea, 5000);
     return () => clearInterval(id);
-  }, [teaOpen, fetchTea]);
+  }, [location.pathname, fetchTea]);
 
   const loadTeaComments = useCallback(async (postId) => {
     const comments = await db.fetchTeaComments(postId);
@@ -645,31 +636,58 @@ export default function App() {
     );
   }
 
-  const showingSubPage = !!selectedCommunity || showCreate || searchOpen || teaOpen;
-  const goToTab = (tab) => {
-    setSelectedCommunity(null);
-    setShowCreate(false);
-    setSearchOpen(false);
-    setTeaOpen(false);
-    setActiveTab(tab);
-  };
-  // Shared with both TopBar/HomeScreen (mobile) and Sidebar (desktop, lg+) so
-  // the two nav surfaces trigger the exact same behavior instead of drifting.
-  const openTea = () => { if (!user.verified) { handleBlocked(); return; } setTeaOpen(true); };
-  const openSearch = () => setSearchOpen(true);
-  const openCreate = () => { if (!user.verified) { handleBlocked(); return; } setShowCreate(true); };
+  // Which nav item is lit, derived from the URL rather than held in state.
+  // The old `activeTab` was the only thing that decided what you saw, which is
+  // why nothing here had a route: the address bar never changed. Now the URL
+  // is the truth and the rail just reads it.
+  const TAB_FOR_PATH = { "": "home", explore: "explore", events: "events", profile: "profile", settings: "settings" };
+  const seg = location.pathname.replace(/^\/+|\/+$/g, "").split("/")[0];
+  const activeTab = TAB_FOR_PATH[seg] || "home";
 
-  // Posting is reachable from the rail on every screen now, not only from
-  // Home. It needs somewhere to post TO, so joining nothing yet routes to
-  // Explore rather than opening a composer with an empty target list.
-  const openComposer = () => {
-    if (!user.verified) { handleBlocked(); return; }
-    setComposerOpen(true);
+  // A sub-page owns the whole viewport: no bottom bar, no top bar, no guest
+  // pill competing with its own back affordance.
+  const SUBPAGE_SEGMENTS = ["c", "create", "search", "tea"];
+  const showingSubPage = SUBPAGE_SEGMENTS.includes(seg);
+
+  const goToTab = (tab) => navigate(tab === "home" ? "/" : `/${tab}`);
+
+  // Kept named as it was so the twenty call sites below did not all have to
+  // change. It navigates now instead of setting state.
+  const setSelectedCommunity = (c) => { if (c?.id) navigate(`/c/${c.id}`); };
+
+  // Shared by both nav surfaces so mobile and desktop cannot drift apart.
+  const openTea = () => { if (!user.verified) { handleBlocked(); return; } navigate("/tea"); };
+  const openSearch = () => navigate("/search");
+  const openCreate = () => { if (!user.verified) { handleBlocked(); return; } navigate("/create"); };
+  const openComposer = () => { if (!user.verified) { handleBlocked(); return; } setComposerOpen(true); };
+
+  // Everything the routed screens need. They cannot be handed props any more,
+  // because the router renders them, not this component.
+  const ctx = {
+    // identity
+    user, authUser, verified: user.verified,
+    // live data
+    communities, clubs, allGroups, dbCommunities, events, feedPosts, feedSparkIds,
+    joinedIds, joinedCommunities, registeredEventIds, sparkedIds, topTrendingIds,
+    teaPosts, myTeaVotes, myTeaReactions, myTeaPostIds, myTeaCommentIds, isTeaModerator,
+    // preferences
+    theme, themeMode, toggleTheme, setThemeMode, notifPrefs, setNotifPrefs,
+    exploreTab, setExploreTab,
+    // navigation
+    goToTab, openTea, openSearch, openCreate, openComposer, setSelectedCommunity,
+    goToInitialPage, showToast,
+    // writes
+    handleJoinToggle, handleCreate, handleCreatePost, handleSparkPost, handleSpark,
+    handleUpdateCommunity, handleDeleteCommunity, handleUpdateProfile, handleRegisterEvent,
+    handleBlocked, handlePostTea, handleValidateTea, handleCommentTea, handleReactTea,
+    handleDeleteTea, handleDeleteTeaComment, loadTeaComments, setReportTarget,
   };
 
   return (
-    <div className={shellClassApp} style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
-      <style>{FONT_IMPORT}</style>
+    <OrbitProvider value={ctx}>
+      <div className={shellClassApp} style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
+        <style>{FONT_IMPORT}</style>
+
         <Sidebar
           active={activeTab}
           setActive={goToTab}
@@ -685,154 +703,53 @@ export default function App() {
           onSupport={() => showToast("Email team.orbit@gmail.com and we will answer")}
           onSignOut={goToInitialPage}
         />
-      <div className="flex-1 flex flex-col overflow-hidden lg:h-full min-w-0">
-      {!showingSubPage && (
-        <TopBar notifOpen={notifOpen} setNotifOpen={setNotifOpen}
-          onTeaClick={openTea}
-          onSearchClick={openSearch}
-          onMessagesClick={() => showToast("DMs are coming soon")}
-          onLogoClick={() => goToTab("home")}
-          user={user} />
-      )}
-      {/* Capped to the same width as the content pane below it. Left full-bleed
-          this stretched "Browsing as guest" to the far left edge and "Verify
-          now" to the far right on a wide monitor, with the actual content
-          centered between them — the call to action ended up furthest from the
-          thing it refers to. */}
-      <div className="flex-1 overflow-hidden flex flex-col min-w-0">
-      {selectedCommunity ? (
-        <CommunityDetail
-          key={selectedCommunity.id}
-          c={selectedCommunity} joined={joinedIds.includes(selectedCommunity.id)}
-          onJoinToggle={handleJoinToggle} onClose={() => setSelectedCommunity(null)}
-          onReport={() => setReportTarget(selectedCommunity.name)}
-          verified={user.verified} onBlocked={handleBlocked}
-          sparked={sparkedIds.includes(selectedCommunity.id)} onSpark={handleSpark}
-          onUpdate={handleUpdateCommunity} onDelete={handleDeleteCommunity}
-          trendRank={topTrendingIds.includes(selectedCommunity.id) ? topTrendingIds.indexOf(selectedCommunity.id) + 1 : null}
-          interests={user.interests}
-          authUserId={authUser?.id} myName={user.name}
-        />
-      ) : showCreate ? (
-        <CreateCommunity onCreate={handleCreate} onClose={() => setShowCreate(false)} verified={user.verified} onBlocked={handleBlocked} onVerifyNow={goToInitialPage} />
-      ) : searchOpen ? (
-        <SearchOverlay communities={allGroups} onOpen={setSelectedCommunity} onClose={() => setSearchOpen(false)} />
-      ) : teaOpen ? (
-        <LocaliTeaScreen
-          teaPosts={teaPosts} onClose={() => setTeaOpen(false)}
-          verified={user.verified} onBlocked={handleBlocked}
-          onPost={handlePostTea} onValidate={handleValidateTea} onComment={handleCommentTea}
-          onReport={(label) => setReportTarget(label)}
-          myVotes={myTeaVotes} onOpenPost={loadTeaComments}
-          onReact={handleReactTea} myReactions={myTeaReactions}
-          myPostIds={myTeaPostIds} myCommentIds={myTeaCommentIds} canModerate={isTeaModerator}
-          onDeletePost={handleDeleteTea} onDeleteComment={handleDeleteTeaComment}
-        />
-      ) : activeTab === "home" ? (
-        <HomeScreen
-          authUserId={authUser?.id}
-          communities={allGroups} joinedIds={joinedIds}
-          onOpen={setSelectedCommunity}
-          feedPosts={feedPosts} feedSparkIds={feedSparkIds} onSparkPost={handleSparkPost}
-          onCreatePost={handleCreatePost}
-          onCreateClick={openCreate}
-          userName={user.verified ? user.name : ""}
-          onJoinToggle={(id) => { if (!id) { handleBlocked(); return; } if (!user.verified) { handleBlocked(); return; } handleJoinToggle(id); }}
-          user={user}
-          onGoToExplore={() => goToTab("explore")}
-          onSearchClick={openSearch}
-          events={events}
-          registeredEventIds={registeredEventIds}
-          onRegisterEvent={handleRegisterEvent}
-          onGoToEvents={() => goToTab("events")}
-          onGoToTea={openTea}
-        />
-      ) : activeTab === "explore" ? (
-        <ExploreScreen subTab={exploreTab} setSubTab={setExploreTab} clubs={clubs} communities={communities}
-          onOpen={setSelectedCommunity}
-          joinedIds={joinedIds}
-          onJoinToggle={(id) => { if (!user.verified) { handleBlocked(); return; } handleJoinToggle(id); }}
-          onCreate={openCreate} />
-      ) : activeTab === "events" ? (
-        <EventsScreen
-          events={events} interests={user.interests}
-          registeredEventIds={registeredEventIds}
-          onRegister={handleRegisterEvent}
-          onOpenEvent={(e) => {
-            // An event's linked community only exists once someone has
-            // registered, so opening one before that has nowhere to go.
-            const c = e.linkedCommunityId && dbCommunities.find((x) => x.id === e.linkedCommunityId);
-            if (c) setSelectedCommunity(c);
-            else showToast("This event's space opens once you register");
-          }}
-          onSubmitEvent={() => showToast("Submitting events isn't built yet")}
-        />
-      ) : activeTab === "profile" ? (
-        <ProfileScreen
-          user={user} joinedCommunities={joinedCommunities}
-          onSaveProfile={handleUpdateProfile}
-          onVerifyGuest={goToInitialPage}
-          onOpenSettings={() => goToTab("settings")}
-          onOpenCommunity={setSelectedCommunity}
-          onComingSoon={() => showToast("Coming soon")}
-          authUserId={authUser?.id}
-          allCommunities={allGroups}
-          myPosts={authUser ? feedPosts.filter((p) => p.authorId === authUser.id) : []}
-          registeredEvents={events.filter((e) => registeredEventIds.includes(e.id))}
-          onOpenEvent={(e) => {
-            const c = e.linkedCommunityId && dbCommunities.find((x) => x.id === e.linkedCommunityId);
-            if (c) setSelectedCommunity(c);
-            else goToTab("events");
-          }}
-        />
-      ) : activeTab === "settings" ? (
-        <SettingsScreen
-          user={{ ...user, email: authUser?.email }}
-          theme={theme} mode={themeMode}
-          onToggleTheme={toggleTheme} onSetTheme={setThemeMode}
-          onLogout={goToInitialPage}
-          onBack={() => goToTab("profile")}
-          onEditProfile={() => goToTab("profile")}
-          onComingSoon={() => showToast("Coming soon")}
-          notifPrefs={notifPrefs}
-          onNotifChange={(key, val) => setNotifPrefs((p) => ({ ...p, [key]: val }))}
-          joinedCommunities={joinedCommunities}
-          onOpenCommunity={setSelectedCommunity}
-          onGoToExplore={() => goToTab("explore")}
-        />
-      ) : null}
-      </div>
 
-      {/* Mobile tab bar. Hidden on a sub-page so a detail view gets the full
-          height and its own back affordance instead of two nav surfaces. */}
-      {!showingSubPage && (
-        <BottomNav active={activeTab} setActive={goToTab} onCreateClick={openCreate} user={user} />
-      )}
-      </div>
+        <div className="flex-1 flex flex-col overflow-hidden lg:h-full min-w-0">
+          {!showingSubPage && (
+            <TopBar
+              notifOpen={notifOpen} setNotifOpen={setNotifOpen}
+              onTeaClick={openTea}
+              onSearchClick={openSearch}
+              onMessagesClick={() => showToast("DMs are coming soon")}
+              onLogoClick={() => goToTab("home")}
+              user={user}
+            />
+          )}
 
-      {reportTarget && (
-        <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} onSubmit={handleReportSubmit} />
-      )}
-      {composerOpen && (
-        <ComposerModal
-          user={user}
-          communities={joinedCommunities}
-          onClose={() => setComposerOpen(false)}
-          onSubmit={handleCreatePost}
-        />
-      )}
-      {!showingSubPage && !user.verified && <GuestBanner onVerify={goToInitialPage} />}
-      {/* Sits above the guest pill rather than beside it, and only one of the
-          two is ever new information at a time. */}
-      {themeNotice && (
-        <ThemeNotice
-          theme={themeNotice}
-          onDismiss={dismissThemeNotice}
-          onOpenSettings={() => goToTab("settings")}
-          raised={!showingSubPage && !user.verified}
-        />
-      )}
-      <Toast message={toastMsg} />
-    </div>
+          <div className="flex-1 overflow-hidden flex flex-col min-w-0">
+            {/* The router decides what goes here. See main.jsx. */}
+            <Outlet />
+          </div>
+
+          {!showingSubPage && (
+            <BottomNav active={activeTab} setActive={goToTab} onCreateClick={openCreate} user={user} />
+          )}
+        </div>
+
+        {/* Global overlays: they float above whatever route is showing, so
+            they belong to the layout rather than to any one page. */}
+        {reportTarget && (
+          <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} onSubmit={handleReportSubmit} />
+        )}
+        {composerOpen && (
+          <ComposerModal
+            user={user}
+            communities={joinedCommunities}
+            onClose={() => setComposerOpen(false)}
+            onSubmit={handleCreatePost}
+          />
+        )}
+        {!showingSubPage && !user.verified && <GuestBanner onVerify={goToInitialPage} />}
+        {themeNotice && (
+          <ThemeNotice
+            theme={themeNotice}
+            onDismiss={dismissThemeNotice}
+            onOpenSettings={() => goToTab("settings")}
+            raised={!showingSubPage && !user.verified}
+          />
+        )}
+        <Toast message={toastMsg} />
+      </div>
+    </OrbitProvider>
   );
 }

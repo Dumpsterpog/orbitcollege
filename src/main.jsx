@@ -1,43 +1,122 @@
-import React from "react";
+import React, { lazy, Suspense, useEffect } from "react";
 import ReactDOM from "react-dom/client";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+} from "react-router-dom";
+import ErrorBoundary from "./components/ErrorBoundary.jsx";
 import App from "./App.jsx";
-import { PrivacyPage, TermsPage } from "./components/LegalPage.jsx";
-import { Maintenance } from "./components/Maintenance.jsx";
 import "./index.css";
 
-// No router library — the app itself is a single route (all navigation is
-// internal tab state in App.jsx, untouched here). /privacy and /terms are
-// the only two URLs that need to work as real, linkable pages (Play Store
-// review, footer links, etc.), so they're handled with a plain pathname
-// check instead of pulling in react-router for two static pages.
-const path = window.location.pathname.replace(/\/+$/, "") || "/";
+/* ── Eager: the shell itself, needed on every route ── */
+// App is the layout -- it owns the data, provides it through context, and
+// renders <Outlet /> for whichever page the router picks.
 
-// MAINTENANCE MODE IS ON.
-//
-// Maintenance is the landing page: it is returned *instead of* App, not on
-// top of it. App is what starts the Firebase auth listener and the Firestore
-// subscriptions, so never mounting it means no session restore, no sign-in
-// popup and no reads. Nobody signs in because that code does not run.
-//
-// Legal pages stay reachable. They are static, they touch no data, and a
-// privacy policy that disappears during maintenance is the one page you
-// cannot afford to take down.
-//
-// TO GO LIVE AGAIN: delete MAINTENANCE and the first branch of Root below,
-// leaving the /privacy and /terms checks and App.
-const MAINTENANCE = true;
+/* ── Lazy: one chunk per page, fetched when first visited ── */
+const HomePage            = lazy(() => import("./pages/HomePage.jsx"));
+const ExplorePage         = lazy(() => import("./pages/ExplorePage.jsx"));
+const EventsPage          = lazy(() => import("./pages/EventsPage.jsx"));
+const ProfilePage         = lazy(() => import("./pages/ProfilePage.jsx"));
+const SettingsPage        = lazy(() => import("./pages/SettingsPage.jsx"));
+const CommunityPage       = lazy(() => import("./pages/CommunityPage.jsx"));
+const CreateCommunityPage = lazy(() => import("./pages/CreateCommunityPage.jsx"));
+const SearchPage          = lazy(() => import("./pages/SearchPage.jsx"));
+const TeaPage             = lazy(() => import("./pages/TeaPage.jsx"));
+const NotFoundPage        = lazy(() => import("./pages/NotFoundPage.jsx"));
+const Maintenance         = lazy(() => import("./components/Maintenance.jsx").then((m) => ({ default: m.Maintenance })));
+const PrivacyPage         = lazy(() => import("./components/LegalPage.jsx").then((m) => ({ default: m.PrivacyPage })));
+const TermsPage           = lazy(() => import("./components/LegalPage.jsx").then((m) => ({ default: m.TermsPage })));
 
-const Root =
-  MAINTENANCE && path !== "/privacy" && path !== "/terms"
-    ? Maintenance
-    : path === "/privacy"
-      ? PrivacyPage
-      : path === "/terms"
-        ? TermsPage
-        : App;
+// Maintenance mode.
+//
+// On by default, off only when something explicitly says so. That direction
+// matters: .env is gitignored, so a local `VITE_MAINTENANCE=false` cannot
+// travel to production by being committed, and a deploy that forgets to set
+// anything stays safely down rather than accidentally opening.
+const MAINTENANCE = import.meta.env.VITE_MAINTENANCE !== "false";
+
+// A deploy gives lazy chunks new content-hashed filenames. A tab left open
+// across a deploy still references the old ones, so the next navigation 404s
+// and the SPA fallback serves index.html in place of JS -- which surfaces as a
+// MIME type error. Reload once to pick up the current index.html. Guarded so a
+// genuinely broken chunk cannot reload-loop.
+window.addEventListener("vite:preloadError", () => {
+  if (sessionStorage.getItem("orbit_reloaded_for_chunk_error")) return;
+  sessionStorage.setItem("orbit_reloaded_for_chunk_error", "1");
+  window.location.reload();
+});
+
+// Matches the page background so a route change does not flash white while its
+// chunk loads. Reads the theme the same way useTheme does.
+function RouteFallback() {
+  let dark = false;
+  try {
+    const saved = localStorage.getItem("orbit_theme");
+    dark = saved === "dark"
+      || (saved !== "light" && window.matchMedia("(prefers-color-scheme: dark)").matches);
+  } catch { /* no storage: light is the safer guess */ }
+  return <div style={{ position: "fixed", inset: 0, background: dark ? "#0a0a0b" : "#ffffff" }} />;
+}
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
 
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <Root />
+    <BrowserRouter>
+      {/* Nothing was catching render errors, so any exception blanked the app
+          to a white screen with no way back. */}
+      <ErrorBoundary>
+        <ScrollToTop />
+        <Suspense fallback={<RouteFallback />}>
+          <Routes>
+            {/* Legal pages sit outside the app shell: they are static, they
+                touch no data, and they must stay reachable during
+                maintenance -- a privacy policy that disappears is the one
+                page you cannot take down. */}
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+
+            {MAINTENANCE ? (
+              <>
+                <Route path="/maintenance" element={<Maintenance />} />
+                <Route path="*" element={<Navigate to="/maintenance" replace />} />
+              </>
+            ) : (
+              <>
+                {/* The app shell. App provides the data through context and
+                    renders <Outlet /> where these pages go. */}
+                <Route path="/" element={<App />}>
+                  <Route index element={<HomePage />} />
+                  <Route path="explore" element={<ExplorePage />} />
+                  <Route path="events" element={<EventsPage />} />
+                  <Route path="profile" element={<ProfilePage />} />
+                  <Route path="settings" element={<SettingsPage />} />
+
+                  {/* Sub-pages. These used to be booleans in App, which meant
+                      a community could not be linked to, survive a refresh,
+                      or be reached with the back button. */}
+                  <Route path="c/:communityId" element={<CommunityPage />} />
+                  <Route path="create" element={<CreateCommunityPage />} />
+                  <Route path="search" element={<SearchPage />} />
+                  <Route path="tea" element={<TeaPage />} />
+
+                  {/* Inside the shell, so a mistyped path keeps the nav. */}
+                  <Route path="*" element={<NotFoundPage />} />
+                </Route>
+
+                <Route path="/maintenance" element={<Navigate to="/" replace />} />
+              </>
+            )}
+          </Routes>
+        </Suspense>
+      </ErrorBoundary>
+    </BrowserRouter>
   </React.StrictMode>
 );
