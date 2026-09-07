@@ -93,13 +93,13 @@
   /* True black, like the reference — on OLED it reads as depth rather than
      as a dark-grey sheet, and it lets the hairline do all the structural
      work without competing with a lifted surface. */
-  --bg: 0 0 0;
+  --bg: 26 26 26;
   --bg-sunken: 18 18 18;
   --bg-raised: 26 26 26;
   --bg-hover: 255 255 255 / 0.06;
 
-  --line: 38 38 38;
-  --line-strong: 84 84 84;
+  --line: 48 48 50;
+  --line-strong: 78 78 82;
 
   --ink: 245 245 245;
   --ink-2: 168 168 168;
