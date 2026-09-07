@@ -6,7 +6,6 @@ export default function EventsPage() {
   return (
     <EventsScreen
       events={o.events}
-      interests={o.user.interests}
       registeredEventIds={o.registeredEventIds}
       onRegister={o.handleRegisterEvent}
       onOpenEvent={(e) => {
@@ -16,7 +15,6 @@ export default function EventsPage() {
         if (c) o.setSelectedCommunity(c);
         else o.showToast("This event's space opens once you register");
       }}
-      onSubmitEvent={() => o.showToast("Submitting events isn't built yet")}
     />
   );
 }

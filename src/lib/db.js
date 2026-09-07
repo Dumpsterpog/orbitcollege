@@ -131,6 +131,7 @@ export const mapEvent = (d) => {
     when: r.eventWhen,
     where: r.eventWhere,
     capacity: r.capacity,
+    going: r.registeredCount ?? 0,
     // A real timestamp alongside the human-written `when` string, so the rail
     // can sort and render a date chip without parsing prose.
     startsAt: toDate(r.startsAt),
@@ -726,6 +727,12 @@ export async function registerForEvent(event, uid, userName) {
     }
 
     if (!alreadyRegistered) {
+      // The attendance count lives on the event rather than being counted from
+      // the registrations subcollection, which would be a query per event on
+      // every paint. It moves in the same transaction as the registration that
+      // changes it, and only when the registration is genuinely new -- a
+      // re-register must not inflate it.
+      tx.update(eventRef, { registeredCount: increment(1) });
       tx.set(regRef, { uid, createdAt: serverTimestamp() });
       const memberRef = doc(db, "communities", communityId, "members", uid);
       const alreadyMember = await tx.get(memberRef);
