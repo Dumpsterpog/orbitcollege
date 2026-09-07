@@ -1,7 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { OrbitProvider } from "./context/OrbitContext.jsx";
-import { ComposerModal } from "./components/Home.jsx";
 import { FONT_IMPORT } from "./data/constants.js";
 import { communityTrendScore, slugify, timeAgo } from "./utils/helpers.js";
 import { useViewportHeight } from "./utils/useViewportHeight.js";
@@ -81,7 +80,6 @@ export default function App() {
   const [notifPrefs, setNotifPrefs] = useState({ events: true, posts: true, replies: true });
   const [notifOpen, setNotifOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
-  const [composerOpen, setComposerOpen] = useState(false);
   // "/" opens search, the way the sidebar's kbd hint advertises. Ignored while
   // the user is typing into a field or a contentEditable, otherwise the key
   // would be unusable in every text input in the app.
@@ -602,7 +600,7 @@ export default function App() {
 
   if (loadingSession) {
     return (
-      <div className={shellClassAuth} style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
+      <div className={shellClassAuth} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
         <style>{FONT_IMPORT}</style>
         <div className="flex-1 flex items-center justify-center">
           <Logo size={26} />
@@ -613,7 +611,7 @@ export default function App() {
 
   if (stage === "onboarding") {
     return (
-      <div className={shellClassAuth} style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
+      <div className={shellClassAuth} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
         <style>{FONT_IMPORT}</style>
         <Onboarding
           onDone={async (name, interests) => {
@@ -663,6 +661,10 @@ export default function App() {
 
   // Everything the routed screens need. They cannot be handed props any more,
   // because the router renders them, not this component.
+  // The only badge with a real number behind it. Notifications are not built,
+  // so that row carries no count rather than a decorative one.
+  const openEventCount = events.filter((e) => !registeredEventIds.includes(e.id)).length;
+
   const ctx = {
     // identity
     user, authUser, verified: user.verified,
@@ -685,7 +687,7 @@ export default function App() {
 
   return (
     <OrbitProvider value={ctx}>
-      <div className={shellClassApp} style={{ fontFamily: "'Geist', system-ui, sans-serif" }}>
+      <div className={shellClassApp} style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
         <style>{FONT_IMPORT}</style>
 
         <Sidebar
@@ -694,7 +696,6 @@ export default function App() {
           onTeaClick={openTea}
           onSearchClick={openSearch}
           onCreateClick={openCreate}
-          onPostClick={openComposer}
           verified={user.verified}
           user={user}
           onUnbuilt={showToast}
@@ -702,16 +703,17 @@ export default function App() {
           onOpenCommunity={setSelectedCommunity}
           onSupport={() => showToast("Email team.orbit@gmail.com and we will answer")}
           onSignOut={goToInitialPage}
+          badges={{ events: openEventCount }}
         />
 
         <div className="flex-1 flex flex-col overflow-hidden lg:h-full min-w-0">
           {!showingSubPage && (
             <TopBar
-              notifOpen={notifOpen} setNotifOpen={setNotifOpen}
-              onTeaClick={openTea}
+              notifOpen={notifOpen}
+              setNotifOpen={setNotifOpen}
               onSearchClick={openSearch}
-              onMessagesClick={() => showToast("DMs are coming soon")}
               onLogoClick={() => goToTab("home")}
+              onAccountClick={() => goToTab("profile")}
               user={user}
             />
           )}
@@ -730,14 +732,6 @@ export default function App() {
             they belong to the layout rather than to any one page. */}
         {reportTarget && (
           <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} onSubmit={handleReportSubmit} />
-        )}
-        {composerOpen && (
-          <ComposerModal
-            user={user}
-            communities={joinedCommunities}
-            onClose={() => setComposerOpen(false)}
-            onSubmit={handleCreatePost}
-          />
         )}
         {!showingSubPage && !user.verified && <GuestBanner onVerify={goToInitialPage} />}
         {themeNotice && (

@@ -1,3 +1,4 @@
+import { ICONS } from "./icons.js";
 import { forwardRef } from "react";
 
 // Primitive vocabulary.
@@ -111,18 +112,29 @@ export const IconButton = forwardRef(function IconButton(
 
 /* ------------------------------------------------------------------ Icon */
 
-// Material Symbols Rounded, filled. `thin` switches to the outline axis for
-// the rare case where a filled glyph is too heavy (large empty-state art).
-export function Icon({ name, size = 20, thin = false, className, style, ...rest }) {
+// Lucide, wrapped so the app can keep calling icons by their old Material
+// Symbol names. See ui/icons.js for why, and for the mapping.
+export function Icon({ name, size = 20, thin = false, className, style, strokeWidth, ...rest }) {
+  const Glyph = ICONS[name];
+
+  if (!Glyph) {
+    // Loud in development, invisible in production. A missing glyph should be
+    // fixed, not silently rendered as a blank gap that nobody notices.
+    if (import.meta.env.DEV) console.warn(`[orbit] no icon mapped for "${name}"`);
+    return <span aria-hidden="true" className={cx("shrink-0 inline-block", className)} style={{ width: size, height: size, ...style }} />;
+  }
+
   return (
-    <span
+    <Glyph
       aria-hidden="true"
-      className={cx("icon shrink-0", thin && "icon-thin", className)}
-      style={{ fontSize: size, width: size, height: size, ...style }}
+      size={size}
+      // Lucide's own default is 2. The design sits a little lighter than that,
+      // and `thin` drops it further for the few large decorative glyphs.
+      strokeWidth={strokeWidth ?? (thin ? 1.5 : 1.85)}
+      className={cx("shrink-0", className)}
+      style={style}
       {...rest}
-    >
-      {name}
-    </span>
+    />
   );
 }
 

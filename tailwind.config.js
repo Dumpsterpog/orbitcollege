@@ -70,7 +70,7 @@ export default {
       },
 
       fontFamily: {
-        sans: ["Geist", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "system-ui", "sans-serif"],
+        sans: ["Inter", "-apple-system", "Segoe UI", "system-ui", "sans-serif"],
         mono: ["JetBrains Mono", "ui-monospace", "monospace"],
       },
 

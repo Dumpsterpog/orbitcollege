@@ -20,28 +20,28 @@
 
   /* Surfaces. `raised` is for overlays only (menus, dialogs, sheets).
      `sunken` is for input wells and hover states, not for content blocks. */
-  --bg: 255 255 255;
-  --bg-sunken: 250 250 250;
+  --bg: 247 248 251;
+  --bg-sunken: 241 243 248;
   --bg-raised: 255 255 255;
   --bg-hover: 0 0 0 / 0.04;
 
   /* One hairline. `line-strong` exists only for a focused input edge. */
-  --line: 219 219 219;
-  --line-strong: 168 168 168;
+  --line: 232 234 241;
+  --line-strong: 203 208 219;
 
   /* Ink. `ink` is body and headings both — weight separates them, not
      colour. `ink-2` is metadata; `ink-3` is the floor for anything that
      still has to be readable. There is no fourth step: if text needs to be
      quieter than ink-3 it should not be on the screen. */
-  --ink: 0 0 0;
-  --ink-2: 115 115 115;
-  --ink-3: 168 168 168;
+  --ink: 17 20 32;
+  --ink-2: 100 108 128;
+  --ink-3: 148 156 175;
 
   /* One accent, used for interactive text, active nav and primary fills. */
-  --accent: 0 102 255;
-  --accent-press: 0 82 214;
+  --accent: 79 70 229;
+  --accent-press: 67 56 202;
   --accent-ink: 255 255 255;
-  --accent-wash: 232 240 254;
+  --accent-wash: 238 238 255;
 
   /* Solid inverse — the highest-emphasis button. */
   --solid: 0 0 0;
@@ -79,7 +79,7 @@
    * text on a page, so the dark-mode values are light enough that white on top
    * of them fails contrast. This pair is tuned the other way round -- a fill
    * dark enough for white text in both themes. */
-  --compose: 7 120 94;
+  --compose: 79 70 229;
   --compose-ink: 255 255 255;
 
   --radius-sm: 6px;
@@ -105,10 +105,10 @@
   --ink-2: 168 168 168;
   --ink-3: 115 115 115;
 
-  --accent: 77 155 255;
+  --accent: 129 124 255;
   --accent-press: 120 180 255;
   --accent-ink: 0 0 0;
-  --accent-wash: 18 32 56;
+  --accent-wash: 30 28 62;
 
   --solid: 245 245 245;
   --solid-press: 219 219 219;
@@ -130,7 +130,7 @@
      readable and the button is still clearly a button on a near-black
      background. Lifting it further to make it pop would drop the label below
      AA, which is the wrong trade on the one control the rail is built around. */
-  --compose: 12 134 104;
+  --compose: 99 91 255;
   --compose-ink: 255 255 255;
   --c-red: 255 122 114;
 
@@ -139,38 +139,10 @@
 /* Filled icon face. Kept filled at every state — an outline set reads as
    unfinished at 20px, and the fill is what makes the active nav item land
    without needing a background chip behind it. */
-.icon {
-  font-family: "Material Symbols Rounded";
-  font-weight: 400;
-  font-style: normal;
-  line-height: 1;
-  letter-spacing: normal;
-  text-transform: none;
-  display: inline-block;
-  white-space: nowrap;
-  word-wrap: normal;
-  direction: ltr;
-  -webkit-font-feature-settings: "liga";
-  -webkit-font-smoothing: antialiased;
-  user-select: none;
-  /* Outlined by default, the way X's are.
-   *
-   * This used to be FILL 1. Solid glyphs at nav size read as a row of stickers
-   * rather than as controls, and the app asks for a lot of icons at once -- a
-   * rail, a post footer, a composer, a rail of cards. Outline is the quieter
-   * default and the one that survives being repeated.
-   *
-   * Add .icon-fill where a solid glyph is genuinely wanted. */
-  font-variation-settings: "FILL" 0, "wght" 350, "GRAD" -25, "opsz" 40;
-}
 /* Outlined, and lighter than the filled default. The nav rail uses this at a
    larger size: a thin glyph needs the extra size to read, and the pair is what
    makes an icon look drawn rather than stamped. */
-/* Lighter still, for large glyphs where the default reads heavy. */
-.icon-thin { font-variation-settings: "FILL" 0, "wght" 250, "GRAD" -25, "opsz" 48; }
 
-/* The escape hatch: a solid glyph where one is genuinely wanted. */
-.icon-fill { font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24; }
 
 /* Story ring: a 2px conic sweep with the avatar punched out of the middle. */
 .story-ring {
