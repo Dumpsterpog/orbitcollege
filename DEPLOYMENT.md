@@ -8,56 +8,39 @@ explanations that used to live inside them live here instead.
 
 ## Maintenance mode
 
-**It is currently ON.** Every route serves `public/maintenance.html`.
+**It is currently ON.** `src/main.jsx` renders `src/components/Maintenance.jsx`
+as the landing page.
 
-### Why it is done at the hosting layer
-
-`vercel.json` rewrites all traffic to a static page, so the React bundle is
-never requested. No Firebase SDK download, no auth listener, no Firestore
-connection. Nobody can sign in because the code that signs people in is never
-served.
-
-An earlier version gated this inside `main.jsx`. That was strictly weaker: the
-browser still downloaded and booted the whole application before deciding to
-render something else.
-
-The page itself is one file with no scripts, no webfont and no external
-requests, at about 4.5KB. The most likely reason it is up is that something in
-the project is mid-repair, so it must not depend on anything in the project to
-render.
+It is returned *instead of* `App`, not on top of it. `App` is what starts the
+Firebase auth listener and the Firestore subscriptions, so never mounting it
+means no session restore, no sign-in popup and no reads. Nobody signs in
+because that code does not run.
 
 ### Going live again
 
-Replace the `rewrites` array in `vercel.json` with just the SPA fallback:
+In `src/main.jsx`, delete the `MAINTENANCE` constant and the first branch of
+`Root`, leaving the `/privacy` and `/terms` checks and `App`. Then redeploy.
 
-```json
-{
-  "rewrites": [
-    { "source": "/(.*)", "destination": "/index.html" }
-  ]
-}
-```
-
-Then redeploy. `public/_redirects` carries the same rules for Netlify and
-should be reverted to `/*  /index.html  200` at the same time.
+Nothing else needs changing: `vercel.json` is back to the plain SPA fallback,
+so hosting serves the app normally and the switch lives entirely in one file.
 
 ### What still works while it is on
 
-- `/privacy` and `/terms` are matched *before* the catch-all. They are static,
-  they touch no data, and a privacy policy that disappears during maintenance
-  is the one page you cannot take down.
-- `/assets/*` and `/seed/*` are untouched. Vercel serves real files from the
-  filesystem before it considers any rewrite, so static assets need no
-  exemption in the rewrite list.
-
-Rewrites match in order and the first one wins, which is why the catch-all is
-last.
+`/privacy` and `/terms` are checked before the maintenance branch and still
+render the real pages. They are static, they touch no data, and a privacy
+policy that disappears during maintenance is the one page you cannot take
+down.
 
 ### What this is not
 
-A security control. It stops ordinary visitors seeing a half-finished app. It
-does not protect data — `firestore.rules` does that, and it is unaffected by
-any of this.
+A security control. The bundle is still downloaded, so anyone reading it can
+see the app code and work around the switch. It stops ordinary visitors seeing
+a half-finished app; it does not protect data. `firestore.rules` does that,
+and it is unaffected.
+
+A hosting-level rewrite would avoid serving the bundle at all, which is
+strictly stronger. This is the accepted trade for the screen being a real
+component that follows the app's own theme.
 
 ---
 
