@@ -29,6 +29,28 @@ service cloud.firestore {
         && exists(/databases/$(database)/documents/profiles/$(request.auth.uid))
         && get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.isAdmin == true;
     }
+    // Off-platform invite links, refused server-side.
+    //
+    // The client filter in lib/moderation.js does the rest and does it better:
+    // it can normalise leetspeak, collapse spacing tricks and explain what was
+    // wrong. None of that is expressible here -- rules get one regex and no
+    // way to say why -- and anyone can bypass a client check by opening a
+    // console.
+    //
+    // So this covers only the abuse that actually pays to automate: dropping
+    // a Telegram or WhatsApp invite into a campus feed to move students to an
+    // unmoderated channel, which is the first step of every scam and porn ring
+    // that has ever targeted a student body. Word filtering stays in the
+    // client, where a human-readable refusal is worth more than an
+    // unbypassable one.
+    function noInviteLinks(text) {
+      // [.] rather than \. on purpose: a backslash inside a rules string needs
+      // doubling to survive into the regex, and getting that wrong yields a
+      // pattern that matches nothing while looking correct. A character class
+      // sidesteps the escaping question entirely.
+      return !text.matches('(?i).*(t[.]me/|telegram[.](me|dog)/|chat[.]whatsapp[.]com/|discord[.]gg/|discord[.]com/invite/|onlyfans[.]com).*');
+    }
+
     // Fields a user must never be able to set on themselves.
     function noPrivilegeEscalation() {
       // communitiesCreated joins isAdmin here: it is a quota, so letting
@@ -155,7 +177,8 @@ service cloud.firestore {
         allow read: if true;
         allow create: if signedIn()
           && request.resource.data.authorId == request.auth.uid
-          && isMember();
+          && isMember()
+          && noInviteLinks(request.resource.data.get('text', ''));
         // sparkCount and pinned are the only reasons a non-author updates.
         allow update: if signedIn();
         allow delete: if (signedIn() && resource.data.authorId == request.auth.uid)
@@ -175,7 +198,8 @@ service cloud.firestore {
             && request.resource.data.authorId == request.auth.uid
             && request.resource.data.text is string
             && request.resource.data.text.size() > 0
-            && request.resource.data.text.size() <= 1000;
+            && request.resource.data.text.size() <= 1000
+            && noInviteLinks(request.resource.data.text);
           allow delete: if (signedIn() && resource.data.authorId == request.auth.uid)
             || isCreator() || isCommunityAdmin() || isAdmin();
         }
@@ -223,7 +247,8 @@ service cloud.firestore {
       allow create: if signedIn()
         && request.resource.data.authorId == request.auth.uid
         && request.resource.data.text is string
-        && request.resource.data.text.size() <= 2000;
+        && request.resource.data.text.size() <= 2000
+        && noInviteLinks(request.resource.data.text);
 
       // Sparks only. Nobody edits someone else's post text.
       //
@@ -254,7 +279,8 @@ service cloud.firestore {
           && request.resource.data.authorId == request.auth.uid
           && request.resource.data.text is string
           && request.resource.data.text.size() > 0
-          && request.resource.data.text.size() <= 1000;
+          && request.resource.data.text.size() <= 1000
+          && noInviteLinks(request.resource.data.text);
         allow delete: if (signedIn() && resource.data.authorId == request.auth.uid) || isAdmin();
       }
     }
@@ -311,7 +337,8 @@ service cloud.firestore {
         && !('authorId' in request.resource.data.keys())
         && request.resource.data.text is string
         && request.resource.data.text.size() > 0
-        && request.resource.data.text.size() <= 2000;
+        && request.resource.data.text.size() <= 2000
+        && noInviteLinks(request.resource.data.text);
 
       // Vote and reaction counters.
       allow update: if signedIn() && !('authorId' in request.resource.data.keys());

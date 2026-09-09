@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import * as db from "../lib/db.js";
+import { checkText } from "../lib/moderation.js";
 import { Icon, Avatar, Button, cx } from "./ui/Primitives.jsx";
 
 export { Avatar };
@@ -170,6 +171,7 @@ export function PostComments({
   const [items, setItems] = useState([]);
   const [draft, setDraft] = useState("");
   const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState("");
 
   useEffect(() => {
     if (!open) return;
@@ -184,6 +186,11 @@ export function PostComments({
     const text = draft.trim();
     if (!text) return;
     if (!canWrite) { onBlocked?.(); return; }
+
+    const clean = checkText(text);
+    if (!clean.ok) { setNotice(clean.reason); return; }
+    setNotice("");
+
     setBusy(true);
     setDraft("");
     try {
@@ -236,6 +243,10 @@ export function PostComments({
 
           {items.length === 0 && (
             <p className="text-base text-ink-3">No comments yet.</p>
+          )}
+
+          {notice && (
+            <p className="text-base text-c-red leading-relaxed">{notice}</p>
           )}
 
           <div className="flex items-center gap-2.5 pt-1">

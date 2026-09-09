@@ -8,6 +8,7 @@ import { useTheme } from "./utils/useTheme.js";
 import * as db from "./lib/db.js";
 import { cached, reviveDates, setCacheScope } from "./lib/cache.js";
 import { checkPostLimit, notePost, checkCommunityLimit, MAX_COMMUNITIES } from "./lib/limits.js";
+import { checkText, checkFields } from "./lib/moderation.js";
 import { onAuthChange, completeRedirectSignIn, fetchProfile, signOut as fbSignOut } from "./lib/authService.js";
 import { auth } from "./lib/firebase.js";
 import { TopBar } from "./components/TopBar.jsx";
@@ -273,6 +274,9 @@ export default function App() {
 
     // Checked before the upload, not after: burning a photo upload on a write
     // that is about to be refused wastes the slowest part of the operation.
+    const clean = checkText(text);
+    if (!clean.ok) { showToast(clean.reason); return false; }
+
     const limit = checkPostLimit();
     if (!limit.ok) { showToast(limit.message); return false; }
     const body = text.trim();
@@ -339,6 +343,12 @@ export default function App() {
     // Counted from the live list rather than a stored tally, so it cannot
     // drift. firestore.rules enforces the same cap server-side; this exists to
     // say so before the form is filled in rather than after.
+    const clean = checkFields([
+      name, desc,
+      ...rules.flatMap((r) => [r.title, r.body]),
+    ]);
+    if (!clean.ok) { showToast(clean.reason); return; }
+
     const owned = dbCommunities.filter((c) => c.creatorId === authUser.id).length;
     const cap = checkCommunityLimit(owned);
     if (!cap.ok) { showToast(cap.message); return; }
@@ -495,6 +505,12 @@ export default function App() {
 
   const handlePostTea = async (text, category = "tea") => {
     if (!authUser) { handleBlocked(); return; }
+
+    // Anonymity is exactly why this needs filtering: it is the surface where
+    // someone assumes nothing traces back to them.
+    const clean = checkText(text);
+    if (!clean.ok) { showToast(clean.reason); return; }
+
     let newId;
     try {
       newId = await db.postTea({ text, category, authorId: authUser.id });
@@ -574,6 +590,10 @@ export default function App() {
 
   const handleCommentTea = async (id, text) => {
     if (!authUser) { handleBlocked(); return; }
+
+    const clean = checkText(text);
+    if (!clean.ok) { showToast(clean.reason); return; }
+
     let commentId;
     try {
       commentId = await db.commentTea(id, text, authUser.id);
