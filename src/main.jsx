@@ -32,11 +32,16 @@ const TermsPage           = lazy(() => import("./components/LegalPage.jsx").then
 
 // Maintenance mode.
 //
-// On by default, off only when something explicitly says so. That direction
-// matters: .env is gitignored, so a local `VITE_MAINTENANCE=false` cannot
-// travel to production by being committed, and a deploy that forgets to set
-// anything stays safely down rather than accidentally opening.
-const MAINTENANCE = import.meta.env.VITE_MAINTENANCE !== "false";
+// Off by default now that the site is live. It was the other way round while
+// the rebuild was in progress, so that a deploy which forgot to configure
+// anything stayed down rather than accidentally opening. That is the right
+// default for a site that is not ready and the wrong one for a site that is:
+// a config slip should not take a running product offline.
+//
+// To put it back up, set VITE_MAINTENANCE=true in the deployment environment
+// and redeploy. Vite inlines the value at build time, so it needs a rebuild
+// either way -- there is no runtime switch here to flip in a hurry.
+const MAINTENANCE = import.meta.env.VITE_MAINTENANCE === "true";
 
 // A deploy gives lazy chunks new content-hashed filenames. A tab left open
 // across a deploy still references the old ones, so the next navigation 404s

@@ -8,39 +8,37 @@ explanations that used to live inside them live here instead.
 
 ## Maintenance mode
 
-**It is currently ON.** `src/main.jsx` renders `src/components/Maintenance.jsx`
-as the landing page.
+**It is currently OFF. The site is live.**
 
-It is returned *instead of* `App`, not on top of it. `App` is what starts the
+`src/main.jsx` reads `VITE_MAINTENANCE` and shows the maintenance screen only
+when it is exactly `"true"`.
+
+### Taking the site down
+
+Set `VITE_MAINTENANCE=true` in the deployment environment and redeploy. Vite
+inlines the value at build time, so it needs a rebuild either way -- there is
+no runtime switch to flip in a hurry. If you need one, that is a hosting-level
+rewrite, not a client flag.
+
+The default used to be the other way round, on while the rebuild was in
+progress, so a deploy that forgot to configure anything stayed down rather
+than accidentally opening. That is right for a site that is not ready and
+wrong for one that is: a config slip should not take a running product
+offline.
+
+### While it is on
+
+`Maintenance` is returned *instead of* `App`, not over it. `App` starts the
 Firebase auth listener and the Firestore subscriptions, so never mounting it
-means no session restore, no sign-in popup and no reads. Nobody signs in
-because that code does not run.
+means no session restore, no sign-in popup and no reads.
 
-### Going live again
+`/privacy` and `/terms` stay reachable. They are static, they touch no data,
+and a privacy policy that disappears during maintenance is the one page you
+cannot take down.
 
-In `src/main.jsx`, delete the `MAINTENANCE` constant and the first branch of
-`Root`, leaving the `/privacy` and `/terms` checks and `App`. Then redeploy.
-
-Nothing else needs changing: `vercel.json` is back to the plain SPA fallback,
-so hosting serves the app normally and the switch lives entirely in one file.
-
-### What still works while it is on
-
-`/privacy` and `/terms` are checked before the maintenance branch and still
-render the real pages. They are static, they touch no data, and a privacy
-policy that disappears during maintenance is the one page you cannot take
-down.
-
-### What this is not
-
-A security control. The bundle is still downloaded, so anyone reading it can
-see the app code and work around the switch. It stops ordinary visitors seeing
-a half-finished app; it does not protect data. `firestore.rules` does that,
-and it is unaffected.
-
-A hosting-level rewrite would avoid serving the bundle at all, which is
-strictly stronger. This is the accepted trade for the screen being a real
-component that follows the app's own theme.
+It is not a security control. The bundle still downloads, so it stops ordinary
+visitors seeing a half-finished app; it does not protect data.
+`firestore.rules` does that.
 
 ---
 

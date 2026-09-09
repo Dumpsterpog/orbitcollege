@@ -17,10 +17,14 @@ import { auth } from "../lib/firebase.js";
 // straight to the last step; if that account already has a profile it goes
 // through, and if it doesn't they land back at step one to fill it.
 //
-// saveProfile is setDoc(merge) on Firestore, so university / year / phone
+// saveProfile is setDoc(merge) on Firestore, so university / year
 // are new fields on the existing profile doc — no migration needed.
 
-const STEPS = ["name", "study", "interests", "phone", "signin"];
+// Four steps. Phone sat between interests and sign-in: optional, skippable,
+// and asking for a number before anyone had an account to attach it to. It
+// bought a field almost nobody filled and cost a step everybody had to get
+// past.
+const STEPS = ["name", "study", "interests", "signin"];
 
 // Orbit is a single-campus product, so university isn't a question — it's a
 // fact the step states. A chip group with one option would be asking
@@ -186,7 +190,6 @@ export function Onboarding({ onDone, onGuest }) {
   const [name, setName] = useState("");
   const [year, setYear] = useState("");
   const [interests, setInterests] = useState([]);
-  const [phone, setPhone] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -197,7 +200,6 @@ export function Onboarding({ onDone, onGuest }) {
     setInterests((cur) => (cur.includes(n) ? cur.filter((x) => x !== n) : [...cur, n]));
 
   // Optional, but if something's been typed it should look like a number.
-  const phoneValid = !phone.trim() || /^[0-9+\-\s()]{7,20}$/.test(phone.trim());
 
   const finish = async () => {
     setLoading(true);
@@ -229,7 +231,6 @@ export function Onboarding({ onDone, onGuest }) {
         interests,
         university: UNIVERSITY,
         year: year || null,
-        phone: phone.trim() || null,
       });
 
       setLoading(false);
@@ -443,51 +444,11 @@ export function Onboarding({ onDone, onGuest }) {
                 <div className="flex items-center justify-between gap-3 mt-10 pt-2">
                   <GoBack onClick={() => go("study")} />
                   <div className="flex items-center gap-2">
-                    <SkipLink onClick={() => { setInterests([]); go("phone"); }} />
-                    <Continue onClick={() => go("phone")} />
+                    <SkipLink onClick={() => { setInterests([]); go("signin"); }} />
+                    <Continue onClick={() => go("signin")} />
                   </div>
                 </div>
               </div>
-            )}
-
-            {/* 4 — Phone (optional) */}
-            {step === "phone" && (
-              <form className="animate-rise flex flex-col flex-1"
-                    onSubmit={(e) => { e.preventDefault(); if (phoneValid) go("signin"); }}>
-                <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">
-                  Add a phone number?
-                </h1>
-                <p className="text-md text-ink-2 mt-2 max-w-md">
-                  Entirely optional. It's only used if a community organiser needs to reach you about
-                  an event you registered for. It is never shown on your profile.
-                </p>
-
-                <div className="mt-8 max-w-md">
-                  <label htmlFor="ob-phone" className="block text-base font-semibold text-ink mb-2">
-                    Phone <span className="font-normal text-ink-2">· optional</span>
-                  </label>
-                  <Input
-                    id="ob-phone" autoFocus type="tel" inputMode="tel" value={phone} maxLength={20}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+91 98765 43210"
-                    className={cx(
-                      "h-12 rounded-full px-5 text-md ring-1 bg-bg border-transparent",
-                      phoneValid ? "ring-line focus:ring-ink" : "ring-danger focus:ring-danger"
-                    )}
-                  />
-                  {!phoneValid && (
-                    <p className="text-base text-danger mt-2">That doesn't look like a phone number.</p>
-                  )}
-                </div>
-
-                <div className="flex items-center justify-between gap-3 mt-10 pt-2">
-                  <GoBack onClick={() => go("interests")} />
-                  <div className="flex items-center gap-2">
-                    <SkipLink onClick={() => { setPhone(""); go("signin"); }} />
-                    <Continue type="submit" disabled={!phoneValid} />
-                  </div>
-                </div>
-              </form>
             )}
 
             {/* 5 — Sign in */}
@@ -512,7 +473,6 @@ export function Onboarding({ onDone, onGuest }) {
                       { k: "University", v: UNIVERSITY, step: "study" },
                       { k: "Year", v: year || "Not set", step: "study" },
                       { k: "Interests", v: interests.length ? `${interests.length} selected` : "None", step: "interests" },
-                      { k: "Phone", v: phone.trim() || "Not set", step: "phone" },
                     ].map((row) => (
                       <div key={row.k} className="flex items-center gap-3 px-4 py-3">
                         <dt className="text-base text-ink-2 w-24 shrink-0">{row.k}</dt>
@@ -553,7 +513,7 @@ export function Onboarding({ onDone, onGuest }) {
                 </p>
 
                 <div className="mt-8 pt-2">
-                  <GoBack onClick={() => { if (returning) { setReturning(false); go("name"); } else go("phone"); }} />
+                  <GoBack onClick={() => { if (returning) { setReturning(false); go("name"); } else go("interests"); }} />
                 </div>
               </div>
             )}
