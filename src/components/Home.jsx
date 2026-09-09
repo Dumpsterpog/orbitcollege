@@ -120,7 +120,7 @@ export function HomeScreen({
   return (
     <Screen>
       <div className="w-full mx-auto px-4 sm:px-6 py-6 grid justify-center gap-6
-        grid-cols-1 max-w-[1420px] lg:grid-cols-[minmax(0,760px)_360px] items-start">
+        grid-cols-1 max-w-[1420px] lg:grid-cols-[minmax(0,760px)_360px]">
 
         {/* ------------------------------------------------------- feed */}
         <div className="min-w-0 flex flex-col gap-4">
@@ -179,7 +179,11 @@ export function HomeScreen({
         </div>
 
         {/* ------------------------------------------------------- rail */}
-        <aside className="hidden lg:block">
+        {/* No items-start on the grid above, deliberately: the aside has to
+            stretch to the row height or the sticky child below has a box its
+            own height to travel in, which is no travel at all -- the rail
+            scrolled away and left a hole. */}
+        <aside className="hidden lg:block h-full">
           <div className="sticky top-6 max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar pr-1 flex flex-col gap-4">
             <PulseHeader />
             <Trending topics={trending} onOpen={() => onGoToExplore()} />
