@@ -411,6 +411,15 @@ service cloud.firestore {
       allow read: if signedIn() && resource.data.uid == request.auth.uid;
     }
 
+    // Chat across every community at once, for the admin tool's moderation
+    // view. Without this, even an admin's collectionGroup("messages") query is
+    // denied, because the nested messages rule only covers one community at a
+    // time. Admin-only, mirroring the nested rule's isAdmin() branch -- nothing
+    // is widened for ordinary members.
+    match /{path=**}/messages/{messageId} {
+      allow read: if isAdmin();
+    }
+
     // Anything not named above is denied. New collections have to be added
     // here deliberately rather than inheriting a permissive default.
     match /{document=**} {
