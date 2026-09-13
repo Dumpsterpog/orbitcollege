@@ -447,11 +447,27 @@ export default function App() {
   // whatever profiles.name actually held on the next reload. Bio was worse
   // — there wasn't even a bio column, so it was never anything more than
   // component state. Both now write to profiles for real.
-  const handleUpdateProfile = async (name, bio) => {
-    const trimmedName = name.trim();
+  // Takes ({ name, bio, interests }) or the older (name, bio) form.
+  //
+  // The profile page has always called this with one object while it read two
+  // strings, so `name.trim()` threw on an object and Edit profile never saved
+  // anything. Both shapes are accepted so no caller can hit that again.
+  const handleUpdateProfile = async (nameOrFields, bioArg) => {
+    const input = nameOrFields && typeof nameOrFields === "object"
+      ? nameOrFields
+      : { name: nameOrFields, bio: bioArg };
+    const trimmedName = String(input.name || "").trim();
     if (!trimmedName || !authUser) return;
-    setUser((u) => ({ ...u, name: trimmedName, bio }));
-    const error = await saveProfile(authUser.id, { name: trimmedName, bio }).then(() => null).catch((e) => e);
+
+    const bio = String(input.bio || "").trim();
+    const clean = checkFields([trimmedName, bio]);
+    if (!clean.ok) { showToast(clean.reason); return; }
+
+    const fields = { name: trimmedName, bio };
+    if (Array.isArray(input.interests)) fields.interests = input.interests;
+
+    setUser((u) => ({ ...u, ...fields }));
+    const error = await saveProfile(authUser.id, fields).then(() => null).catch((e) => e);
     showToast(error ? "Couldn't save profile, try again" : "Profile updated");
   };
 

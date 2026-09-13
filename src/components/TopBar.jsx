@@ -1,6 +1,7 @@
 import { useClickOutside } from "../utils/hooks.js";
 import { Icon, Avatar, cx } from "./ui/Primitives.jsx";
 import { Weather } from "./Weather.jsx";
+import { BetaTag } from "./Common.jsx";
 
 // Header at every width.
 //
@@ -31,6 +32,7 @@ export function TopBar({
       {/* The rail carries the wordmark on desktop. */}
       <button onClick={onLogoClick} className="flex lg:hidden items-center gap-2 shrink-0" aria-label="Orbit home">
         <img src="/orbitcollege.png" alt="" width={30} height={30} className="w-[30px] h-[30px] rounded-lg object-contain" />
+        <BetaTag />
       </button>
 
       <div className="flex-1 min-w-0 max-w-[640px] lg:mx-2">

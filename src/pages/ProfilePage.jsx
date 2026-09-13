@@ -6,6 +6,8 @@ export default function ProfilePage() {
   return (
     <ProfileScreen
       user={o.user}
+      email={o.authUser?.email}
+      pendingCount={o.pendingPosts.length}
       joinedCommunities={o.joinedCommunities}
       onSaveProfile={o.handleUpdateProfile}
       onVerifyGuest={o.goToInitialPage}

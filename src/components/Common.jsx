@@ -25,6 +25,23 @@ export function Logo({ size = 24, showWordmark = true }) {
           Orbit
         </span>
       )}
+      {showWordmark && <BetaTag />}
+    </span>
+  );
+}
+
+// Beta marker, next to every wordmark. One component so the loading screen,
+// sidebar and phone header cannot end up with three slightly different pills.
+export function BetaTag({ className }) {
+  return (
+    <span
+      className={cx(
+        "inline-flex items-center h-[18px] px-1.5 rounded-md bg-accent-wash text-accent ring-1 ring-accent/25",
+        "text-[10px] font-bold uppercase tracking-[0.08em] leading-none shrink-0",
+        className
+      )}
+    >
+      Beta
     </span>
   );
 }

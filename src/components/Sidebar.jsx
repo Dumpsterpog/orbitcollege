@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { BetaTag } from "./Common.jsx";
 import { CATEGORIES } from "../data/constants.js";
 import { Icon, Avatar, cx } from "./ui/Primitives.jsx";
 
@@ -124,7 +125,10 @@ export function Sidebar({
             className="w-9 h-9 rounded-xl object-contain shrink-0"
           />
           <span className="hidden xl:block min-w-0">
-            <span className="block text-[19px] font-bold tracking-[-0.02em] text-ink leading-none">Orbit</span>
+            <span className="flex items-center gap-1.5">
+              <span className="text-[19px] font-bold tracking-[-0.02em] text-ink leading-none">Orbit</span>
+              <BetaTag />
+            </span>
             <span className="block text-[10.5px] text-ink-3 mt-1 truncate">
               Your campus. Your people. Your space.
             </span>
