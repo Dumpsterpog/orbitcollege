@@ -136,6 +136,7 @@ export const mapEvent = (d) => {
     // can sort and render a date chip without parsing prose.
     startsAt: toDate(r.startsAt),
     imageUrl: r.imageUrl || null,
+    featured: !!r.featured,
     linkedCommunityId: r.linkedCommunityId || null,
   };
 };
@@ -511,6 +512,43 @@ export async function createPost({ communityId = null, authorId, authorName, tex
   return mapPost(await getDoc(ref));
 }
 
+/* ------------------------------------------------------ review queue */
+
+// A post the classifier held back. It waits in moderation_queue, readable only
+// by its author and admins, until the admin tool publishes or rejects it.
+export async function submitForReview({ communityId = null, authorId, authorName, text, imageUrl = null, labels = [], matched = [] }) {
+  need();
+  const ref = await addDoc(collection(db, "moderation_queue"), {
+    authorId,
+    authorName: authorName || "Someone",
+    text: text || "",
+    imageUrl,
+    communityId: communityId || null,
+    labels,
+    matched,
+    status: "pending",
+    createdAt: serverTimestamp(),
+  });
+  return ref.id;
+}
+
+// The signed-in user's own posts still waiting. Filtered on authorId, which is
+// what the read rule requires; status is filtered here rather than in the
+// query so no composite index is needed.
+export function watchMyPendingPosts(uid, cb) {
+  if (!firebaseReady || !uid) { cb([]); return () => {}; }
+  return onSnapshot(
+    query(collection(db, "moderation_queue"), where("authorId", "==", uid)),
+    (snap) => cb(
+      snap.docs
+        .map((d) => ({ id: d.id, ...d.data(), createdAt: toDate(d.data().createdAt) }))
+        .filter((x) => x.status === "pending")
+        .sort((a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0))
+    ),
+    (err) => { watchFailed(err); cb([]); }
+  );
+}
+
 /* ---------------------------------------------------------- comments */
 
 // Comments hang off whichever post document they belong to, so the same code
@@ -673,6 +711,77 @@ export function watchEvents(cb) {
     (snap) => cb(snap.docs.map(mapEvent)),
     (err) => { watchFailed(err); cb([]); }
   );
+}
+
+/* ----------------------------------------------------- announcements */
+
+// Banners published from the admin tool. The newest few, with switched-off and
+// expired ones dropped here rather than in the query, so a single-field
+// orderBy is all it needs and no composite index has to exist.
+export function watchAnnouncements(cb) {
+  if (!firebaseReady) { cb([]); return () => {}; }
+  return onSnapshot(
+    query(collection(db, "announcements"), orderBy("createdAt", "desc"), limit(5)),
+    (snap) => {
+      const now = Date.now();
+      cb(
+        snap.docs
+          .map((d) => {
+            const r = d.data();
+            return { id: d.id, title: r.title || "", body: r.body || "", active: r.active !== false, expiresAt: toDate(r.expiresAt) };
+          })
+          .filter((a) => a.active && (!a.expiresAt || a.expiresAt.getTime() > now))
+      );
+    },
+    (err) => { watchFailed(err); cb([]); }
+  );
+}
+
+/* --------------------------------------------------------------- ads */
+
+// Live ads only: the rules refuse to hand anyone else a draft or a paused ad,
+// and this equality filter is what lets the query satisfy that rule. The
+// schedule is checked here, so an ad with a start date in the future can be
+// set live ahead of time and simply appears when the date comes.
+export function watchAds(cb) {
+  if (!firebaseReady) { cb([]); return () => {}; }
+  return onSnapshot(
+    query(collection(db, "ads"), where("status", "==", "live")),
+    (snap) => {
+      const now = Date.now();
+      cb(
+        snap.docs
+          .map((d) => {
+            const r = d.data();
+            return {
+              id: d.id,
+              format: r.format || "text",
+              placements: r.placements?.length ? r.placements : ["feed"],
+              advertiser: r.advertiser || "",
+              advertiserAvatar: r.advertiserAvatar || null,
+              headline: r.headline || "",
+              body: r.body || "",
+              imageUrl: r.imageUrl || null,
+              ctaLabel: r.ctaLabel || "Learn more",
+              linkUrl: r.linkUrl || "",
+              interests: r.interests || [],
+              showToGuests: r.showToGuests !== false,
+              startsAt: toDate(r.startsAt),
+              endsAt: toDate(r.endsAt),
+            };
+          })
+          .filter((a) => (!a.startsAt || a.startsAt.getTime() <= now) && (!a.endsAt || a.endsAt.getTime() > now))
+      );
+    },
+    (err) => { watchFailed(err); cb([]); }
+  );
+}
+
+// Best effort by design. A lost impression is a rounding error; an ad that
+// throws because a counter write was refused would be a broken feed.
+export function trackAd(adId, field) {
+  if (!firebaseReady || !adId || (field !== "impressions" && field !== "clicks")) return;
+  updateDoc(doc(db, "ads", adId), { [field]: increment(1) }).catch(() => {});
 }
 
 export async function fetchMyRegistrations(uid) {

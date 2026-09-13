@@ -66,15 +66,53 @@ const ABUSE = [
 // Off-platform invite links. The point is not that these services are bad --
 // it is that a campus feed is a recruiting ground for scams and porn rings
 // that move people to an unmoderated channel as the first step.
+//
+// Always refused, never queued: firestore.rules refuses the same links on
+// every post write, including an admin's, so a queued one could never be
+// approved anyway.
 const LINK_PATTERNS = [
   { re: /\bt\.me\/\S+/i,                       label: "Telegram invite links" },
   { re: /\btelegram\.(me|dog)\/\S+/i,          label: "Telegram invite links" },
   { re: /\bchat\.whatsapp\.com\/\S+/i,         label: "WhatsApp group invites" },
   { re: /\b(discord\.gg|discord\.com\/invite)\/\S+/i, label: "Discord invites" },
   { re: /\bonlyfans\.com\/\S*/i,               label: "OnlyFans links" },
-  { re: /\b(bit\.ly|tinyurl\.com|cutt\.ly|rb\.gy|is\.gd|shorturl\.at)\/\S+/i,
-    label: "shortened links, because nobody can see where they go" },
 ];
+
+// Shortened links hide where they go. Refused in comments and Locali-Tea,
+// sent for review in posts, where a moderator can open them and look.
+const SHORTENER = /\b(bit\.ly|tinyurl\.com|cutt\.ly|rb\.gy|is\.gd|shorturl\.at)\/\S+/i;
+
+/* -------------------------------------------------------- review queue */
+
+// Posts about these go to a moderator instead of the feed.
+//
+// This is where the "campuses must be able to discuss sex" rule from the top
+// of the file meets the request to keep dating and sexual posts off the feed.
+// A refusal would silence the consent-workshop post along with the hookup
+// post; a review queue lets a person tell them apart. So the list can be
+// broad -- a false positive costs a short wait, not a lost post.
+const SEXUAL = [
+  "sex", "sexy", "sexual", "sexually", "nsfw", "nude", "naked", "horny",
+  "boobs", "tits", "dick", "pussy", "makeout", "make out", "kinky",
+  "one night stand", "fwb", "friends with benefits", "sugar daddy", "sugar mommy",
+];
+const DATING = [
+  "dating", "date me", "looking for a date", "hookup", "hook up", "tinder",
+  "bumble", "grindr", "looking for a gf", "looking for a bf", "need a gf", "need a bf",
+];
+
+// Adult sites, as links rather than words.
+const NSFW_LINK = /\b(pornhub|xvideos|xnxx|xhamster|redtube|youporn|fansly|chaturbate|stripchat|erome|spankbang|rule34)\.[a-z.]{2,}|\breddit\.com\/r\/\w*nsfw/i;
+
+// A byte-for-byte mirror of noExplicit() in firestore.rules, run on the raw
+// text.
+//
+// The lists above match on normalised text, and the rule cannot normalise, so
+// the two can disagree: "porn5" normalises to "porns", which the list misses
+// and the rule catches. Without this mirror such a post would skip the queue,
+// hit the rule, and fail with a bare permission-denied. With it, anything the
+// rule would refuse is queued first -- the client is always at least as strict.
+const RULES_MIRROR = /(^|[^a-z])(porn|porno|pornhub|xvideos|xnxx|xhamster|nudes|sexting|hentai)([^a-z]|$)/i;
 
 /* --------------------------------------------------------------- match */
 
@@ -101,6 +139,9 @@ export function checkText(raw) {
       return { ok: false, kind: "link", reason: `Orbit does not allow ${label}.` };
     }
   }
+  if (SHORTENER.test(text)) {
+    return { ok: false, kind: "link", reason: "Orbit does not allow shortened links, because nobody can see where they go." };
+  }
 
   for (const term of ABUSE) {
     if (hasTerm(norm, term)) {
@@ -123,6 +164,53 @@ export function checkText(raw) {
   }
 
   return { ok: true };
+}
+
+/**
+ * Decides what happens to a post: published, refused, or held for review.
+ *
+ *   { action: "allow" }
+ *   { action: "block",  reason }                 slurs, invite links
+ *   { action: "review", reason, labels, matched } sexual, dating, NSFW links
+ *
+ * Posts only. Comments and Locali-Tea have nowhere to wait -- Tea is anonymous,
+ * so a queue entry would have to name its author -- and keep using checkText.
+ */
+export function classifyPost(raw) {
+  const text = String(raw || "");
+  if (!text.trim()) return { action: "allow" };
+  const norm = normalise(text);
+
+  for (const { re, label } of LINK_PATTERNS) {
+    if (re.test(text)) return { action: "block", reason: `Orbit does not allow ${label}.` };
+  }
+  for (const term of ABUSE) {
+    if (hasTerm(norm, term)) {
+      return { action: "block", reason: "That language is not allowed here. Repeated attempts get accounts removed." };
+    }
+  }
+
+  const labels = new Set();
+  const matched = [];
+  const hit = (label, term) => { labels.add(label); if (!matched.includes(term)) matched.push(term); };
+
+  for (const term of EXPLICIT) if (hasTerm(norm, term)) hit("explicit", term);
+  const mirror = text.match(RULES_MIRROR);
+  if (mirror) hit("explicit", mirror[2].toLowerCase());
+  for (const term of SEXUAL) if (hasTerm(norm, term)) hit("sexual", term);
+  for (const term of DATING) if (hasTerm(norm, term)) hit("dating", term);
+  const link = text.match(NSFW_LINK);
+  if (link) hit("nsfw-link", link[0].toLowerCase());
+  const short = text.match(SHORTENER);
+  if (short) hit("hidden-link", short[0].toLowerCase());
+
+  if (!labels.size) return { action: "allow" };
+  return {
+    action: "review",
+    labels: [...labels],
+    matched: matched.slice(0, 8),
+    reason: "Your post is waiting for a moderator. It will appear once it is approved.",
+  };
 }
 
 /** Same check across several fields at once, for forms. */

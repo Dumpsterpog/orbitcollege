@@ -1,8 +1,9 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, Fragment } from "react";
 import { Screen } from "./ui/Layout.jsx";
-import { Button, cx } from "./ui/Primitives.jsx";
+import { Button, Icon, cx } from "./ui/Primitives.jsx";
 import { Composer, FeedTabs } from "./home/Composer.jsx";
 import { PostCard } from "./home/PostCard.jsx";
+import { AdCard } from "./home/AdCard.jsx";
 import {
   PulseHeader, Trending, UpcomingEvents, CommunitiesForYou, StartCommunityCard,
 } from "./home/Rail.jsx";
@@ -40,7 +41,7 @@ const TABS = [
 
 export function HomeScreen({
   communities, joinedIds, onOpen, onCreateClick, authUserId,
-  feedPosts, feedSparkIds, onSparkPost, onCreatePost,
+  feedPosts, feedSparkIds, onSparkPost, onCreatePost, pendingPosts = [], announcements = [], ads = [],
   userName, user, onJoinToggle, onGoToExplore, onSharePost, onReportPost,
   events = [], registeredEventIds = [], onRegisterEvent, onGoToEvents,
 }) {
@@ -117,20 +118,98 @@ export function HomeScreen({
 
   const canPost = !!user?.verified;
 
+  // Dismissed announcements are remembered per browser. Storage can be
+  // unavailable (private windows), in which case a dismissal lasts the visit.
+  const [dismissed, setDismissed] = useState(() => {
+    try { return JSON.parse(localStorage.getItem("orbit.dismissedAnnouncements") || "[]"); }
+    catch { return []; }
+  });
+  const dismissAnnouncement = (id) => {
+    const next = [...dismissed, id].slice(-50);
+    setDismissed(next);
+    try { localStorage.setItem("orbit.dismissedAnnouncements", JSON.stringify(next)); } catch { /* visit-only */ }
+  };
+  const shownAnnouncements = announcements.filter((a) => !dismissed.includes(a.id)).slice(0, 2);
+
+  // Targeting. An ad with no interests is for everyone; one with interests
+  // reaches only people who picked at least one of them. Guests have no
+  // interests, so an interest-targeted ad never reaches them either way.
+  const myInterests = user?.interests || [];
+  const eligibleAds = ads.filter((a) =>
+    (user?.verified || a.showToGuests)
+    && (!a.interests.length || myInterests.some((i) => a.interests.includes(i))));
+  const feedAds = eligibleAds.filter((a) => a.placements.includes("feed"));
+  const railAds = eligibleAds.filter((a) => a.placements.includes("rail"));
+
+  // First ad after the third post (or the last, on a short feed), then one
+  // every six posts, rotating through what is live.
+  const adAfter = (i) => {
+    if (!feedAds.length) return null;
+    const first = Math.min(2, posts.length - 1);
+    if (i < first || (i - first) % 6 !== 0) return null;
+    return feedAds[((i - first) / 6) % feedAds.length];
+  };
+
   return (
     <Screen>
-      <div className="w-full mx-auto px-4 sm:px-6 py-6 grid justify-center gap-6
+      <div className="w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 grid justify-center gap-6
         grid-cols-1 max-w-[1420px] lg:grid-cols-[minmax(0,760px)_360px]">
 
         {/* ------------------------------------------------------- feed */}
-        <div className="min-w-0 flex flex-col gap-4">
-          <Composer
-            user={{ ...user, name: userName || user?.name }}
-            communities={joined}
-            canPost={canPost}
-            onBlocked={() => onJoinToggle?.(null)}
-            onSubmit={onCreatePost}
-          />
+        <div className="min-w-0 flex flex-col gap-3 sm:gap-4">
+          {shownAnnouncements.map((a) => (
+            <div key={a.id} className="flex items-start gap-3 rounded-2xl border border-line bg-bg-raised px-4 py-3">
+              <Icon name="campaign" size={18} className="text-accent mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                {a.title && <p className="text-base font-semibold text-ink break-words">{a.title}</p>}
+                {a.body && <p className="text-xs text-ink-2 mt-0.5 leading-relaxed whitespace-pre-wrap break-words">{a.body}</p>}
+              </div>
+              <button
+                onClick={() => dismissAnnouncement(a.id)}
+                aria-label="Dismiss announcement"
+                className="grid place-items-center w-7 h-7 rounded-full text-ink-3 hover:text-ink hover:bg-bg-sunken transition-colors shrink-0"
+              >
+                <Icon name="close" size={16} />
+              </button>
+            </div>
+          ))}
+
+          {user?.suspended ? (
+            <div className="flex items-start gap-3 rounded-2xl border border-line bg-bg-raised px-4 py-3">
+              <Icon name="block" size={18} className="text-c-red mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-base font-semibold text-ink">Your account is suspended</p>
+                <p className="text-xs text-ink-2 mt-0.5 leading-relaxed">
+                  You can still read Orbit, but posting, commenting and chat are turned off.
+                  If you think this is a mistake, email team.orbit@gmail.com.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <Composer
+              user={{ ...user, name: userName || user?.name }}
+              communities={joined}
+              canPost={canPost}
+              onBlocked={() => onJoinToggle?.(null)}
+              onSubmit={onCreatePost}
+            />
+          )}
+
+          {/* Only the author ever sees this: the queue is unreadable to anyone
+              else, so a held post cannot leak through here. */}
+          {pendingPosts.length > 0 && (
+            <div className="flex items-start gap-3 rounded-2xl border border-line bg-bg-raised px-4 py-3">
+              <Icon name="schedule" size={18} className="text-ink-3 mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <p className="text-base font-semibold text-ink">
+                  {pendingPosts.length === 1 ? "1 post is" : `${pendingPosts.length} posts are`} waiting for review
+                </p>
+                <p className="text-xs text-ink-2 mt-0.5 leading-relaxed">
+                  Posts about dating, sex or adult links are checked by a moderator before they appear. Only you can see this.
+                </p>
+              </div>
+            </div>
+          )}
 
           <FeedTabs value={tab} onChange={setTab} tabs={TABS} />
 
@@ -158,23 +237,28 @@ export function HomeScreen({
               </Button>
             </div>
           ) : (
-            posts.map((p) => (
-              <PostCard
-                key={p.id}
-                post={p}
-                community={communities.find((c) => c.id === p.communityId)}
-                liked={(feedSparkIds || []).includes(p.id)}
-                onLike={onSparkPost}
-                onOpen={onOpen}
-                onTag={() => onGoToExplore()}
-                onShare={onSharePost}
-                onReport={onReportPost}
-                authUserId={authUserId}
-                myName={userName}
-                canWrite={canPost}
-                onBlocked={() => onJoinToggle?.(null)}
-              />
-            ))
+            posts.map((p, i) => {
+              const ad = adAfter(i);
+              return (
+                <Fragment key={p.id}>
+                  <PostCard
+                    post={p}
+                    community={communities.find((c) => c.id === p.communityId)}
+                    liked={(feedSparkIds || []).includes(p.id)}
+                    onLike={onSparkPost}
+                    onOpen={onOpen}
+                    onTag={() => onGoToExplore()}
+                    onShare={onSharePost}
+                    onReport={onReportPost}
+                    authUserId={authUserId}
+                    myName={userName}
+                    canWrite={canPost}
+                    onBlocked={() => onJoinToggle?.(null)}
+                  />
+                  {ad && <AdCard ad={ad} />}
+                </Fragment>
+              );
+            })
           )}
         </div>
 
@@ -187,6 +271,7 @@ export function HomeScreen({
           <div className="sticky top-6 max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar pr-1 flex flex-col gap-4">
             <PulseHeader />
             <Trending topics={trending} onOpen={() => onGoToExplore()} />
+            {railAds[0] && <AdCard ad={railAds[0]} compact />}
             <UpcomingEvents
               events={openEvents}
               registeredIds={registeredEventIds}

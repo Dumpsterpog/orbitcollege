@@ -8,6 +8,7 @@ import { Screen, PageHeader, Modal } from "./ui/Layout.jsx";
 import { EmptyState } from "./EmptyState.jsx";
 import { PostComments } from "./Common.jsx";
 import * as db from "../lib/db.js";
+import { classifyPost } from "../lib/moderation.js";
 
 export function CommunitySettings({ c, onSave, onDelete, onClose }) {
   const [name, setName] = useState(c.name);
@@ -362,6 +363,15 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
     // rule quietly meant a community could not have a written announcement.
     if (!authUserId || (!t && !file)) return;
 
+    // Same three-way decision as the home composer. This path used to have no
+    // filter at all, which made a community the way around the feed's.
+    const verdict = classifyPost(t);
+    if (verdict.action === "block") {
+      setShareNote(verdict.reason);
+      setTimeout(() => setShareNote(""), 3200);
+      return;
+    }
+
     setDraft("");
     setPostImageFile(null);
     setPostImagePreview(null);
@@ -379,7 +389,16 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
     }
 
     try {
-      await db.createPost({ communityId: c.id, authorId: authUserId, authorName: myName, text: t, imageUrl });
+      if (verdict.action === "review") {
+        await db.submitForReview({
+          communityId: c.id, authorId: authUserId, authorName: myName, text: t, imageUrl,
+          labels: verdict.labels, matched: verdict.matched,
+        });
+        setShareNote(verdict.reason);
+        setTimeout(() => setShareNote(""), 3200);
+      } else {
+        await db.createPost({ communityId: c.id, authorId: authUserId, authorName: myName, text: t, imageUrl });
+      }
     } catch (err) {
       console.error("[orbit] community post failed", err);
     } finally {

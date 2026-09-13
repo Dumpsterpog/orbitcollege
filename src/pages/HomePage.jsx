@@ -15,6 +15,9 @@ export default function HomePage() {
       onOpen={o.setSelectedCommunity}
       feedPosts={o.feedPosts}
       feedSparkIds={o.feedSparkIds}
+      pendingPosts={o.pendingPosts}
+      announcements={o.announcements}
+      ads={o.ads}
       onSparkPost={o.handleSparkPost}
       onCreatePost={o.handleCreatePost}
       onCreateClick={o.openCreate}

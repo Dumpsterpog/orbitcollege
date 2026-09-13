@@ -8,7 +8,7 @@ import { useTheme } from "./utils/useTheme.js";
 import * as db from "./lib/db.js";
 import { cached, reviveDates, setCacheScope } from "./lib/cache.js";
 import { checkPostLimit, notePost, checkCommunityLimit, MAX_COMMUNITIES } from "./lib/limits.js";
-import { checkText, checkFields } from "./lib/moderation.js";
+import { checkText, checkFields, classifyPost } from "./lib/moderation.js";
 import { onAuthChange, completeRedirectSignIn, fetchProfile, signOut as fbSignOut } from "./lib/authService.js";
 import { auth } from "./lib/firebase.js";
 import { TopBar } from "./components/TopBar.jsx";
@@ -73,6 +73,9 @@ export default function App() {
   // below. feedSparkIds tracks which of those posts the signed-in user has
   // already sparked, same one-row-per-user-per-post pattern as Community.jsx.
   const [feedPosts, setFeedPosts] = useState([]);
+  const [pendingPosts, setPendingPosts] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [ads, setAds] = useState([]);
   const [feedSparkIds, setFeedSparkIds] = useState([]);
 
   // Still mock/local for this first build — see App architecture notes.
@@ -165,6 +168,8 @@ export default function App() {
   useEffect(() => db.watchFeed(
     cached("feed", setFeedPosts, reviveDates(["createdAt"]))
   ), []);
+  useEffect(() => db.watchAnnouncements(setAnnouncements), []);
+  useEffect(() => db.watchAds(setAds), []);
 
   // Which of those posts you personally sparked needs a "you", so it stays
   // signed-in only and refetches when the session changes.
@@ -175,6 +180,13 @@ export default function App() {
       .then((ids) => { if (alive) setFeedSparkIds(ids); })
       .catch((e) => console.error("[orbit] fetchMySparks", e));
     return () => { alive = false; };
+  }, [authUser]);
+
+  // Your own posts still in the review queue, so the feed can say they are
+  // waiting instead of looking like they vanished.
+  useEffect(() => {
+    if (!authUser) { setPendingPosts([]); return; }
+    return db.watchMyPendingPosts(authUser.id, setPendingPosts);
   }, [authUser]);
 
   // Session bootstrap — returning users with a live Firebase session skip
@@ -202,6 +214,10 @@ export default function App() {
           verified: true,
           interests: profile?.interests || [],
           bio: profile?.bio || "",
+          // Set from the admin tool. The rules are what enforce it; this only
+          // lets the UI say so instead of failing every post with a bare
+          // permission error.
+          suspended: profile?.suspended === true,
         });
         setStage("app");
         fetchMyJoins(fbUser.uid);
@@ -274,8 +290,13 @@ export default function App() {
 
     // Checked before the upload, not after: burning a photo upload on a write
     // that is about to be refused wastes the slowest part of the operation.
-    const clean = checkText(text);
-    if (!clean.ok) { showToast(clean.reason); return false; }
+    // Three outcomes, not two. Slurs and invite links are refused here; sexual,
+    // dating and adult-link posts are held for a moderator instead of being
+    // refused, because a word list cannot tell a consent workshop from a
+    // hookup post and a person can.
+    if (user.suspended) { showToast("Your account is suspended, so posting is turned off"); return false; }
+    const verdict = classifyPost(text);
+    if (verdict.action === "block") { showToast(verdict.reason); return false; }
 
     const limit = checkPostLimit();
     if (!limit.ok) { showToast(limit.message); return false; }
@@ -293,6 +314,22 @@ export default function App() {
       if (file) {
         showToast("Uploading photo…");
         ({ url: imageUrl } = await db.uploadImage("community-media", file, authUser.id));
+      }
+      if (verdict.action === "review") {
+        await db.submitForReview({
+          communityId,
+          authorId: authUser.id,
+          authorName: user.name,
+          text: body,
+          imageUrl,
+          labels: verdict.labels,
+          matched: verdict.matched,
+        });
+        // Counts toward the rate limit like any post: a queue that anyone can
+        // fill without limit is just a slower way to spam the moderators.
+        notePost();
+        showToast(verdict.reason);
+        return true;
       }
       created = await db.createPost({
         communityId,
@@ -720,7 +757,7 @@ export default function App() {
     // identity
     user, authUser, verified: user.verified,
     // live data
-    communities, clubs, allGroups, dbCommunities, events, feedPosts, feedSparkIds,
+    communities, clubs, allGroups, dbCommunities, events, feedPosts, feedSparkIds, pendingPosts, announcements, ads,
     joinedIds, joinedCommunities, registeredEventIds, sparkedIds, topTrendingIds,
     teaPosts, myTeaVotes, myTeaReactions, myTeaPostIds, myTeaCommentIds, isTeaModerator,
     // preferences
@@ -785,13 +822,16 @@ export default function App() {
         {reportTarget && (
           <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} onSubmit={handleReportSubmit} />
         )}
-        {!showingSubPage && !user.verified && <GuestBanner onVerify={goToInitialPage} />}
+        {/* One floating pill at a time. Stacked, the two covered a third of a
+            phone screen -- the feed a guest came to look at. The theme notice
+            is once-ever, so it goes first and the guest prompt follows it. */}
+        {!showingSubPage && !user.verified && !themeNotice && <GuestBanner onVerify={goToInitialPage} />}
         {themeNotice && (
           <ThemeNotice
             theme={themeNotice}
             onDismiss={dismissThemeNotice}
             onOpenSettings={() => goToTab("settings")}
-            raised={!showingSubPage && !user.verified}
+            raised={false}
           />
         )}
         <Toast message={toastMsg} />

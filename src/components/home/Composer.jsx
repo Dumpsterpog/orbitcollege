@@ -110,7 +110,7 @@ export function Composer({ user, communities = [], onSubmit, onBlocked, canPost 
               <span className="block text-[15px] font-semibold text-ink">
                 What&apos;s happening on campus{first ? `, ${first}` : ""}?
               </span>
-              <span className="block text-[13px] text-ink-3 mt-1">
+              <span className="hidden sm:block text-[13px] text-ink-3 mt-1">
                 Share a thought, ask a question, post an event or just say hi!
               </span>
             </button>
@@ -135,12 +135,14 @@ export function Composer({ user, communities = [], onSubmit, onBlocked, canPost 
       {/* Type chips. Hidden once you are writing -- by then they have done
           their job and would only be taking room from the text. */}
       {!open && (
-        <div className="flex flex-wrap items-center gap-2 mt-4">
+        // One swipeable row on a phone instead of three wrapped ones, which
+        // pushed the first post below the fold before anyone had scrolled.
+        <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 mt-3 sm:mt-4 overflow-x-auto no-scrollbar -mx-1 px-1">
           {TYPES.map((t) => (
             <button
               key={t.key}
               onClick={() => expand(t)}
-              className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border border-line
+              className="shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border border-line
                 text-[12.5px] font-medium text-ink-2 hover:text-ink hover:border-line-strong
                 hover:bg-bg-sunken transition-colors"
             >
@@ -151,7 +153,7 @@ export function Composer({ user, communities = [], onSubmit, onBlocked, canPost 
           <button
             onClick={() => expand()}
             aria-label="More"
-            className="grid place-items-center w-9 h-9 rounded-full border border-line text-ink-3
+            className="shrink-0 grid place-items-center w-9 h-9 rounded-full border border-line text-ink-3
               hover:text-ink hover:border-line-strong hover:bg-bg-sunken transition-colors"
           >
             <Icon name="more_horiz" size={16} />
@@ -277,7 +279,7 @@ export function Composer({ user, communities = [], onSubmit, onBlocked, canPost 
 // it rather than as a button someone forgot to style.
 export function FeedTabs({ value, onChange, tabs }) {
   return (
-    <div className="inline-flex items-center gap-1 bg-bg-sunken p-1 rounded-full">
+    <div className="inline-flex items-center gap-1 bg-bg-sunken p-1 rounded-full max-w-full overflow-x-auto no-scrollbar self-start">
       {tabs.map((t) => (
         <button
           key={t.key}

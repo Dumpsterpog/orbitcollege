@@ -19,12 +19,13 @@ import {
   MessageCircle, MessageSquare, Moon, MoreHorizontal, Pencil, Pin, Plus, QrCode,
   Reply, RotateCw, Search, SearchX, Send, Settings, Share2, Shield, ShieldCheck,
   SlidersHorizontal, Snowflake, Sparkles, Star, Sun, SunMoon, Trash2, TrendingUp,
-  Trophy, User, UserCircle, UserPlus, Users, X,
+  Trophy, User, UserCircle, UserPlus, Users, X, PlusCircle,
 } from "lucide-react";
 
 export const ICONS = {
   // navigation
   home: Home,
+  add_circle: PlusCircle,
   explore: Compass,
   search: Search,
   search_off: SearchX,

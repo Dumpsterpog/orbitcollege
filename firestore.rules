@@ -48,15 +48,42 @@ service cloud.firestore {
       // doubling to survive into the regex, and getting that wrong yields a
       // pattern that matches nothing while looking correct. A character class
       // sidesteps the escaping question entirely.
-      return !text.matches('(?i).*(t[.]me/|telegram[.](me|dog)/|chat[.]whatsapp[.]com/|discord[.]gg/|discord[.]com/invite/|onlyfans[.]com).*');
+      //
+      // (?s) matters as much as the pattern. Without it `.` stops at a line
+      // break, matches() has to consume the whole string, and so any post
+      // with a newline before the link sailed through: "hi\nt.me/x" passed.
+      return !text.matches('(?is).*(t[.]me/|telegram[.](me|dog)/|chat[.]whatsapp[.]com/|discord[.]gg/|discord[.]com/invite/|onlyfans[.]com).*');
+    }
+
+    // Unambiguous pornography terms, refused on direct writes.
+    //
+    // The review queue is the real control: the client sends sexual, dating
+    // and NSFW posts to moderation_queue instead of the feed. This is what
+    // stops someone skipping the queue from a console. It is deliberately a
+    // short list of words with no innocent reading -- anything broader belongs
+    // in the queue, where a person decides -- and lib/moderation.js mirrors it
+    // exactly (RULES_MIRROR), so an honest client queues everything this
+    // would refuse and never meets it.
+    function noExplicit(text) {
+      return !text.matches('(?is)(.*[^a-z])?(porn|porno|pornhub|xvideos|xnxx|xhamster|nudes|sexting|hentai)([^a-z].*)?');
     }
 
     // Fields a user must never be able to set on themselves.
     function noPrivilegeEscalation() {
       // communitiesCreated joins isAdmin here: it is a quota, so letting
-      // someone write their own would make the cap decorative.
+      // someone write their own would make the cap decorative. suspended is
+      // the same: a suspension you can lift yourself is not one.
       return !request.resource.data.diff(resource.data).affectedKeys()
-        .hasAny(['isAdmin', 'communitiesCreated']);
+        .hasAny(['isAdmin', 'communitiesCreated', 'suspended']);
+    }
+
+    // Suspended by an admin from the admin tool. Checked on every write that
+    // puts words in front of other people -- posts, comments, chat, Tea,
+    // communities, the review queue -- and on nothing else, so a suspended
+    // student can still read, leave communities and file reports.
+    function notSuspended() {
+      return !exists(/databases/$(database)/documents/profiles/$(request.auth.uid))
+        || get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.get('suspended', false) != true;
     }
 
     /* ------------------------------------------------------- profiles */
@@ -70,7 +97,14 @@ service cloud.firestore {
       // buys at this size. If email must be private, that split is the fix.
       allow read: if true;
 
-      allow create: if isSelf(uid);
+      // noPrivilegeEscalation() only guards updates, which left create wide
+      // open: a new account could write its own profile with isAdmin: true
+      // on the very first write and be an admin. The same three fields are
+      // pinned to their defaults here.
+      allow create: if isSelf(uid)
+        && request.resource.data.get('isAdmin', false) == false
+        && request.resource.data.get('suspended', false) == false
+        && request.resource.data.get('communitiesCreated', 0) == 0;
       // isAdmin is deliberately excluded, so nobody can promote themselves.
       // Set it from the Firebase console or the admin tool.
       allow update: if (isSelf(uid) && noPrivilegeEscalation()) || isAdmin();
@@ -140,7 +174,7 @@ service cloud.firestore {
       // count of recent documents, which is exactly the query rules cannot do.
       // Closing that properly means a Cloud Function or an App Check quota;
       // until then it slows honest users down and stops nobody determined.
-      allow create: if signedIn()
+      allow create: if signedIn() && notSuspended()
         && request.resource.data.creatorId == request.auth.uid
         && ownedCommunities() < 2;
 
@@ -175,10 +209,16 @@ service cloud.firestore {
 
       match /posts/{postId} {
         allow read: if true;
-        allow create: if signedIn()
-          && request.resource.data.authorId == request.auth.uid
-          && isMember()
-          && noInviteLinks(request.resource.data.get('text', ''));
+        // Second clause: an admin approving a queued post writes it under
+        // the original author's id, and the author need not be a member any
+        // more. noExplicit is waived for exactly that case -- the queue exists
+        // so a person can approve what the word list would refuse.
+        allow create: if (signedIn() && notSuspended()
+            && request.resource.data.authorId == request.auth.uid
+            && isMember()
+            && noInviteLinks(request.resource.data.get('text', ''))
+            && noExplicit(request.resource.data.get('text', '')))
+          || (isAdmin() && noInviteLinks(request.resource.data.get('text', '')));
         // sparkCount and pinned are the only reasons a non-author updates.
         allow update: if signedIn();
         allow delete: if (signedIn() && resource.data.authorId == request.auth.uid)
@@ -194,12 +234,13 @@ service cloud.firestore {
         // community's leadership, or an app admin.
         match /comments/{commentId} {
           allow read: if true;
-          allow create: if signedIn()
+          allow create: if signedIn() && notSuspended()
             && request.resource.data.authorId == request.auth.uid
             && request.resource.data.text is string
             && request.resource.data.text.size() > 0
             && request.resource.data.text.size() <= 1000
-            && noInviteLinks(request.resource.data.text);
+            && noInviteLinks(request.resource.data.text)
+            && noExplicit(request.resource.data.text);
           allow delete: if (signedIn() && resource.data.authorId == request.auth.uid)
             || isCreator() || isCommunityAdmin() || isAdmin();
         }
@@ -208,7 +249,7 @@ service cloud.firestore {
       match /messages/{messageId} {
         // Chat is members-only. A post is broadcast; a message is not.
         allow read: if isMember() || isAdmin();
-        allow create: if signedIn()
+        allow create: if signedIn() && notSuspended()
           && request.resource.data.authorId == request.auth.uid
           && isMember();
         allow update: if isMember();
@@ -244,11 +285,15 @@ service cloud.firestore {
       // post's community from its document path instead of this field. A path
       // cannot lie about where a document lives. The field is no longer read
       // by the app at all, so there is nothing left to forge.
-      allow create: if signedIn()
-        && request.resource.data.authorId == request.auth.uid
-        && request.resource.data.text is string
+      // Second clause: an admin publishing an approved queue item, under the
+      // original author's id. See moderation_queue below.
+      allow create: if request.resource.data.text is string
         && request.resource.data.text.size() <= 2000
-        && noInviteLinks(request.resource.data.text);
+        && noInviteLinks(request.resource.data.text)
+        && ((signedIn() && notSuspended()
+              && request.resource.data.authorId == request.auth.uid
+              && noExplicit(request.resource.data.text))
+            || isAdmin());
 
       // Sparks only. Nobody edits someone else's post text.
       //
@@ -275,12 +320,13 @@ service cloud.firestore {
 
       match /comments/{commentId} {
         allow read: if true;
-        allow create: if signedIn()
+        allow create: if signedIn() && notSuspended()
           && request.resource.data.authorId == request.auth.uid
           && request.resource.data.text is string
           && request.resource.data.text.size() > 0
           && request.resource.data.text.size() <= 1000
-          && noInviteLinks(request.resource.data.text);
+          && noInviteLinks(request.resource.data.text)
+          && noExplicit(request.resource.data.text);
         allow delete: if (signedIn() && resource.data.authorId == request.auth.uid) || isAdmin();
       }
     }
@@ -333,12 +379,13 @@ service cloud.firestore {
 
       // No authorId on the document itself. A create that tries to add one is
       // refused, so the anonymity cannot be undone by a future client bug.
-      allow create: if signedIn()
+      allow create: if signedIn() && notSuspended()
         && !('authorId' in request.resource.data.keys())
         && request.resource.data.text is string
         && request.resource.data.text.size() > 0
         && request.resource.data.text.size() <= 2000
-        && noInviteLinks(request.resource.data.text);
+        && noInviteLinks(request.resource.data.text)
+        && noExplicit(request.resource.data.text);
 
       // Vote and reaction counters.
       allow update: if signedIn() && !('authorId' in request.resource.data.keys());
@@ -351,18 +398,78 @@ service cloud.firestore {
             && get(/databases/$(database)/documents/tea_authors/$(commentId)).data.authorId == request.auth.uid;
         }
         allow read: if true;
-        allow create: if signedIn() && !('authorId' in request.resource.data.keys());
+        allow create: if signedIn() && notSuspended() && !('authorId' in request.resource.data.keys());
         allow delete: if isCommentAuthor() || isAdmin();
       }
       match /votes/{voteUid}     { allow read, create, update, delete: if isSelf(voteUid); }
       match /reactions/{reactUid} { allow read, create, update, delete: if isSelf(reactUid); }
     }
 
+    /* -------------------------------------------------- review queue */
+
+    // Posts held for a moderator: sexual, dating, NSFW links.
+    //
+    // A separate collection rather than a `status` field on posts, because
+    // posts are world-readable and Firestore cannot hide a document from a
+    // query by a field -- a pending post in `posts` would be one network tab
+    // away from public. Here only two people can ever read an entry: the
+    // author, so they can see it is waiting, and an admin.
+    //
+    // Approval is an admin writing the real post (the isAdmin() clauses on
+    // both post rules) and marking the entry approved. Rejected entries are
+    // kept, not deleted, so the admin tool can show who keeps trying.
+    match /moderation_queue/{itemId} {
+      allow read: if isAdmin()
+        || (signedIn() && resource.data.authorId == request.auth.uid);
+      allow create: if signedIn() && notSuspended()
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.text is string
+        && request.resource.data.text.size() <= 2000;
+      allow update, delete: if isAdmin();
+    }
+
+    /* -------------------------------------------------- announcements */
+
+    // Banners the admin tool puts at the top of everyone's home feed. Public
+    // to read, because a notice about a campus closure is for guests too;
+    // admin-only to write.
+    match /announcements/{announcementId} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
+    }
+
+    /* ------------------------------------------------------------ ads */
+
+    // Promoted cards in the feed and rail. Created, edited and removed only
+    // from the admin tool.
+    //
+    // Readable only while live: drafts and paused ads are nobody's business
+    // but an admin's, and watchAds filters on status == 'live', which is what
+    // makes that query allowed.
+    //
+    // The one write anyone can make is the counters, and only by one at a
+    // time, and only on a live ad. That keeps impressions and clicks honest
+    // against a careless client; it does not stop someone scripting a
+    // thousand +1s. Real ad fraud protection needs a server, and the admin
+    // tool labels these numbers as approximate for that reason.
+    match /ads/{adId} {
+      allow read: if resource.data.status == 'live' || isAdmin();
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (resource.data.status == 'live'
+            && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['impressions', 'clicks'])
+            && request.resource.data.get('impressions', 0) >= resource.data.get('impressions', 0)
+            && request.resource.data.get('impressions', 0) <= resource.data.get('impressions', 0) + 1
+            && request.resource.data.get('clicks', 0) >= resource.data.get('clicks', 0)
+            && request.resource.data.get('clicks', 0) <= resource.data.get('clicks', 0) + 1);
+    }
+
     /* ------------------------------------------------ stickers, reports */
 
     match /stickers/{stickerId} {
       allow read: if true;
-      allow create: if signedIn() && request.resource.data.authorId == request.auth.uid;
+      allow create: if signedIn() && notSuspended() && request.resource.data.authorId == request.auth.uid;
       allow delete: if (signedIn() && resource.data.authorId == request.auth.uid) || isAdmin();
     }
 
