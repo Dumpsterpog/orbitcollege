@@ -10,6 +10,7 @@ export default function ProfilePage() {
       pendingCount={o.pendingPosts.length}
       joinedCommunities={o.joinedCommunities}
       onSaveProfile={o.handleUpdateProfile}
+      onProfileImage={o.handleProfileImage}
       onVerifyGuest={o.goToInitialPage}
       onOpenSettings={() => o.goToTab("settings")}
       onOpenCommunity={o.setSelectedCommunity}

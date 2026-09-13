@@ -214,6 +214,11 @@ export default function App() {
           verified: true,
           interests: profile?.interests || [],
           bio: profile?.bio || "",
+          // No fallback to the Google photo here: the profile already stores
+          // it on creation, and falling back would bring a removed photo back
+          // on the next reload.
+          avatarUrl: profile?.avatarUrl || null,
+          bannerUrl: profile?.bannerUrl || null,
           // Set from the admin tool. The rules are what enforce it; this only
           // lets the UI say so instead of failing every post with a bare
           // permission error.
@@ -469,6 +474,35 @@ export default function App() {
     setUser((u) => ({ ...u, ...fields }));
     const error = await saveProfile(authUser.id, fields).then(() => null).catch((e) => e);
     showToast(error ? "Couldn't save profile, try again" : "Profile updated");
+  };
+
+  // Profile photo and banner. kind is "avatar" or "banner"; a null file
+  // removes it. Uploads go to the same Storage folder post photos use, so the
+  // Storage rules that already let a user write their own folder cover them.
+  const handleProfileImage = async (kind, file) => {
+    if (!user.verified || !authUser) { handleBlocked(); return; }
+    const field = kind === "banner" ? "bannerUrl" : "avatarUrl";
+    const noun = kind === "banner" ? "Banner" : "Profile photo";
+
+    if (file === null) {
+      setUser((u) => ({ ...u, [field]: null }));
+      const error = await saveProfile(authUser.id, { [field]: null }).then(() => null).catch((e) => e);
+      showToast(error ? "Couldn't remove it, try again" : `${noun} removed`);
+      return;
+    }
+    if (!file?.type?.startsWith("image/")) { showToast("That file is not an image"); return; }
+    if (file.size > 5 * 1024 * 1024) { showToast("Images have to be under 5 MB"); return; }
+
+    showToast(`Uploading ${noun.toLowerCase()}…`);
+    try {
+      const { url } = await db.uploadImage("community-media", file, authUser.id);
+      await saveProfile(authUser.id, { [field]: url });
+      setUser((u) => ({ ...u, [field]: url }));
+      showToast(`${noun} updated`);
+    } catch (err) {
+      console.error("[orbit] profile image failed", err);
+      showToast(err?.code === "storage/unauthorized" ? "Upload refused by Storage rules" : "Upload failed, try again");
+    }
   };
 
   const handleDeleteCommunity = async (id) => {
@@ -785,7 +819,7 @@ export default function App() {
     ownedCommunities, maxCommunities: MAX_COMMUNITIES,
     // writes
     handleJoinToggle, handleCreate, handleCreatePost, handleSparkPost, handleSpark,
-    handleUpdateCommunity, handleDeleteCommunity, handleUpdateProfile, handleRegisterEvent,
+    handleUpdateCommunity, handleDeleteCommunity, handleUpdateProfile, handleProfileImage, handleRegisterEvent,
     handleBlocked, handlePostTea, handleValidateTea, handleCommentTea, handleReactTea,
     handleDeleteTea, handleDeleteTeaComment, loadTeaComments, setReportTarget,
   };
@@ -818,8 +852,13 @@ export default function App() {
               setNotifOpen={setNotifOpen}
               onSearchClick={openSearch}
               onLogoClick={() => goToTab("home")}
-              onAccountClick={() => goToTab("profile")}
               user={user}
+              email={authUser?.email}
+              themeMode={themeMode}
+              onThemeChange={setThemeMode}
+              onOpenProfile={() => goToTab("profile")}
+              onOpenSettings={() => goToTab("settings")}
+              onSignIn={goToInitialPage}
             />
           )}
 

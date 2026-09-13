@@ -85,7 +85,7 @@ export function Composer({ user, communities = [], onSubmit, onBlocked, canPost 
   return (
     <div className="w-full bg-bg-raised rounded-2xl border border-line p-5">
       <div className="flex items-start gap-3.5">
-        <Avatar name={user?.name || "Guest"} size={40} />
+        <Avatar name={user?.name || "Guest"} src={user?.avatarUrl} size={40} />
 
         <div className="flex-1 min-w-0">
           {open ? (

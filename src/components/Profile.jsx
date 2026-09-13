@@ -132,11 +132,36 @@ function InterestChip({ name, on, onClick }) {
   );
 }
 
+// A styled label around a hidden file input. The value is cleared after each
+// pick so choosing the same file twice (after a failed upload) still fires.
+function FilePick({ onFile, className, label, children }) {
+  return (
+    <label className={cx("cursor-pointer", className)} aria-label={label} title={label}>
+      {children}
+      <input
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; if (f) onFile(f); }}
+      />
+    </label>
+  );
+}
+
+const pillButton =
+  "inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-bg-sunken text-ink text-[13px] font-semibold " +
+  "ring-1 ring-line hover:ring-line-strong transition-colors";
+
 export function ProfileScreen({
   user, email, joinedCommunities = [], onSaveProfile, onVerifyGuest, onOpenSettings,
   onOpenCommunity, authUserId, myPosts = [], registeredEvents = [], allCommunities = [],
-  onOpenEvent, pendingCount = 0,
+  onOpenEvent, pendingCount = 0, onProfileImage,
 }) {
+  const [uploading, setUploading] = useState(null);
+  const pickImage = async (kind, file) => {
+    setUploading(kind);
+    try { await onProfileImage?.(kind, file); } finally { setUploading(null); }
+  };
   const [tab, setTab] = useState("communities");
   const [editing, setEditing] = useState(false);
   const [draftName, setDraftName] = useState(user.name);
@@ -202,15 +227,31 @@ export function ProfileScreen({
 
           {/* ------------------------------------------------ identity */}
           <section className={cx(card, "overflow-hidden")}>
-            <div className="relative h-28 sm:h-40 bg-gradient-to-br from-accent via-c-violet to-c-pink">
-              <div
-                className="absolute inset-0 opacity-30"
-                style={{
-                  backgroundImage:
-                    "radial-gradient(circle at 18% 30%, rgba(255,255,255,0.55) 0, transparent 38%)," +
-                    "radial-gradient(circle at 82% 75%, rgba(255,255,255,0.35) 0, transparent 42%)",
-                }}
-              />
+            <div className="relative h-32 sm:h-48 bg-gradient-to-br from-accent via-c-violet to-c-pink">
+              {user.bannerUrl ? (
+                <img src={user.bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              ) : (
+                <div
+                  className="absolute inset-0 opacity-30"
+                  style={{
+                    backgroundImage:
+                      "radial-gradient(circle at 18% 30%, rgba(255,255,255,0.55) 0, transparent 38%)," +
+                      "radial-gradient(circle at 82% 75%, rgba(255,255,255,0.35) 0, transparent 42%)",
+                  }}
+                />
+              )}
+              {user.verified && (
+                <FilePick
+                  label={user.bannerUrl ? "Change banner" : "Add banner"}
+                  onFile={(f) => pickImage("banner", f)}
+                  className="absolute top-3 right-3 inline-flex items-center gap-1.5 h-9 px-3 rounded-full
+                    bg-black/50 text-white text-xs font-semibold backdrop-blur-sm hover:bg-black/65 transition-colors"
+                >
+                  <Icon name={uploading === "banner" ? "progress_activity" : "photo_camera"} size={16}
+                    className={uploading === "banner" ? "animate-spin" : undefined} />
+                  <span className="hidden sm:inline">{user.bannerUrl ? "Change banner" : "Add banner"}</span>
+                </FilePick>
+              )}
             </div>
 
             <div className="px-4 sm:px-6 pb-5">
@@ -218,7 +259,18 @@ export function ProfileScreen({
                 {/* relative z-10: the cover above is positioned, so without its
                     own stacking the avatar pulled up over it is painted under it. */}
                 <span className="relative z-10 rounded-full ring-4 ring-bg-raised bg-bg-raised shrink-0">
-                  <Avatar name={user.name || "Guest"} size={96} />
+                  <Avatar name={user.name || "Guest"} src={user.avatarUrl} size={96} />
+                  {user.verified && (
+                    <FilePick
+                      label={user.avatarUrl ? "Change profile photo" : "Add profile photo"}
+                      onFile={(f) => pickImage("avatar", f)}
+                      className="absolute bottom-0.5 right-0.5 grid place-items-center w-8 h-8 rounded-full
+                        bg-accent text-accent-ink ring-2 ring-bg-raised hover:bg-accent-press transition-colors"
+                    >
+                      <Icon name={uploading === "avatar" ? "progress_activity" : "photo_camera"} size={15}
+                        className={uploading === "avatar" ? "animate-spin" : undefined} />
+                    </FilePick>
+                  )}
                 </span>
                 <div className="flex items-center gap-2 pb-1">
                   {user.verified ? (
@@ -512,6 +564,43 @@ export function ProfileScreen({
                 </button>
               </div>
               <div className="p-5 space-y-5 overflow-y-auto">
+                <div>
+                  <p className="block text-xs font-semibold text-ink-2 uppercase tracking-wide mb-2">Profile photo</p>
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <Avatar name={draftName || user.name} src={user.avatarUrl} size={56} />
+                    <FilePick onFile={(f) => pickImage("avatar", f)} className={pillButton} label="Upload profile photo">
+                      <Icon name={uploading === "avatar" ? "progress_activity" : "photo_camera"} size={15}
+                        className={uploading === "avatar" ? "animate-spin" : "text-c-violet"} />
+                      {user.avatarUrl ? "Change" : "Upload"}
+                    </FilePick>
+                    {user.avatarUrl && (
+                      <button onClick={() => pickImage("avatar", null)} className={cx(pillButton, "text-c-red")}>
+                        <Icon name="delete" size={15} />Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="block text-xs font-semibold text-ink-2 uppercase tracking-wide mb-2">Banner</p>
+                  <div className="relative h-24 rounded-xl overflow-hidden border border-line bg-gradient-to-br from-accent via-c-violet to-c-pink">
+                    {user.bannerUrl && <img src={user.bannerUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />}
+                  </div>
+                  <div className="flex items-center gap-2 mt-2 flex-wrap">
+                    <FilePick onFile={(f) => pickImage("banner", f)} className={pillButton} label="Upload banner">
+                      <Icon name={uploading === "banner" ? "progress_activity" : "image"} size={15}
+                        className={uploading === "banner" ? "animate-spin" : "text-c-green"} />
+                      {user.bannerUrl ? "Change" : "Upload"}
+                    </FilePick>
+                    {user.bannerUrl && (
+                      <button onClick={() => pickImage("banner", null)} className={cx(pillButton, "text-c-red")}>
+                        <Icon name="delete" size={15} />Remove
+                      </button>
+                    )}
+                    <span className="text-xs text-ink-3">Wide images work best, around 1500 × 500. Up to 5 MB.</span>
+                  </div>
+                </div>
+
                 <div>
                   <label htmlFor="pf-name" className="block text-xs font-semibold text-ink-2 uppercase tracking-wide mb-1.5">Name</label>
                   <Input id="pf-name" value={draftName} maxLength={60} onChange={(e) => setDraftName(e.target.value)} autoFocus />

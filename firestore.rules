@@ -439,6 +439,16 @@ service cloud.firestore {
       allow create, update, delete: if isAdmin();
     }
 
+    /* -------------------------------------------------- admin presence */
+
+    // When each admin last had the admin tool open. Written by the tool once a
+    // minute for the signed-in admin's own entry only; readable by admins.
+    match /admin_presence/{uid} {
+      allow read: if isAdmin();
+      allow create, update: if isSelf(uid) && isAdmin();
+      allow delete: if isAdmin();
+    }
+
     /* ------------------------------------------------------------ ads */
 
     // Promoted cards in the feed and rail. Created, edited and removed only

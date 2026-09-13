@@ -28,7 +28,7 @@ export function BottomNav({ active, setActive, onCreateClick, user }) {
             className="flex-1 grid place-items-center active:scale-90 transition-transform duration-150"
           >
             {t.key === "profile" ? (
-              <Avatar name={user?.name || "Guest"} size={26} ring={on} />
+              <Avatar name={user?.name || "Guest"} src={user?.avatarUrl} size={26} ring={on} />
             ) : (
               <Icon name={t.icon} size={27} className={cx(on || t.action ? t.tint : "text-ink")} />
             )}

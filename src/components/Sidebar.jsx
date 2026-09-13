@@ -259,7 +259,7 @@ export function Sidebar({
           )}
         >
           <span className="relative shrink-0">
-            <Avatar name={user?.name || "Guest"} size={34} />
+            <Avatar name={user?.name || "Guest"} src={user?.avatarUrl} size={34} />
             {verified && (
               <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-c-green ring-2 ring-bg-raised" />
             )}

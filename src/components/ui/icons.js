@@ -19,12 +19,14 @@ import {
   MessageCircle, MessageSquare, Moon, MoreHorizontal, Pencil, Pin, Plus, QrCode,
   Reply, RotateCw, Search, SearchX, Send, Settings, Share2, Shield, ShieldCheck,
   SlidersHorizontal, Snowflake, Sparkles, Star, Sun, SunMoon, Trash2, TrendingUp,
-  Trophy, User, UserCircle, UserPlus, Users, X, PlusCircle, EyeOff, Code, Dumbbell, Plane, Handshake, Clapperboard, Music, Palette, PawPrint, UtensilsCrossed, Gamepad2, HeartHandshake, Library,
+  Trophy, User, UserCircle, UserPlus, Users, X, PlusCircle, EyeOff, Code, Dumbbell, Plane, Handshake, Clapperboard, Music, Palette, PawPrint, UtensilsCrossed, Gamepad2, HeartHandshake, Library, Monitor, Cloud,
 } from "lucide-react";
 
 export const ICONS = {
   // navigation
   home: Home,
+  cloud: Cloud,
+  computer: Monitor,
   house: Home,
   local_library: Library,
   code: Code,

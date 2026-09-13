@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useClickOutside } from "../utils/hooks.js";
 import { Icon, Avatar, cx } from "./ui/Primitives.jsx";
 import { Weather } from "./Weather.jsx";
@@ -12,11 +13,47 @@ import { BetaTag } from "./Common.jsx";
 // Still a button rather than a live field: typing here and having the
 // keystrokes thrown away on navigation is worse than not looking like a field,
 // so it hands off to the real search surface on the first key.
+
+const THEMES = [
+  { key: "light", label: "Light", icon: "light_mode" },
+  { key: "dark", label: "Dark", icon: "dark_mode" },
+  { key: "system", label: "System", icon: "computer" },
+];
+
+function MenuItem({ icon, label, onClick, hint }) {
+  return (
+    <button
+      role="menuitem"
+      onClick={onClick}
+      className="w-full flex items-center gap-3 px-3 h-10 rounded-xl text-left text-[13.5px] font-medium text-ink
+        hover:bg-bg-sunken transition-colors"
+    >
+      <Icon name={icon} size={18} className="text-ink-2 shrink-0" />
+      <span className="flex-1 truncate">{label}</span>
+      {hint && <span className="text-xs text-ink-3">{hint}</span>}
+      <Icon name="chevron_right" size={16} className="text-ink-3 shrink-0" />
+    </button>
+  );
+}
+
 export function TopBar({
-  notifOpen, setNotifOpen, onSearchClick, onLogoClick, onAccountClick,
-  user, notifCount = 0,
+  notifOpen, setNotifOpen, onSearchClick, onLogoClick,
+  user, email, notifCount = 0,
+  themeMode = "system", onThemeChange, onOpenProfile, onOpenSettings, onSignIn,
 }) {
-  const ref = useClickOutside(notifOpen, () => setNotifOpen(false));
+  const [menuOpen, setMenuOpen] = useState(false);
+  const ref = useClickOutside(notifOpen || menuOpen, () => { setNotifOpen(false); setMenuOpen(false); });
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e) => { if (e.key === "Escape") setMenuOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [menuOpen]);
+
+  // Navigating closes the menu; switching theme does not, so the change can
+  // be seen before choosing another.
+  const go = (fn) => { setMenuOpen(false); fn?.(); };
 
   // No bottom rule on the header. It, the rail and every card were each
   // drawing their own hairline, which stacked into a grid of lines competing
@@ -59,7 +96,7 @@ export function TopBar({
         <Weather />
 
         <button
-          onClick={() => setNotifOpen(!notifOpen)}
+          onClick={() => { setMenuOpen(false); setNotifOpen(!notifOpen); }}
           aria-label="Notifications"
           className="relative grid place-items-center w-10 h-10 rounded-full text-ink-2
             hover:bg-bg-sunken hover:text-ink transition-colors"
@@ -90,13 +127,87 @@ export function TopBar({
         )}
 
         <button
-          onClick={onAccountClick}
-          aria-label="Account"
-          className="flex items-center gap-1 rounded-full p-0.5 hover:bg-bg-sunken transition-colors"
+          onClick={() => { setNotifOpen(false); setMenuOpen((v) => !v); }}
+          aria-label="Account menu"
+          aria-haspopup="menu"
+          aria-expanded={menuOpen}
+          className={cx(
+            "flex items-center gap-1 rounded-full p-0.5 pr-1.5 transition-colors",
+            menuOpen ? "bg-bg-sunken" : "hover:bg-bg-sunken"
+          )}
         >
-          <Avatar name={user?.name || "Guest"} size={34} />
-          <Icon name="expand_more" size={18} className="hidden sm:block text-ink-3" />
+          <Avatar name={user?.name || "Guest"} src={user?.avatarUrl} size={34} />
+          <Icon
+            name="expand_more"
+            size={18}
+            className={cx("text-ink-3 transition-transform duration-200", menuOpen && "rotate-180")}
+          />
         </button>
+
+        {menuOpen && (
+          <div
+            role="menu"
+            className="absolute right-3 sm:right-4 top-16 w-[min(18.5rem,calc(100vw-1.5rem))] bg-bg-raised rounded-2xl
+              border border-line shadow-pop overflow-hidden animate-pop z-40"
+          >
+            <button
+              onClick={() => go(user?.verified ? onOpenProfile : onSignIn)}
+              className="w-full flex items-center gap-3 px-4 py-3.5 text-left hover:bg-bg-sunken transition-colors border-b border-line"
+            >
+              <Avatar name={user?.name || "Guest"} src={user?.avatarUrl} size={42} />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[14px] font-semibold text-ink truncate">{user?.name || "Guest"}</span>
+                <span className="block text-xs text-ink-3 truncate">
+                  {user?.verified ? (email || "View your profile") : "Browsing as guest"}
+                </span>
+              </span>
+            </button>
+
+            <div className="p-1.5">
+              <MenuItem icon="person" label="Profile" onClick={() => go(onOpenProfile)} />
+            </div>
+
+            <div className="px-4 pt-1 pb-3">
+              <p className="text-2xs font-semibold uppercase tracking-wide text-ink-3 mb-2">Theme</p>
+              <div className="grid grid-cols-3 gap-1 bg-bg-sunken p-1 rounded-xl" role="radiogroup" aria-label="Theme">
+                {THEMES.map((t) => {
+                  const on = themeMode === t.key;
+                  return (
+                    <button
+                      key={t.key}
+                      role="radio"
+                      aria-checked={on}
+                      onClick={() => onThemeChange?.(t.key)}
+                      className={cx(
+                        "flex flex-col items-center gap-1 py-2 rounded-lg text-[11.5px] font-semibold transition-colors",
+                        on ? "bg-bg-raised text-ink ring-1 ring-line shadow-sm" : "text-ink-2 hover:text-ink"
+                      )}
+                    >
+                      <Icon name={t.icon} size={17} className={on ? "text-accent" : undefined} />
+                      {t.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="p-1.5 border-t border-line">
+              <MenuItem icon="settings" label="Settings" onClick={() => go(onOpenSettings)} />
+            </div>
+
+            {!user?.verified && onSignIn && (
+              <div className="px-3 pb-3">
+                <button
+                  onClick={() => go(onSignIn)}
+                  className="w-full h-10 rounded-full bg-accent text-accent-ink text-[13px] font-semibold
+                    hover:bg-accent-press transition-colors"
+                >
+                  Sign in
+                </button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </header>
   );
