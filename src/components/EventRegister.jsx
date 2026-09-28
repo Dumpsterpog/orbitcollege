@@ -85,7 +85,7 @@ function Choice({ on, onClick, title, sub, right }) {
       onClick={onClick}
       aria-pressed={on}
       className={cx(
-        "w-full flex items-center gap-3 rounded-xl px-4 py-3.5 text-left transition-colors",
+        "w-full flex items-center gap-3 rounded-xl px-4 py-2.5 text-left transition-colors",
         on ? "ring-2 ring-accent bg-accent-wash" : "ring-1 ring-line hover:ring-line-strong"
       )}
     >
@@ -120,6 +120,7 @@ export function EventRegisterScreen({
   const [form, setForm] = useState({
     name: user?.name || "",
     college: user?.university || "Manipal University Jaipur",
+    regNo: "",
     branch: "",
     year: "",
     phone: "",
@@ -164,6 +165,7 @@ export function EventRegisterScreen({
     const name = form.name.trim();
     if (!name) { setError("Please enter your full name."); return; }
     if (!form.college.trim()) { setError("Please enter your college."); return; }
+    if (!form.regNo.trim()) { setError("Please enter your college registration number."); return; }
     if (!form.year) { setError("Please pick your year of study."); return; }
     // Required: the club needs a way to reach someone on the day, and email
     // is not it when the queue is moving.
@@ -193,6 +195,7 @@ export function EventRegisterScreen({
       await db.createSignup(event.id, authUserId, {
         name: form.name.trim(),
         college: form.college.trim(),
+        regNo: form.regNo.trim(),
         branch: form.branch.trim(),
         year: form.year,
         phone: form.phone.replace(/[^0-9+]/g, ""),
@@ -285,7 +288,7 @@ export function EventRegisterScreen({
             </div>
           </div>
 
-          <div className={cx(card, "p-4 flex items-center gap-2 sm:gap-4 overflow-x-auto no-scrollbar")}>
+          <div className={cx(card, "px-4 py-3 flex items-center gap-2 sm:gap-4 overflow-x-auto no-scrollbar")}>
             <Step n={1} label="Your details" state={stage === "details" ? "on" : "done"} />
             <span className="h-px flex-1 min-w-[12px] bg-line" />
             <Step n={2} label="Slot and pass"
@@ -308,11 +311,16 @@ export function EventRegisterScreen({
                 We need a few details for your entry pass. The slot and pass come next.
               </p>
 
-              <div className="grid gap-4 mt-5">
-                <Field label="Full name">
-                  <Input value={form.name} maxLength={120} onChange={set("name")} placeholder="As it should appear on your pass" className="h-11" />
-                </Field>
-                <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-3.5 mt-4">
+                <div className="grid gap-3.5 sm:grid-cols-2">
+                  <Field label="Full name">
+                    <Input value={form.name} maxLength={120} onChange={set("name")} placeholder="As it should appear on your pass" className="h-11" />
+                  </Field>
+                  <Field label="Registration number">
+                    <Input value={form.regNo} maxLength={40} onChange={set("regNo")} placeholder="Your college registration number" className="h-11" />
+                  </Field>
+                </div>
+                <div className="grid gap-3.5 sm:grid-cols-2">
                   <Field label="College">
                     <Input value={form.college} maxLength={120} onChange={set("college")} className="h-11" />
                   </Field>
@@ -320,23 +328,23 @@ export function EventRegisterScreen({
                     <Input value={form.branch} maxLength={80} onChange={set("branch")} placeholder="e.g. CSE" className="h-11" />
                   </Field>
                 </div>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <Field label="Year of study">
+                <div className="grid gap-3.5 sm:grid-cols-3">
+                  <Field label="Year">
                     <select value={form.year} onChange={set("year")} className={selectClass}>
                       <option value="">Select year</option>
                       {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
                     </select>
                   </Field>
-                  <Field label="Phone" hint="The club calls this number if anything changes on the day.">
+                  <Field label="Phone">
                     <Input value={form.phone} maxLength={15} inputMode="tel" onChange={set("phone")} placeholder="10 digit number" className="h-11" />
                   </Field>
+                  <Field label="Heard from" optional>
+                    <select value={form.referral} onChange={set("referral")} className={selectClass}>
+                      <option value="">Prefer not to say</option>
+                      {REFERRALS.map((r) => <option key={r} value={r}>{r}</option>)}
+                    </select>
+                  </Field>
                 </div>
-                <Field label="Where did you hear about this?" optional>
-                  <select value={form.referral} onChange={set("referral")} className={selectClass}>
-                    <option value="">Prefer not to say</option>
-                    {REFERRALS.map((r) => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </Field>
               </div>
 
               {error && <p className="text-base text-c-red mt-4 leading-relaxed">{error}</p>}
@@ -346,15 +354,13 @@ export function EventRegisterScreen({
               </Button>
             </section>
           ) : stage === "options" ? (
-            <section className={cx(card, "p-4 sm:p-6")}>
+            <section className={cx(card, "p-4 sm:p-5")}>
               <h1 className="text-xl font-bold text-ink">Pick your slot and pass</h1>
-              <p className="text-base text-ink-2 mt-1 leading-relaxed">
-                Both slots cover the same workshop. Choose the one you can make.
-              </p>
+              <p className="text-base text-ink-2 mt-0.5">Both slots cover the same workshop.</p>
 
-              <div className="mt-5">
+              <div className="mt-4">
                 <p className="text-xs font-semibold text-ink-2 uppercase tracking-wide mb-2">Slot</p>
-                <div className="flex flex-col gap-2.5">
+                <div className="flex flex-col gap-2">
                   {SLOTS.map((s) => (
                     <Choice
                       key={s.key}
@@ -367,9 +373,9 @@ export function EventRegisterScreen({
                 </div>
               </div>
 
-              <div className="mt-6">
+              <div className="mt-4">
                 <p className="text-xs font-semibold text-ink-2 uppercase tracking-wide mb-2">Pass</p>
-                <div className="flex flex-col gap-2.5">
+                <div className="flex flex-col gap-2">
                   {PASSES.map((p) => (
                     <Choice
                       key={p.key}
@@ -384,28 +390,27 @@ export function EventRegisterScreen({
               </div>
 
               {form.passType === "stag" && (
-                <div className="mt-6">
+                <div className="mt-4">
                   <p className="text-xs font-semibold text-ink-2 uppercase tracking-wide">Who else is coming</p>
-                  <p className="text-xs text-ink-3 mt-1 mb-3 leading-relaxed">
-                    You are the first of four. Add the other three, with their college registration numbers.
-                    One pass covers all of you, and it belongs to you.
+                  <p className="text-xs text-ink-3 mt-0.5 mb-2">
+                    You are the first of four. One pass covers all of you.
                   </p>
-                  <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-2">
                     {team.map((row, i) => (
-                      <div key={i} className="grid gap-2.5 sm:grid-cols-[1fr_180px]">
+                      <div key={i} className="grid gap-2 sm:grid-cols-[1fr_180px]">
                         <Input
                           value={row.name}
                           maxLength={120}
                           onChange={setTeamField(i, "name")}
                           placeholder={`Person ${i + 2} full name`}
-                          className="h-11"
+                          className="h-10"
                         />
                         <Input
                           value={row.regNo}
                           maxLength={40}
                           onChange={setTeamField(i, "regNo")}
                           placeholder="Registration number"
-                          className="h-11"
+                          className="h-10"
                         />
                       </div>
                     ))}
@@ -413,14 +418,14 @@ export function EventRegisterScreen({
                 </div>
               )}
 
-              <div className="mt-6 pt-4 border-t border-line flex items-center justify-between gap-3">
+              <div className="mt-4 pt-3 border-t border-line flex items-center justify-between gap-3">
                 <span className="text-base text-ink-2">Total to pay</span>
                 <span className="text-xl font-bold text-ink tabular-nums">{rupees(chosenPass.amount)}</span>
               </div>
 
               {error && <p className="text-base text-c-red mt-4 leading-relaxed">{error}</p>}
 
-              <div className="grid gap-2 sm:grid-cols-[auto_1fr] mt-5">
+              <div className="grid gap-2 sm:grid-cols-[auto_1fr] mt-4">
                 <Button variant="soft" size="lg" onClick={() => { setError(""); setLocalStep("details"); }}>
                   Back
                 </Button>
@@ -433,8 +438,7 @@ export function EventRegisterScreen({
             <section className={cx(card, "p-4 sm:p-6")}>
               <h1 className="text-xl font-bold text-ink">Pay to confirm your place</h1>
               <p className="text-base text-ink-2 mt-1 leading-relaxed">
-                The workshop is run by {CLUB}. Payment opens in a new tab on CCAvenue, the university's payment
-                page. Pay there, close that tab, then come back here and confirm.
+                Run by {CLUB}. Payment opens in a new tab on CCAvenue. Pay there, then come back and confirm.
               </p>
 
               <dl className="mt-5 rounded-xl bg-bg-sunken px-4 py-3.5 grid grid-cols-2 gap-y-2.5 text-base">
@@ -461,13 +465,13 @@ export function EventRegisterScreen({
               <div className="mt-5 pt-5 border-t border-line">
                 <p className="text-base font-semibold text-ink">Paid already?</p>
                 <p className="text-xs text-ink-2 mt-1 leading-relaxed">
-                  CCAvenue does not tell Orbit when a payment lands, so tell us here. {CLUB} checks it against
-                  the payment report, and your entry pass appears on this page once it is confirmed.
+                  CCAvenue does not tell Orbit when a payment lands, so tell us here. {CLUB} checks it and your
+                  pass appears on this page.
                 </p>
 
-                <div className="mt-3">
+                <div className="mt-2.5">
                   <Field label="Payment reference" optional
-                         hint="The order or transaction id from CCAvenue, if you have it. It makes checking your payment quicker.">
+                         hint="The CCAvenue order id, if you have it. It makes checking quicker.">
                     <Input
                       value={paymentRef}
                       maxLength={60}
@@ -545,6 +549,7 @@ export function EventRegisterScreen({
                   {signup.amount ? ` · ${rupees(signup.amount)}` : ""}
                 </dd>
                 <dt className="text-ink-3">College</dt><dd className="text-ink text-right break-words">{signup.college}</dd>
+                {signup.regNo && (<><dt className="text-ink-3">Registration no.</dt><dd className="text-ink text-right font-mono text-xs">{signup.regNo}</dd></>)}
                 <dt className="text-ink-3">Year</dt><dd className="text-ink text-right">{signup.year}</dd>
                 {signup.branch && <><dt className="text-ink-3">Branch</dt><dd className="text-ink text-right">{signup.branch}</dd></>}
               </dl>
@@ -568,41 +573,35 @@ export function EventRegisterScreen({
 
         <aside className="hidden lg:block h-full">
           <div className="sticky top-6 flex flex-col gap-4">
-            <section className={cx(card, "overflow-hidden")}>
-              <img src="/poster.jpg" alt={event.title} className="w-full block" />
-            </section>
-
-            <section className={cx(card, "p-4")}>
-              <div className="flex items-center gap-2 mb-3">
-                <Icon name="calendar_today" size={18} className="text-accent" />
-                <h3 className="text-[14px] font-bold text-ink tracking-tight">The event</h3>
-              </div>
-              <div className="flex flex-col gap-2 text-base text-ink-2">
-                <span className="flex items-start gap-2">
-                  <Icon name="schedule" size={15} className="text-ink-3 shrink-0 mt-0.5" />
-                  <span className="min-w-0">{event.when}</span>
+            <section className={cx(card, "p-3.5 flex items-start gap-3")}>
+              <span className="w-16 h-[88px] rounded-xl overflow-hidden bg-bg-sunken shrink-0">
+                <img src="/poster.jpg" alt={event.title} className="w-full h-full object-cover" />
+              </span>
+              <span className="min-w-0 flex-1 leading-tight">
+                <span className="block text-[14px] font-bold text-ink truncate">{event.title}</span>
+                <span className="flex items-center gap-1.5 text-xs text-ink-2 mt-1.5">
+                  <Icon name="schedule" size={13} className="text-ink-3 shrink-0" />{event.when}
                 </span>
                 {event.where && (
-                  <span className="flex items-start gap-2">
-                    <Icon name="location_on" size={15} className="text-c-pink shrink-0 mt-0.5" />
+                  <span className="flex items-start gap-1.5 text-xs text-ink-2 mt-1">
+                    <Icon name="location_on" size={13} className="text-c-pink shrink-0 mt-0.5" />
                     <span className="min-w-0 break-words">{event.where}</span>
                   </span>
                 )}
-                <span className="flex items-start gap-2">
-                  <Icon name="group" size={15} className="text-c-violet shrink-0 mt-0.5" />
-                  <span>Run by {CLUB}</span>
+                <span className="flex items-center gap-1.5 text-xs text-ink-3 mt-1">
+                  <Icon name="group" size={13} className="shrink-0" />Run by {CLUB}
                 </span>
-              </div>
+              </span>
             </section>
 
-            <section className={cx(card, "p-4")}>
-              <div className="flex items-center gap-2 mb-3">
-                <Icon name="confirmation_number" size={18} className="text-c-green" />
-                <h3 className="text-[14px] font-bold text-ink tracking-tight">Passes</h3>
+            <section className={cx(card, "p-3.5")}>
+              <div className="flex items-center gap-2 mb-2">
+                <Icon name="confirmation_number" size={16} className="text-c-green" />
+                <h3 className="text-[13px] font-bold text-ink tracking-tight">Passes</h3>
               </div>
-              <div className="flex flex-col gap-2">
+              <div className="flex flex-col gap-1.5">
                 {PASSES.map((p) => (
-                  <div key={p.key} className="flex items-center justify-between gap-3 text-base">
+                  <div key={p.key} className="flex items-center justify-between gap-3 text-xs">
                     <span className="text-ink-2 min-w-0 truncate">
                       {p.label}{p.people > 1 ? ` (${p.people})` : ""}
                     </span>
@@ -610,33 +609,21 @@ export function EventRegisterScreen({
                   </div>
                 ))}
               </div>
-              <p className="text-xs text-ink-3 mt-3 leading-relaxed">
-                A stag pass is one payment and one QR for four people. Whoever registers carries it.
+              <p className="text-xs text-ink-3 mt-2 leading-relaxed">
+                A stag pass is one payment and one QR for four people.
               </p>
             </section>
 
-            <section className={cx(card, "p-4")}>
-              <div className="flex items-center gap-2 mb-3">
-                <Icon name="info" size={18} className="text-c-blue" />
-                <h3 className="text-[14px] font-bold text-ink tracking-tight">How this works</h3>
+            <section className={cx(card, "p-3.5")}>
+              <div className="flex items-center gap-2 mb-2">
+                <Icon name="info" size={16} className="text-c-blue" />
+                <h3 className="text-[13px] font-bold text-ink tracking-tight">How this works</h3>
               </div>
-              <ol className="flex flex-col gap-2.5 text-xs text-ink-2 leading-relaxed">
-                <li className="flex gap-2.5">
-                  <span className="grid place-items-center w-5 h-5 rounded-full bg-bg-sunken text-2xs font-bold text-ink shrink-0">1</span>
-                  Your details, so {CLUB} can reach you on the day.
-                </li>
-                <li className="flex gap-2.5">
-                  <span className="grid place-items-center w-5 h-5 rounded-full bg-bg-sunken text-2xs font-bold text-ink shrink-0">2</span>
-                  Your slot and pass.
-                </li>
-                <li className="flex gap-2.5">
-                  <span className="grid place-items-center w-5 h-5 rounded-full bg-bg-sunken text-2xs font-bold text-ink shrink-0">3</span>
-                  Payment on the university's CCAvenue page, in a new tab.
-                </li>
-                <li className="flex gap-2.5">
-                  <span className="grid place-items-center w-5 h-5 rounded-full bg-bg-sunken text-2xs font-bold text-ink shrink-0">4</span>
-                  The club checks the payment, then your QR pass appears here and on your profile.
-                </li>
+              <ol className="flex flex-col gap-1.5 text-xs text-ink-2 leading-relaxed">
+                <li className="flex gap-2"><span className="text-ink-3 font-mono">1</span>Your details.</li>
+                <li className="flex gap-2"><span className="text-ink-3 font-mono">2</span>Slot and pass.</li>
+                <li className="flex gap-2"><span className="text-ink-3 font-mono">3</span>Pay on CCAvenue, in a new tab.</li>
+                <li className="flex gap-2"><span className="text-ink-3 font-mono">4</span>{CLUB} confirms it, your QR appears here.</li>
               </ol>
             </section>
           </div>
