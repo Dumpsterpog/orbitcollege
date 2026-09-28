@@ -239,8 +239,31 @@ function Stat({ label, value }) {
 // paying. So the header sends people to the registration page, and the share
 // QR is hidden -- a code that lets someone skip the ticket is worse than no
 // code at all.
-export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, verified, onBlocked, sparked, onSpark, onUpdate, onDelete, trendRank, interests, authUserId, myName, event = null, registered = false, onRegisterEvent }) {
+export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, verified, onBlocked, sparked, onSpark, onUpdate, onDelete, trendRank, interests, authUserId, myName, event = null, registered = false, pass = null, onRegisterEvent }) {
   const cat = categoryOf(c.category);
+
+  // Registered is not the same as paid, and paid is not the same as confirmed.
+  // A boolean was showing "View your pass" to someone whose payment nobody had
+  // checked yet, which is how people arrive at a gate holding nothing.
+  const passState = !event ? "none"
+    : pass?.status === "verified" && pass?.passCode ? "ready"
+    : pass?.status === "payment_claimed" ? "checking"
+    : pass ? "unpaid"
+    : registered ? "checking"
+    : "none";
+  const EVENT_CTA = {
+    none:     { label: "Register to join", short: "Register",  variant: "primary",   icon: undefined },
+    unpaid:   { label: "Finish payment",   short: "Pay",       variant: "primary",   icon: undefined },
+    checking: { label: "See registration", short: "Pending",   variant: "secondary", icon: "schedule" },
+    ready:    { label: "View your pass",   short: "Your pass", variant: "secondary", icon: "check" },
+  };
+  const cta = EVENT_CTA[passState];
+  const passNote = {
+    none: "Announcements are for people going. Registration and payment come first.",
+    unpaid: "You have not finished paying. Your place is not held until you do.",
+    checking: "Payment recorded. The organisers are checking it, and your QR pass appears once it is confirmed.",
+    ready: "Confirmed. Your QR pass is on your profile and your registration page.",
+  }[passState];
     const sparks = baseSparks(c) + (sparked ? 1 : 0);
   const isAdmin = !!authUserId && c.creatorId === authUserId;
   const isLive = c.lastActive <= 10;
@@ -602,9 +625,9 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
             <div className="min-w-0 flex-1 pb-1 hidden sm:flex justify-end gap-1.5">
               {!event && <Button variant="secondary" size="sm" icon="qr_code_2" onClick={() => setQrOpen(true)}>Share</Button>}
               {event ? (
-                registered
-                  ? <Button variant="secondary" size="sm" icon="check" onClick={() => onRegisterEvent?.(event)}>Registered</Button>
-                  : <Button variant="primary" size="sm" onClick={() => onRegisterEvent?.(event)}>Register to join</Button>
+                <Button variant={cta.variant} size="sm" icon={cta.icon} onClick={() => onRegisterEvent?.(event)}>
+                  {cta.label}
+                </Button>
               ) : (
                 <Button
                   variant={joined ? "secondary" : "primary"}
@@ -635,9 +658,8 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
             </div>
             <div className="sm:hidden shrink-0">
               {event ? (
-                <Button variant={registered ? "secondary" : "primary"} size="sm"
-                        onClick={() => onRegisterEvent?.(event)}>
-                  {registered ? "Registered" : "Register"}
+                <Button variant={cta.variant} size="sm" onClick={() => onRegisterEvent?.(event)}>
+                  {cta.short}
                 </Button>
               ) : (
                 <Button
@@ -726,8 +748,29 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
 
         {/* Body: content beside a rail carrying everything about the community
             that is not a post. The rail is what lets the header stay short. */}
-        <div className="max-w-6xl w-full mx-auto lg:px-8 grid lg:grid-cols-[minmax(0,1fr)_310px] gap-x-8 items-start">
+        <div className="max-w-6xl w-full mx-auto lg:px-8 grid lg:grid-cols-[minmax(0,1fr)_310px] gap-x-8">
           <div className="min-w-0">
+            {event && (
+              <div className="lg:hidden px-5 pt-4">
+                <div className="rounded-2xl border border-line bg-bg-raised p-3.5 flex items-center gap-3">
+                  <span className="w-12 h-12 rounded-xl overflow-hidden bg-bg-sunken shrink-0">
+                    <img src={EVENT_POSTER} alt="" className="w-full h-full object-cover" />
+                  </span>
+                  <span className="min-w-0 flex-1 leading-tight">
+                    <span className="block text-[13.5px] font-semibold text-ink truncate">{event.title}</span>
+                    <span className="block text-xs text-ink-2 mt-0.5 truncate">{event.when}</span>
+                  </span>
+                  <Button
+                    variant={cta.variant}
+                    size="sm"
+                    className="shrink-0"
+                    onClick={() => onRegisterEvent?.(event)}
+                  >
+                    {cta.short}
+                  </Button>
+                </div>
+              </div>
+            )}
         {tab === "chat" && (
           <div className="flex flex-col h-[min(64vh,600px)]">
             {(() => {
@@ -1149,37 +1192,36 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
           </div>
         )}
       </div>
-          </div>
 
-          <aside className="hidden lg:block pt-5 pb-16">
-            <div className="sticky top-4 space-y-4">
+          <aside className="hidden lg:block h-full pt-5 pb-16">
+            <div className="sticky top-[72px] space-y-4">
               {event && (
-                <RailPanel title={registered ? "You are going" : "About the event"}>
-                  <img src={EVENT_POSTER} alt={event.title}
-                       className="w-full rounded-xl border border-line mb-3" />
-                  <div className="flex flex-col gap-1.5 text-base text-ink-2">
-                    <span className="flex items-center gap-2">
-                      <Icon name="calendar_today" size={15} className="text-accent shrink-0" />{event.when}
+                <RailPanel title={passState === "ready" ? "You are going" : "About the event"}>
+                  <div className="flex items-start gap-3">
+                    <span className="w-14 h-14 rounded-xl overflow-hidden bg-bg-sunken shrink-0">
+                      <img src={EVENT_POSTER} alt="" className="w-full h-full object-cover" />
                     </span>
-                    {event.where && (
-                      <span className="flex items-center gap-2">
-                        <Icon name="location_on" size={15} className="text-c-pink shrink-0" />{event.where}
-                      </span>
-                    )}
+                    <span className="min-w-0 flex-1 leading-tight">
+                      <span className="block text-[14px] font-semibold text-ink truncate">{event.title}</span>
+                      <span className="block text-xs text-ink-2 mt-1 truncate">{event.when}</span>
+                      {event.where && <span className="block text-xs text-ink-3 mt-0.5 truncate">{event.where}</span>}
+                    </span>
                   </div>
                   <Button
-                    variant={registered ? "secondary" : "primary"}
-                    size="sm"
-                    className="w-full mt-3"
+                    variant={cta.variant}
+                    size="md"
+                    icon={cta.icon}
+                    className="w-full mt-3.5"
                     onClick={() => onRegisterEvent?.(event)}
                   >
-                    {registered ? "View your pass" : "Register to join"}
+                    {cta.label}
                   </Button>
-                  {!registered && (
-                    <p className="text-xs text-ink-3 mt-2 leading-relaxed">
-                      This chat is for people going. Registration and payment come first.
-                    </p>
-                  )}
+                  <p className={cx(
+                    "text-xs mt-2 leading-relaxed",
+                    passState === "unpaid" ? "text-c-amber" : "text-ink-3"
+                  )}>
+                    {passNote}
+                  </p>
                 </RailPanel>
               )}
 
@@ -1234,6 +1276,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
               )}
             </div>
           </aside>
+        </div>
         </div>
       {settingsOpen && (
         <CommunitySettings

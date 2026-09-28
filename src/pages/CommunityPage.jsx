@@ -39,6 +39,7 @@ export default function CommunityPage() {
       c={c}
       event={eventForCommunity}
       registered={!!eventForCommunity && o.registeredEventIds.includes(eventForCommunity.id)}
+      pass={eventForCommunity ? o.myPasses.find((p) => p.eventId === eventForCommunity.id) || null : null}
       onRegisterEvent={(e) => navigate("/events/" + e.id + "/register")}
       joined={o.joinedIds.includes(c.id)}
       onJoinToggle={o.handleJoinToggle}
