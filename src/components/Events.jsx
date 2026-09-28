@@ -42,9 +42,13 @@ const EVENT_POSTER = "/techideate.jpg";
 // matters this month, the campus artwork is what the page is for the rest of
 // the year, and neither has to win. Sources are JPEG, not the original PNGs --
 // 2.3MB of poster on a phone is a second of staring at nothing.
+// Each slide says how it wants to sit in the frame, because they are not the
+// same shape. The poster is 16:9 and fills it exactly. The campus artwork is
+// 3:1 and would lose its own title to a crop -- "CAMPUS EVENTS" became
+// "S EVENTS" -- so it is shown whole against a blurred copy of itself.
 const BANNER_SLIDES = [
-  { src: "/techideate.jpg", alt: "TechIdeate 2026, Beyond Human" },
-  { src: "/banner.jpg", alt: "Campus events at Manipal University Jaipur" },
+  { src: "/techideate.jpg", alt: "TechIdeate 2026, Beyond Human", fit: "cover" },
+  { src: "/banner.jpg", alt: "Campus events at Manipal University Jaipur", fit: "contain" },
 ];
 
 function BannerSlides({ slides, interval = 5000 }) {
@@ -64,7 +68,7 @@ function BannerSlides({ slides, interval = 5000 }) {
 
   return (
     <section
-      className="relative w-full rounded-2xl border border-line overflow-hidden bg-bg-sunken aspect-[4/5] sm:aspect-[5/2]"
+      className="relative w-full rounded-2xl border border-line overflow-hidden bg-bg-sunken aspect-[16/9]"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
       onFocus={() => setPaused(true)}
@@ -80,10 +84,12 @@ function BannerSlides({ slides, interval = 5000 }) {
           )}
           aria-hidden={i !== at}
         >
+          {/* The blurred layer only shows for a slide that does not fill the
+              frame; a 16:9 poster covers it completely. */}
           <img src={slide.src} alt="" aria-hidden="true"
                className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60" />
           <img src={slide.src} alt={slide.alt} loading={i === 0 ? "eager" : "lazy"}
-               className="relative w-full h-full object-contain" />
+               className={cx("relative w-full h-full", slide.fit === "contain" ? "object-contain" : "object-cover")} />
         </div>
       ))}
 
@@ -111,13 +117,13 @@ function BannerSlides({ slides, interval = 5000 }) {
 // cuts the title off. This shows the whole poster over a blurred, enlarged
 // copy of itself, which fills the band without inventing artwork or hiding
 // any of it.
-function Poster({ src, className, alt = "" }) {
+function Poster({ src, className, alt = "", fit = "contain" }) {
   return (
     <div className={cx("relative overflow-hidden bg-bg-sunken", className)}>
       <img src={src} alt="" aria-hidden="true"
            className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60" />
       <img src={src} alt={alt} loading="lazy"
-           className="relative w-full h-full object-contain" />
+           className={cx("relative w-full h-full", fit === "cover" ? "object-cover" : "object-contain")} />
     </div>
   );
 }
@@ -166,7 +172,7 @@ function EventCard({ e, registered, onRegister, onOpen }) {
             poster, and only then a category glyph. A card with a picture on it
             is the difference between a listing and an invitation. */}
         {e.imageUrl || EVENT_POSTER ? (
-          <Poster src={e.imageUrl || EVENT_POSTER} className="w-full h-full" />
+          <Poster src={e.imageUrl || EVENT_POSTER} className="w-full h-full" fit="cover" />
         ) : (
           <span className="w-full h-full grid place-items-center">
             <Icon name={cat?.msr || "calendar_today"} size={30} className={cat?.tint || "text-ink-3"} />
