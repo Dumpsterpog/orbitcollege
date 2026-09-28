@@ -13,7 +13,7 @@ rules_version = '2';
 //
 //   Writing needs an account. Every create/update/delete below requires a
 //   signed-in caller, and almost all of them require that caller to be the
-//   owner of the thing being changed.
+//   owner of the thing being changed. 
 //
 //   Anonymity is structural. Firestore cannot hide one field of a readable
 //   document, so Locali-Tea ownership is kept in a separate collection that
@@ -346,7 +346,11 @@ service cloud.firestore {
 
       match /registrations/{regUid} {
         allow read: if true;
-        allow create, delete: if isSelf(regUid);
+        // Admins delete too: a test registration, or someone who paid for the
+        // wrong event, has to be removable by the club rather than only by the
+        // student who made it.
+        allow create: if isSelf(regUid);
+        allow delete: if isSelf(regUid) || isAdmin();
       }
 
       // Registration details: name, college, year, referral.

@@ -31,10 +31,15 @@ export default function CommunityPage() {
     );
   }
 
+  const eventForCommunity = o.events.find((e) => e.linkedCommunityId === c.id) || null;
+
   return (
     <CommunityDetail
       key={c.id}
       c={c}
+      event={eventForCommunity}
+      registered={!!eventForCommunity && o.registeredEventIds.includes(eventForCommunity.id)}
+      onRegisterEvent={(e) => navigate("/events/" + e.id + "/register")}
       joined={o.joinedIds.includes(c.id)}
       onJoinToggle={o.handleJoinToggle}
       onClose={() => navigate(-1)}

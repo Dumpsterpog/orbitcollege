@@ -1,6 +1,10 @@
 import { useState, useMemo, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { CATEGORIES, categoryOf } from "../data/constants.js";
+
+// Event artwork: horizontal for the banner, vertical for the rail.
+const EVENT_BANNER = "/techideate.jpg";
+const EVENT_POSTER = "/poster.jpg";
 import { baseSparks, handleFor, timeAgo } from "../utils/helpers.js";
 import { Icon, Avatar, Button, IconButton, Input, Textarea, Field, Spinner, cx } from "./ui/Primitives.jsx";
 import { Switch } from "./ui/Primitives.jsx";
@@ -230,7 +234,12 @@ function Stat({ label, value }) {
   );
 }
 
-export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, verified, onBlocked, sparked, onSpark, onUpdate, onDelete, trendRank, interests, authUserId, myName }) {
+// `event` is the event this community belongs to, when it has one. An event
+// community is not joined by pressing Join: it is joined by registering and
+// paying. So the header sends people to the registration page, and the share
+// QR is hidden -- a code that lets someone skip the ticket is worse than no
+// code at all.
+export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, verified, onBlocked, sparked, onSpark, onUpdate, onDelete, trendRank, interests, authUserId, myName, event = null, registered = false, onRegisterEvent }) {
   const cat = categoryOf(c.category);
     const sparks = baseSparks(c) + (sparked ? 1 : 0);
   const isAdmin = !!authUserId && c.creatorId === authUserId;
@@ -538,8 +547,17 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
       <div className="flex-1 min-h-0 overflow-y-auto">
         {/* Banner. A community rarely has cover art, so the fallback is a wash
             in its own category colour rather than a grey slab or a stock photo. */}
-        <div className={cx("relative h-32 sm:h-40 overflow-hidden bg-gradient-to-br", BANNER[cat.tint] || BANNER.default)}>
-          {c.avatarUrl && (
+        <div className={cx(
+          "relative overflow-hidden bg-gradient-to-br",
+          event ? "h-40 sm:h-60" : "h-32 sm:h-40",
+          BANNER[cat.tint] || BANNER.default
+        )}>
+          {event ? (
+            <>
+              <img src={event.imageUrl || EVENT_BANNER} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              <span className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/55 to-transparent" />
+            </>
+          ) : c.avatarUrl && (
             <img src={c.avatarUrl} alt="" aria-hidden="true"
                  className="absolute inset-0 w-full h-full object-cover opacity-25 blur-xl scale-110" />
           )}
@@ -577,15 +595,21 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
             </div>
 
             <div className="min-w-0 flex-1 pb-1 hidden sm:flex justify-end gap-1.5">
-              <Button variant="secondary" size="sm" icon="qr_code_2" onClick={() => setQrOpen(true)}>Share</Button>
-              <Button
-                variant={joined ? "secondary" : "primary"}
-                size="sm"
-                icon={joined ? "check" : undefined}
-                onClick={() => { if (!verified) { onBlocked(); return; } onJoinToggle(c.id); }}
-              >
-                {joined ? "Joined" : "Join"}
-              </Button>
+              {!event && <Button variant="secondary" size="sm" icon="qr_code_2" onClick={() => setQrOpen(true)}>Share</Button>}
+              {event ? (
+                registered
+                  ? <Button variant="secondary" size="sm" icon="check" onClick={() => onRegisterEvent?.(event)}>Registered</Button>
+                  : <Button variant="primary" size="sm" onClick={() => onRegisterEvent?.(event)}>Register to join</Button>
+              ) : (
+                <Button
+                  variant={joined ? "secondary" : "primary"}
+                  size="sm"
+                  icon={joined ? "check" : undefined}
+                  onClick={() => { if (!verified) { onBlocked(); return; } onJoinToggle(c.id); }}
+                >
+                  {joined ? "Joined" : "Join"}
+                </Button>
+              )}
             </div>
           </div>
 
@@ -609,13 +633,20 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
               </div>
             </div>
             <div className="sm:hidden shrink-0">
-              <Button
-                variant={joined ? "secondary" : "primary"}
-                size="sm"
-                onClick={() => { if (!verified) { onBlocked(); return; } onJoinToggle(c.id); }}
-              >
-                {joined ? "Joined" : "Join"}
-              </Button>
+              {event ? (
+                <Button variant={registered ? "secondary" : "primary"} size="sm"
+                        onClick={() => onRegisterEvent?.(event)}>
+                  {registered ? "Registered" : "Register"}
+                </Button>
+              ) : (
+                <Button
+                  variant={joined ? "secondary" : "primary"}
+                  size="sm"
+                  onClick={() => { if (!verified) { onBlocked(); return; } onJoinToggle(c.id); }}
+                >
+                  {joined ? "Joined" : "Join"}
+                </Button>
+              )}
             </div>
           </div>
 
@@ -648,9 +679,11 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
               </span>
             )}
 
-            <button onClick={() => setQrOpen(true)} className="inline-flex items-center gap-1.5 sm:hidden hover:text-ink transition-colors">
-              <Icon name="qr_code_2" size={16} className="text-ink-3" />Share
-            </button>
+            {!event && (
+              <button onClick={() => setQrOpen(true)} className="inline-flex items-center gap-1.5 sm:hidden hover:text-ink transition-colors">
+                <Icon name="qr_code_2" size={16} className="text-ink-3" />Share
+              </button>
+            )}
           </div>
 
           {matchedMembers.length > 0 && (
@@ -1062,6 +1095,36 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
 
           <aside className="hidden lg:block pt-5 pb-16">
             <div className="sticky top-4 space-y-4">
+              {event && (
+                <RailPanel title={registered ? "You are going" : "About the event"}>
+                  <img src={EVENT_POSTER} alt={event.title}
+                       className="w-full rounded-xl border border-line mb-3" />
+                  <div className="flex flex-col gap-1.5 text-base text-ink-2">
+                    <span className="flex items-center gap-2">
+                      <Icon name="calendar_today" size={15} className="text-accent shrink-0" />{event.when}
+                    </span>
+                    {event.where && (
+                      <span className="flex items-center gap-2">
+                        <Icon name="location_on" size={15} className="text-c-pink shrink-0" />{event.where}
+                      </span>
+                    )}
+                  </div>
+                  <Button
+                    variant={registered ? "secondary" : "primary"}
+                    size="sm"
+                    className="w-full mt-3"
+                    onClick={() => onRegisterEvent?.(event)}
+                  >
+                    {registered ? "View your pass" : "Register to join"}
+                  </Button>
+                  {!registered && (
+                    <p className="text-xs text-ink-3 mt-2 leading-relaxed">
+                      This chat is for people going. Registration and payment come first.
+                    </p>
+                  )}
+                </RailPanel>
+              )}
+
               <RailPanel title="About">
                 <p className="text-base text-ink-2 leading-relaxed">
                   {c.desc || "No description yet."}
