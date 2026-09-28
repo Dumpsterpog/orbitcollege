@@ -17,6 +17,8 @@ export default function HomePage() {
     <EventsScreen
       events={o.events}
       registeredEventIds={o.registeredEventIds}
+      passes={o.myPasses}
+      onOpenPass={(p) => navigate(`/events/${p.eventId}/register`)}
       onRegister={(e) => navigate(`/events/${e.id}/register`)}
       onOpenEvent={(e) => {
         const c = e.linkedCommunityId && o.dbCommunities.find((x) => x.id === e.linkedCommunityId);

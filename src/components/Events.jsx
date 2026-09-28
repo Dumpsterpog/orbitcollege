@@ -248,7 +248,7 @@ function EventCard({ e, registered, onRegister, onOpen }) {
 /* ------------------------------------------------------------ screen */
 
 export function EventsScreen({
-  events, onRegister, registeredEventIds = [], onOpenEvent,
+  events, onRegister, registeredEventIds = [], onOpenEvent, passes = [], onOpenPass,
 }) {
   const [filter, setFilter] = useState("all");
   const [range, setRange] = useState("all");
@@ -370,6 +370,51 @@ export function EventsScreen({
             scrolled away and left a hole. */}
         <aside className="hidden lg:block h-full">
           <div className="sticky top-6 max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar pr-1 flex flex-col gap-4">
+            {passes.length > 0 && (
+              <section className="w-full bg-bg-raised rounded-2xl border border-line p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Icon name="confirmation_number" size={18} className="text-c-green" />
+                  <h3 className="text-[14px] font-bold text-ink tracking-tight">
+                    {passes.length === 1 ? "Your pass" : "Your passes"}
+                  </h3>
+                </div>
+
+                <div className="flex flex-col gap-3">
+                  {passes.map((pass) => {
+                    const ev = events.find((e) => e.id === pass.eventId);
+                    const title = ev?.title || pass.eventTitle || "Event";
+                    const ready = pass.status === "verified" && pass.passCode;
+                    const waiting = pass.status === "payment_claimed";
+                    return (
+                      <div key={pass.eventId} className="rounded-xl bg-bg-sunken px-3.5 py-3">
+                        <p className="text-[13.5px] font-semibold text-ink truncate">{title}</p>
+                        <p className="flex items-start gap-1.5 text-xs text-ink-2 mt-1 leading-relaxed">
+                          <Icon
+                            name={ready ? "check_circle" : waiting ? "schedule" : "info"}
+                            size={14}
+                            className={cx("mt-0.5 shrink-0", ready ? "text-c-green" : waiting ? "text-c-amber" : "text-c-blue")}
+                          />
+                          <span>
+                            {ready
+                              ? "Confirmed. Your QR pass is on your profile."
+                              : waiting
+                                ? "We have your payment. The organisers are checking it, and your QR pass appears here once it is confirmed."
+                                : "Registration started. Finish the payment step to get your pass."}
+                          </span>
+                        </p>
+                        <button
+                          onClick={() => onOpenPass?.(pass)}
+                          className="mt-2 text-xs font-semibold text-accent hover:underline"
+                        >
+                          {ready ? "View your pass" : waiting ? "See your registration" : "Finish registering"}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
             <CampusCalendar
               events={sorted}
               selected={day}

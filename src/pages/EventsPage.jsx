@@ -9,6 +9,8 @@ export default function EventsPage() {
     <EventsScreen
       events={o.events}
       registeredEventIds={o.registeredEventIds}
+      passes={o.myPasses}
+      onOpenPass={(p) => navigate(`/events/${p.eventId}/register`)}
       onRegister={(e) => navigate(`/events/${e.id}/register`)}
       onOpenEvent={(e) => {
         // An event's linked community only exists once someone has registered,

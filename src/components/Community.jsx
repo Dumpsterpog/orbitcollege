@@ -873,9 +873,9 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
         )}
         {tab === "posts" && (
           <div className="px-5 lg:px-0 pt-5 pb-16">
-            {event && !isAdmin && (
+            {event && (
               <p className="text-base text-ink-2 text-center py-4 mb-4 rounded-2xl border border-line">
-                Announcements about {event.title} appear here. Only the organisers can post.
+                Announcements about {event.title} appear here. They are posted by the organisers.
               </p>
             )}
 
@@ -885,7 +885,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
               </p>
             )}
 
-            {(event ? isAdmin : joined && canPost) && (
+            {!event && joined && canPost && (
               <div className="rounded-2xl border border-line p-3.5 mb-5">
                 <div className="flex gap-3">
                   <Avatar name={myName} size={40} />
