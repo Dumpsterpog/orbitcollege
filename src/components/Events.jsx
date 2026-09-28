@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { CATEGORIES } from "../data/constants.js";
 import { Screen } from "./ui/Layout.jsx";
 import { Icon, cx } from "./ui/Primitives.jsx";
@@ -36,7 +36,76 @@ const RANGES = [
 
 // Colour per badge, as whole class strings so Tailwind's scanner keeps them.
 // The poster doubles as the page banner and as the fallback card cover.
-const EVENT_POSTER = "/image.png";
+const EVENT_POSTER = "/techideate.jpg";
+
+// The banner rotates rather than picking one image: the event poster is what
+// matters this month, the campus artwork is what the page is for the rest of
+// the year, and neither has to win. Sources are JPEG, not the original PNGs --
+// 2.3MB of poster on a phone is a second of staring at nothing.
+const BANNER_SLIDES = [
+  { src: "/techideate.jpg", alt: "TechIdeate 2026, Beyond Human" },
+  { src: "/banner.jpg", alt: "Campus events at Manipal University Jaipur" },
+];
+
+function BannerSlides({ slides, interval = 5000 }) {
+  const [at, setAt] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    if (paused || slides.length < 2) return;
+    // Someone who has asked their system to stop animations gets the first
+    // slide and the dots, not a carousel moving under them.
+    let reduce = false;
+    try { reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { /* assume motion is fine */ }
+    if (reduce) return;
+    const t = setInterval(() => setAt((n) => (n + 1) % slides.length), interval);
+    return () => clearInterval(t);
+  }, [paused, slides.length, interval]);
+
+  return (
+    <section
+      className="relative w-full rounded-2xl border border-line overflow-hidden bg-bg-sunken aspect-[4/5] sm:aspect-[5/2]"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onFocus={() => setPaused(true)}
+      onBlur={() => setPaused(false)}
+      aria-roledescription="carousel"
+    >
+      {slides.map((slide, i) => (
+        <div
+          key={slide.src}
+          className={cx(
+            "absolute inset-0 transition-opacity duration-700",
+            i === at ? "opacity-100" : "opacity-0 pointer-events-none"
+          )}
+          aria-hidden={i !== at}
+        >
+          <img src={slide.src} alt="" aria-hidden="true"
+               className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60" />
+          <img src={slide.src} alt={slide.alt} loading={i === 0 ? "eager" : "lazy"}
+               className="relative w-full h-full object-contain" />
+        </div>
+      ))}
+
+      {slides.length > 1 && (
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2">
+          {slides.map((slide, i) => (
+            <button
+              key={slide.src}
+              onClick={() => setAt(i)}
+              aria-label={`Show ${slide.alt}`}
+              aria-current={i === at}
+              className={cx(
+                "h-2 rounded-full transition-all",
+                i === at ? "w-6 bg-white" : "w-2 bg-white/50 hover:bg-white/80"
+              )}
+            />
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
 
 // A poster is portrait and a banner is wide, so cropping one into the other
 // cuts the title off. This shows the whole poster over a blurred, enlarged
@@ -227,11 +296,7 @@ export function EventsScreen({
         <div className="min-w-0 flex flex-col gap-4">
           {/* The artwork carries it. The copy that was here said what the page
               title and the filters below already say. */}
-          <Poster
-            src={EVENT_POSTER}
-            alt="Campus events"
-            className="w-full rounded-2xl border border-line aspect-[4/5] sm:aspect-[2/1]"
-          />
+          <BannerSlides slides={BANNER_SLIDES} />
 
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">

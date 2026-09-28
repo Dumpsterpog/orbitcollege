@@ -8,6 +8,9 @@ export default function ProfilePage() {
       user={o.user}
       email={o.authUser?.email}
       pendingCount={o.pendingPosts.length}
+      passes={o.myPasses}
+      events={o.events}
+      onOpenPass={(p) => o.goToTab(`events/${p.eventId}/register`)}
       joinedCommunities={o.joinedCommunities}
       onSaveProfile={o.handleUpdateProfile}
       onProfileImage={o.handleProfileImage}

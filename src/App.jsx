@@ -75,6 +75,7 @@ export default function App() {
   const [feedPosts, setFeedPosts] = useState([]);
   const [pendingPosts, setPendingPosts] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
+  const [myPasses, setMyPasses] = useState([]);
   const [ads, setAds] = useState([]);
   const [feedSparkIds, setFeedSparkIds] = useState([]);
 
@@ -189,6 +190,22 @@ export default function App() {
       .catch((e) => console.error("[orbit] fetchMySparks", e));
     return () => { alive = false; };
   }, [authUser]);
+
+  // Event passes: one listener per event this account registered for. The
+  // status and pass code are written by an admin after they check the payment,
+  // so this has to be live rather than fetched once.
+  useEffect(() => {
+    if (!authUser || registeredEventIds.length === 0) { setMyPasses([]); return; }
+    const byEvent = new Map();
+    const unsubs = registeredEventIds.map((eventId) =>
+      db.watchMySignup(eventId, authUser.id, (signup) => {
+        if (signup) byEvent.set(eventId, { ...signup, eventId });
+        else byEvent.delete(eventId);
+        setMyPasses([...byEvent.values()]);
+      })
+    );
+    return () => unsubs.forEach((stop) => stop());
+  }, [authUser, registeredEventIds.join(",")]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Your own posts still in the review queue, so the feed can say they are
   // waiting instead of looking like they vanished.
@@ -818,7 +835,7 @@ export default function App() {
     // identity
     user, authUser, verified: user.verified,
     // live data
-    communities, clubs, allGroups, dbCommunities, events, feedPosts, feedSparkIds, pendingPosts, announcements, ads,
+    communities, clubs, allGroups, dbCommunities, events, feedPosts, feedSparkIds, pendingPosts, announcements, ads, myPasses,
     joinedIds, joinedCommunities, registeredEventIds, sparkedIds, topTrendingIds,
     teaPosts, myTeaVotes, myTeaReactions, myTeaPostIds, myTeaCommentIds, isTeaModerator,
     // preferences

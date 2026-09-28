@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import { CATEGORIES } from "../data/constants.js";
 import { Icon, Avatar, Button, Input, Textarea, cx } from "./ui/Primitives.jsx";
 import { Screen, Empty } from "./ui/Layout.jsx";
@@ -156,6 +157,7 @@ export function ProfileScreen({
   user, email, joinedCommunities = [], onSaveProfile, onVerifyGuest, onOpenSettings,
   onOpenCommunity, authUserId, myPosts = [], registeredEvents = [], allCommunities = [],
   onOpenEvent, pendingCount = 0, onProfileImage,
+  passes = [], events = [], onOpenPass,
 }) {
   const [uploading, setUploading] = useState(null);
   const pickImage = async (kind, file) => {
@@ -505,6 +507,63 @@ export function ProfileScreen({
                       A moderator checks it before it appears. Only you can see this.
                     </p>
                   </section>
+                )}
+
+                {passes.length > 0 && (
+                  <RailCard icon="confirmation_number" tint="text-c-green"
+                            title={passes.length === 1 ? "Event pass" : "Event passes"}>
+                    <div className="flex flex-col gap-5">
+                      {passes.map((p) => {
+                        const ev = events.find((e) => e.id === p.eventId);
+                        const ready = p.status === "verified" && p.passCode;
+                        return (
+                          <div key={p.eventId} className="flex flex-col gap-2 min-w-0">
+                            <div className="min-w-0">
+                              <p className="text-[14px] font-semibold text-ink truncate">
+                                {ev?.title || p.eventTitle || "Event"}
+                              </p>
+                              <p className="text-xs text-ink-3 truncate">{ev?.when || ev?.where || ""}</p>
+                            </div>
+
+                            {ready ? (
+                              <>
+                                {/* White plate behind the code: a scanner
+                                    reading a phone in dark mode needs the
+                                    contrast and the quiet zone. */}
+                                <span className="self-center p-3 bg-white rounded-xl">
+                                  <QRCodeSVG
+                                    value={`orbit:v1:${p.eventId}:${authUserId}:${p.passCode}`}
+                                    size={150}
+                                    level="M"
+                                  />
+                                </span>
+                                <p className="text-center text-[15px] font-bold tracking-[0.18em] text-ink">
+                                  {p.passCode}
+                                </p>
+                                <p className="text-center text-xs text-ink-2 leading-relaxed">
+                                  Show this at the entrance.
+                                </p>
+                              </>
+                            ) : (
+                              <div className="rounded-xl bg-bg-sunken px-3 py-2.5">
+                                <p className="text-xs text-ink-2 leading-relaxed">
+                                  {p.status === "payment_claimed"
+                                    ? "Payment recorded. Your pass appears here once the club confirms it."
+                                    : "Registration started. Finish the payment step to get your pass."}
+                                </p>
+                                <button
+                                  onClick={() => onOpenPass?.(p)}
+                                  className="mt-2 text-xs font-semibold text-accent hover:underline"
+                                >
+                                  {p.status === "payment_claimed" ? "View registration" : "Finish registering"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </RailCard>
                 )}
 
                 <RailCard icon="interests" tint="text-c-pink" title="Interests"
