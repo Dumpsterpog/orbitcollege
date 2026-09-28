@@ -93,8 +93,13 @@ export function EventRegisterScreen({
     if (!name) { setError("Please enter your full name."); return; }
     if (!form.college.trim()) { setError("Please enter your college."); return; }
     if (!form.year) { setError("Please pick your year of study."); return; }
+    // Required: the club needs a way to reach someone on the day, and email
+    // is not it when the queue is moving.
     const phone = form.phone.replace(/[^0-9+]/g, "");
-    if (phone && phone.replace(/\D/g, "").length < 10) { setError("That phone number looks too short."); return; }
+    const digits = phone.replace(/\D/g, "");
+    if (!digits) { setError("Please enter a phone number so the club can reach you."); return; }
+    if (digits.length < 10) { setError("That phone number looks too short."); return; }
+    if (digits.length > 13) { setError("That phone number looks too long."); return; }
 
     setError("");
     setBusy(true);
@@ -221,7 +226,7 @@ export function EventRegisterScreen({
                     {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
                   </select>
                 </Field>
-                <Field label="Phone" optional hint="Only used if we need to reach you on the day.">
+                <Field label="Phone" hint="The club calls this number if anything changes on the day.">
                   <Input value={form.phone} maxLength={15} inputMode="tel" onChange={set("phone")} placeholder="10 digit number" className="h-11" />
                 </Field>
               </div>
