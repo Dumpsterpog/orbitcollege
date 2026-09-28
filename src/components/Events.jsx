@@ -98,7 +98,7 @@ function EventCard({ e, registered, onRegister, onOpen }) {
                 : "bg-accent text-accent-ink hover:bg-accent-press active:scale-[0.98]"
             )}
           >
-            {registered ? "Going" : "Join Event"}
+            {registered ? "Registered" : "Register"}
           </button>
         </div>
 

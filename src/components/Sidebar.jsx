@@ -142,13 +142,16 @@ export function Sidebar({
           <div key={group.label || gi}>
             {group.label && <GroupLabel>{group.label}</GroupLabel>}
             <div className="flex flex-col gap-0.5">
-              {group.items.map((item) => (
+              {/* key is this app's identifier for the row, not React's, so it
+                  is pulled out of the spread: React 19 warns when a spread
+                  carries one, and it never reaches the component anyway. */}
+              {group.items.map(({ key, ...row }) => (
                 <Row
-                  key={item.key}
-                  {...item}
-                  badge={badges[item.badgeKey]}
-                  active={active === item.key}
-                  onClick={() => go(item)}
+                  key={key}
+                  {...row}
+                  badge={badges[row.badgeKey]}
+                  active={active === key}
+                  onClick={() => go({ key, ...row })}
                 />
               ))}
             </div>
@@ -182,13 +185,13 @@ export function Sidebar({
 
         <GroupLabel>Personal</GroupLabel>
         <div className="flex flex-col gap-0.5">
-          {PERSONAL.map((item) => (
+          {PERSONAL.map(({ key, ...row }) => (
             <Row
-              key={item.key}
-              {...item}
-              badge={badges[item.badgeKey]}
-              active={active === item.key}
-              onClick={() => go(item)}
+              key={key}
+              {...row}
+              badge={badges[row.badgeKey]}
+              active={active === key}
+              onClick={() => go({ key, ...row })}
             />
           ))}
         </div>

@@ -7,6 +7,7 @@ import { useViewportHeight } from "./utils/useViewportHeight.js";
 import { useTheme } from "./utils/useTheme.js";
 import * as db from "./lib/db.js";
 import { cached, reviveDates, setCacheScope } from "./lib/cache.js";
+import { withDemoEvent } from "./lib/demoEvent.js";
 import { checkPostLimit, notePost, checkCommunityLimit, MAX_COMMUNITIES } from "./lib/limits.js";
 import { checkText, checkFields, classifyPost } from "./lib/moderation.js";
 import { onAuthChange, completeRedirectSignIn, fetchProfile, signOut as fbSignOut } from "./lib/authService.js";
@@ -162,8 +163,10 @@ export default function App() {
   useEffect(() => db.watchCommunities(
     cached("communities", setDbCommunities, reviveDates(["createdAt"]))
   ), []);
+  // The demo event is added here rather than inside the watcher so it survives
+  // an empty database, which is exactly when it is needed.
   useEffect(() => db.watchEvents(
-    cached("events", setEvents, reviveDates(["startsAt"]))
+    cached("events", (list) => setEvents(withDemoEvent(list)), reviveDates(["startsAt"]))
   ), []);
   // The campus feed is a collectionGroup read across every post in the project,
   // and it used to open on every page load for every visitor. Home is the
