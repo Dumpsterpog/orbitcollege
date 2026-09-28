@@ -14,13 +14,18 @@ import { CampusCalendar } from "./events/Calendar.jsx";
 // the main thing anyone does on this page. A dropdown hides the options behind
 // a click and gives no sense of what is available.
 
+// Each key is a real category name, so a chip filters for what it says. The
+// old list mapped labels onto unrelated community categories -- "Workshops"
+// filtered for "Study" -- so a workshop matched nothing. Chips with no events
+// behind them are hidden further down, so this list can cover every kind
+// without cluttering a page that has one.
 const FILTERS = [
-  { key: "all",        label: "All Events",   icon: "calendar_today" },
-  { key: "Study",      label: "Workshops",    icon: "lightbulb" },
-  { key: "Coding & Projects", label: "Competitions", icon: "workspace_premium" },
-  { key: "Networking & Social", label: "Meetups", icon: "groups" },
-  { key: "Music",      label: "Cultural",     icon: "star" },
-  { key: "Sports",     label: "Sports",       icon: "local_fire_department" },
+  { key: "all",               label: "All Events",    icon: "calendar_today" },
+  { key: "Workshop",          label: "Workshops",     icon: "lightbulb" },
+  { key: "Coding & Projects", label: "Competitions",  icon: "workspace_premium" },
+  { key: "Networking & Social", label: "Meetups",     icon: "groups" },
+  { key: "Music",             label: "Cultural",      icon: "star" },
+  { key: "Sports",            label: "Sports",        icon: "local_fire_department" },
 ];
 
 const RANGES = [
@@ -30,6 +35,24 @@ const RANGES = [
 ];
 
 // Colour per badge, as whole class strings so Tailwind's scanner keeps them.
+// The poster doubles as the page banner and as the fallback card cover.
+const EVENT_POSTER = "/image.png";
+
+// A poster is portrait and a banner is wide, so cropping one into the other
+// cuts the title off. This shows the whole poster over a blurred, enlarged
+// copy of itself, which fills the band without inventing artwork or hiding
+// any of it.
+function Poster({ src, className, alt = "" }) {
+  return (
+    <div className={cx("relative overflow-hidden bg-bg-sunken", className)}>
+      <img src={src} alt="" aria-hidden="true"
+           className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60" />
+      <img src={src} alt={alt} loading="lazy"
+           className="relative w-full h-full object-contain" />
+    </div>
+  );
+}
+
 const BADGE = {
   Featured: "bg-accent text-accent-ink",
   Workshop: "bg-c-green text-white",
@@ -61,14 +84,20 @@ const tagsOf = (e) =>
 
 function EventCard({ e, registered, onRegister, onOpen }) {
   const cat = CATEGORIES.find((x) => x.name === e.category);
-  const badge = e.featured ? "Featured" : e.category === "Sports" ? "Sports" : "Event";
+  const badge = e.featured ? "Featured"
+    : e.category === "Workshop" ? "Workshop"
+    : e.category === "Sports" ? "Sports"
+    : "Event";
   const tags = tagsOf(e);
 
   return (
     <article className="w-full bg-bg-raised rounded-2xl border border-line p-4 flex flex-col sm:flex-row gap-4">
       <div className="relative w-full sm:w-[200px] h-[140px] shrink-0 rounded-xl overflow-hidden bg-bg-sunken">
-        {e.imageUrl ? (
-          <img src={e.imageUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
+        {/* The event's own artwork if it has been uploaded, then the campus
+            poster, and only then a category glyph. A card with a picture on it
+            is the difference between a listing and an invitation. */}
+        {e.imageUrl || EVENT_POSTER ? (
+          <Poster src={e.imageUrl || EVENT_POSTER} className="w-full h-full" />
         ) : (
           <span className="w-full h-full grid place-items-center">
             <Icon name={cat?.msr || "calendar_today"} size={30} className={cat?.tint || "text-ink-3"} />
@@ -198,13 +227,11 @@ export function EventsScreen({
         <div className="min-w-0 flex flex-col gap-4">
           {/* The artwork carries it. The copy that was here said what the page
               title and the filters below already say. */}
-          <section className="w-full rounded-2xl overflow-hidden">
-            <img
-              src="/banner.png"
-              alt="Campus events"
-              className="w-full aspect-[3/1] object-cover"
-            />
-          </section>
+          <Poster
+            src={EVENT_POSTER}
+            alt="Campus events"
+            className="w-full rounded-2xl border border-line aspect-[4/5] sm:aspect-[2/1]"
+          />
 
           <div className="flex items-center gap-2 flex-wrap">
             <div className="flex items-center gap-2 flex-wrap flex-1 min-w-0">

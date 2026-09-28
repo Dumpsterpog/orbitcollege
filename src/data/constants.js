@@ -1,4 +1,5 @@
 import {
+  Lightbulb,
   BookOpen, Trophy, Dumbbell, Code2, Home as HomeIcon,
   Plane, Gamepad2, Handshake, Music, ChefHat, Palette, Clapperboard,
   Library, Camera, PawPrint, HeartHandshake,
@@ -13,6 +14,7 @@ import {
 // tile and a filter pill without reading the label. `icon` is the legacy
 // lucide component, kept only for screens not yet migrated.
 export const CATEGORIES = [
+  { name: "Workshop", icon: Lightbulb, color: "amber", msr: "lightbulb", tint: "text-c-amber", ring: "bg-c-amber" },
   { name: "Study", icon: BookOpen, color: "indigo", msr: "menu_book", tint: "text-c-blue", ring: "bg-c-blue" },
   { name: "Sports", icon: Trophy, color: "rose", msr: "sports_soccer", tint: "text-c-green", ring: "bg-c-green" },
   { name: "Fitness", icon: Dumbbell, color: "emerald", msr: "fitness_center", tint: "text-c-teal", ring: "bg-c-teal" },
