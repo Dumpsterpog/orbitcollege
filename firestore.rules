@@ -74,7 +74,7 @@ service cloud.firestore {
       // someone write their own would make the cap decorative. suspended is
       // the same: a suspension you can lift yourself is not one.
       return !request.resource.data.diff(resource.data).affectedKeys()
-        .hasAny(['isAdmin', 'communitiesCreated', 'suspended']);
+        .hasAny(['isAdmin', 'communitiesCreated', 'suspended', 'adminViews']);
     }
 
     // Suspended by an admin from the admin tool. Checked on every write that

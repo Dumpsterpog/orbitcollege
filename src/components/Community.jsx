@@ -5,6 +5,37 @@ import { CATEGORIES, categoryOf } from "../data/constants.js";
 // Event artwork: horizontal for the banner, vertical for the rail.
 const EVENT_BANNER = "/techideate.jpg";
 const EVENT_POSTER = "/poster.jpg";
+
+// Where the club actually talks to people. Fill these in and the card appears;
+// leave one empty and that row is skipped rather than rendering a dead link.
+const EVENT_SOCIALS = [
+  { key: "whatsapp", label: "WhatsApp group", href: "", tint: "text-[#25D366]" },
+  { key: "instagram", label: "Instagram", href: "", tint: "text-[#E1306C]" },
+  { key: "linkedin", label: "LinkedIn", href: "", tint: "text-[#0A66C2]" },
+];
+
+function BrandMark({ name, className }) {
+  const common = { viewBox: "0 0 24 24", fill: "currentColor", className, "aria-hidden": "true" };
+  if (name === "whatsapp") {
+    return (
+      <svg {...common}>
+        <path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2 22l5.25-1.38a9.87 9.87 0 0 0 4.79 1.22h.01c5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.82 9.82 0 0 0 12.04 2Zm0 18.13h-.01a8.2 8.2 0 0 1-4.18-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.2 8.2 0 0 1-1.26-4.36c0-4.54 3.7-8.23 8.24-8.23 2.2 0 4.27.86 5.83 2.42a8.18 8.18 0 0 1 2.41 5.82c0 4.54-3.7 8.21-8.24 8.21Zm4.52-6.16c-.25-.12-1.47-.72-1.69-.81-.23-.08-.39-.12-.56.13-.16.25-.64.8-.78.97-.14.16-.29.19-.54.06-.25-.12-1.05-.39-1.99-1.23-.74-.66-1.24-1.47-1.38-1.72-.15-.25-.02-.38.11-.5.11-.11.25-.29.37-.43.13-.15.17-.25.25-.41.08-.17.04-.31-.02-.43-.06-.12-.56-1.35-.77-1.85-.2-.48-.41-.42-.56-.43h-.48c-.17 0-.43.06-.66.31-.23.25-.86.85-.86 2.07s.89 2.4 1.01 2.56c.12.17 1.75 2.67 4.23 3.74.59.26 1.05.41 1.41.52.59.19 1.13.16 1.56.1.47-.07 1.47-.6 1.67-1.18.21-.58.21-1.07.15-1.18-.06-.1-.23-.16-.48-.29Z" />
+      </svg>
+    );
+  }
+  if (name === "instagram") {
+    return (
+      <svg {...common}>
+        <path d="M12 2.16c3.2 0 3.58.01 4.85.07 1.17.05 1.8.25 2.23.41.56.22.96.48 1.38.9.42.42.68.82.9 1.38.16.42.36 1.06.41 2.23.06 1.27.07 1.65.07 4.85s-.01 3.58-.07 4.85c-.05 1.17-.25 1.8-.41 2.23-.22.56-.48.96-.9 1.38-.42.42-.82.68-1.38.9-.42.16-1.06.36-2.23.41-1.27.06-1.65.07-4.85.07s-3.58-.01-4.85-.07c-1.17-.05-1.8-.25-2.23-.41a3.8 3.8 0 0 1-1.38-.9 3.8 3.8 0 0 1-.9-1.38c-.16-.42-.36-1.06-.41-2.23C2.17 15.58 2.16 15.2 2.16 12s.01-3.58.07-4.85c.05-1.17.25-1.8.41-2.23.22-.56.48-.96.9-1.38.42-.42.82-.68 1.38-.9.42-.16 1.06-.36 2.23-.41C8.42 2.17 8.8 2.16 12 2.16Zm0 1.98c-3.15 0-3.5.01-4.74.07-1.14.05-1.76.24-2.17.4-.55.21-.94.47-1.35.88-.41.41-.67.8-.88 1.35-.16.41-.35 1.03-.4 2.17-.06 1.24-.07 1.59-.07 4.74s.01 3.5.07 4.74c.05 1.14.24 1.76.4 2.17.21.55.47.94.88 1.35.41.41.8.67 1.35.88.41.16 1.03.35 2.17.4 1.24.06 1.59.07 4.74.07s3.5-.01 4.74-.07c1.14-.05 1.76-.24 2.17-.4.55-.21.94-.47 1.35-.88.41-.41.67-.8.88-1.35.16-.41.35-1.03.4-2.17.06-1.24.07-1.59.07-4.74s-.01-3.5-.07-4.74c-.05-1.14-.24-1.76-.4-2.17a3.6 3.6 0 0 0-.88-1.35 3.6 3.6 0 0 0-1.35-.88c-.41-.16-1.03-.35-2.17-.4-1.24-.06-1.59-.07-4.74-.07Zm0 3.37a4.49 4.49 0 1 1 0 8.98 4.49 4.49 0 0 1 0-8.98Zm0 7.4a2.91 2.91 0 1 0 0-5.82 2.91 2.91 0 0 0 0 5.82Zm5.72-7.6a1.05 1.05 0 1 1-2.1 0 1.05 1.05 0 0 1 2.1 0Z" />
+      </svg>
+    );
+  }
+  return (
+    <svg {...common}>
+      <path d="M4.98 3.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5ZM3 9.75h4v11.5H3V9.75Zm6.5 0h3.83v1.57h.05c.53-1 1.84-2.06 3.78-2.06 4.04 0 4.79 2.66 4.79 6.12v5.87h-4v-5.2c0-1.24-.02-2.84-1.73-2.84-1.73 0-2 1.35-2 2.75v5.29h-4V9.75Z" />
+    </svg>
+  );
+}
 import { baseSparks, handleFor, timeAgo } from "../utils/helpers.js";
 import { Icon, Avatar, Button, IconButton, Input, Textarea, Field, Spinner, cx } from "./ui/Primitives.jsx";
 import { Switch } from "./ui/Primitives.jsx";
@@ -258,6 +289,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
     ready:    { label: "View your pass",   short: "Your pass", variant: "secondary", icon: "check" },
   };
   const cta = EVENT_CTA[passState];
+  const socials = EVENT_SOCIALS.filter((x) => x.href);
   const passNote = {
     none: "Announcements are for people going. Registration and payment come first.",
     unpaid: "You have not finished paying. Your place is not held until you do.",
@@ -751,24 +783,58 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
         <div className="max-w-6xl w-full mx-auto lg:px-8 grid lg:grid-cols-[minmax(0,1fr)_310px] gap-x-8">
           <div className="min-w-0">
             {event && (
-              <div className="lg:hidden px-5 pt-4">
-                <div className="rounded-2xl border border-line bg-bg-raised p-3.5 flex items-center gap-3">
-                  <span className="w-12 h-12 rounded-xl overflow-hidden bg-bg-sunken shrink-0">
-                    <img src={EVENT_POSTER} alt="" className="w-full h-full object-cover" />
-                  </span>
-                  <span className="min-w-0 flex-1 leading-tight">
-                    <span className="block text-[13.5px] font-semibold text-ink truncate">{event.title}</span>
-                    <span className="block text-xs text-ink-2 mt-0.5 truncate">{event.when}</span>
-                  </span>
-                  <Button
-                    variant={cta.variant}
-                    size="sm"
-                    className="shrink-0"
-                    onClick={() => onRegisterEvent?.(event)}
-                  >
-                    {cta.short}
-                  </Button>
-                </div>
+              <div className="px-5 lg:px-0 pt-5">
+                <section className="rounded-2xl border border-line bg-bg-raised p-5 sm:p-6">
+                  <div className="flex items-start gap-4">
+                    <span className="w-16 h-[88px] rounded-xl overflow-hidden bg-bg-sunken shrink-0 hidden sm:block">
+                      <img src={EVENT_POSTER} alt="" className="w-full h-full object-cover" />
+                    </span>
+                    <div className="min-w-0 flex-1">
+                      <p className={cx(
+                        "text-2xs font-semibold uppercase tracking-wide",
+                        passState === "ready" ? "text-c-green"
+                          : passState === "checking" ? "text-c-amber"
+                          : passState === "unpaid" ? "text-c-amber" : "text-ink-3"
+                      )}>
+                        {passState === "ready" ? "Your place is confirmed"
+                          : passState === "checking" ? "Payment being checked"
+                          : passState === "unpaid" ? "Payment not finished"
+                          : "Registration open"}
+                      </p>
+                      <div className="flex items-center gap-2 flex-wrap mt-1">
+                        <h2 className="text-lg font-bold text-ink break-words">{event.title}</h2>
+                        {/* Registering puts you in the group. Saying so is how
+                            someone knows the thing they just did worked. */}
+                        {joined && (
+                          <span className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-c-green/15 text-c-green text-2xs font-bold">
+                            <Icon name="check" size={12} />Joined
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-base text-ink-2">
+                        <span className="inline-flex items-center gap-1.5">
+                          <Icon name="calendar_today" size={15} className="text-accent shrink-0" />{event.when}
+                        </span>
+                        {event.where && (
+                          <span className="inline-flex items-center gap-1.5 min-w-0">
+                            <Icon name="location_on" size={15} className="text-c-pink shrink-0" />
+                            <span className="truncate">{event.where}</span>
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-ink-2 mt-2.5 leading-relaxed max-w-prose">{passNote}</p>
+                      <Button
+                        variant={cta.variant}
+                        size="md"
+                        icon={cta.icon}
+                        className="mt-4 w-full sm:w-auto"
+                        onClick={() => onRegisterEvent?.(event)}
+                      >
+                        {cta.label}
+                      </Button>
+                    </div>
+                  </div>
+                </section>
               </div>
             )}
         {tab === "chat" && (
@@ -916,12 +982,6 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
         )}
         {tab === "posts" && (
           <div className="px-5 lg:px-0 pt-5 pb-16">
-            {event && (
-              <p className="text-base text-ink-2 text-center py-4 mb-4 rounded-2xl border border-line">
-                Announcements about {event.title} appear here. They are posted by the organisers.
-              </p>
-            )}
-
             {!event && joined && !canPost && (
               <p className="text-base text-ink-2 text-center py-4 mb-4 rounded-2xl border border-line">
                 Only this community&apos;s admins can post right now.
@@ -1195,33 +1255,27 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
 
           <aside className="hidden lg:block h-full pt-5 pb-16">
             <div className="sticky top-[72px] space-y-4">
-              {event && (
-                <RailPanel title={passState === "ready" ? "You are going" : "About the event"}>
-                  <div className="flex items-start gap-3">
-                    <span className="w-14 h-14 rounded-xl overflow-hidden bg-bg-sunken shrink-0">
-                      <img src={EVENT_POSTER} alt="" className="w-full h-full object-cover" />
-                    </span>
-                    <span className="min-w-0 flex-1 leading-tight">
-                      <span className="block text-[14px] font-semibold text-ink truncate">{event.title}</span>
-                      <span className="block text-xs text-ink-2 mt-1 truncate">{event.when}</span>
-                      {event.where && <span className="block text-xs text-ink-3 mt-0.5 truncate">{event.where}</span>}
-                    </span>
+              {socials.length > 0 && (
+                <RailPanel title="Follow along">
+                  <div className="flex flex-col gap-1">
+                    {socials.map((link) => (
+                      <a
+                        key={link.key}
+                        href={link.href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 -mx-2 px-2 py-2 rounded-xl hover:bg-bg-sunken transition-colors group"
+                      >
+                        <span className="grid place-items-center w-9 h-9 rounded-xl bg-bg-sunken shrink-0">
+                          <BrandMark name={link.key} className={cx("w-[18px] h-[18px]", link.tint)} />
+                        </span>
+                        <span className="min-w-0 flex-1 text-base font-medium text-ink truncate group-hover:text-accent transition-colors">
+                          {link.label}
+                        </span>
+                        <Icon name="arrow_outward" size={15} className="text-ink-3 shrink-0" />
+                      </a>
+                    ))}
                   </div>
-                  <Button
-                    variant={cta.variant}
-                    size="md"
-                    icon={cta.icon}
-                    className="w-full mt-3.5"
-                    onClick={() => onRegisterEvent?.(event)}
-                  >
-                    {cta.label}
-                  </Button>
-                  <p className={cx(
-                    "text-xs mt-2 leading-relaxed",
-                    passState === "unpaid" ? "text-c-amber" : "text-ink-3"
-                  )}>
-                    {passNote}
-                  </p>
                 </RailPanel>
               )}
 
@@ -1236,29 +1290,6 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                   <Stat label="Rank" value={trendRank ? "#" + trendRank : "Unranked"} />
                 </div>
               </RailPanel>
-
-              {c.rules?.length > 0 && (
-                <RailPanel title="House rules">
-                  <ol className="space-y-3.5">
-                    {c.rules.map((r, i) => (
-                      <li key={i}>
-                        <p className="text-base font-semibold text-ink">
-                          <span className="font-mono text-ink-3 mr-1.5">{i + 1}.</span>{r.title}
-                        </p>
-                        {r.body && <p className="text-base text-ink-2 leading-relaxed mt-0.5 pl-5">{r.body}</p>}
-                      </li>
-                    ))}
-                  </ol>
-                </RailPanel>
-              )}
-
-              {isAdmin && !c.rules?.length && (
-                <RailPanel title="House rules">
-                  <p className="text-base text-ink-2 leading-relaxed">
-                    None set yet. A community with rules gets reported a lot less than one without.
-                  </p>
-                </RailPanel>
-              )}
 
               {c.tags?.length > 0 && (
                 <RailPanel title="Topics">

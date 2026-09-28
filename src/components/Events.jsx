@@ -48,7 +48,7 @@ const EVENT_POSTER = "/techideate.jpg";
 // "S EVENTS" -- so it is shown whole against a blurred copy of itself.
 const BANNER_SLIDES = [
   { src: "/techideate.jpg", alt: "TechIdeate 2026, Beyond Human", fit: "cover" },
-  { src: "/banner.jpg", alt: "Campus events at Manipal University Jaipur", fit: "contain" },
+  { src: "/banner.jpg", alt: "Campus events at Manipal University Jaipur", fit: "cover" },
 ];
 
 function BannerSlides({ slides, interval = 5000 }) {
