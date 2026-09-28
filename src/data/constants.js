@@ -1,4 +1,5 @@
 import {
+  Users,
   Lightbulb,
   BookOpen, Trophy, Dumbbell, Code2, Home as HomeIcon,
   Plane, Gamepad2, Handshake, Music, ChefHat, Palette, Clapperboard,
@@ -13,6 +14,21 @@ import {
 // the same subject is recognisable at a glance in a feed row, a directory
 // tile and a filter pill without reading the label. `icon` is the legacy
 // lucide component, kept only for screens not yet migrated.
+// Every category lookup goes through this.
+//
+// A community or event can carry a category this build has never heard of: an
+// older name, something typed into the admin tool, or a list that has since
+// changed. CATEGORIES.find then returns undefined, and the next line that
+// reads cat.tint takes the whole page down with it -- which is exactly what
+// happened to the event chat when its community was created as "Competition".
+export const categoryOf = (name) =>
+  CATEGORIES.find((c) => c.name === name) || FALLBACK_CATEGORY;
+
+export const FALLBACK_CATEGORY = {
+  name: "Community", icon: Users, color: "slate", msr: "groups",
+  tint: "text-c-blue", ring: "bg-c-blue",
+};
+
 export const CATEGORIES = [
   { name: "Workshop", icon: Lightbulb, color: "amber", msr: "lightbulb", tint: "text-c-amber", ring: "bg-c-amber" },
   { name: "Study", icon: BookOpen, color: "indigo", msr: "menu_book", tint: "text-c-blue", ring: "bg-c-blue" },

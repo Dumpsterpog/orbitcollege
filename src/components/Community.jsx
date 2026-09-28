@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { CATEGORIES } from "../data/constants.js";
+import { CATEGORIES, categoryOf } from "../data/constants.js";
 import { baseSparks, handleFor, timeAgo } from "../utils/helpers.js";
 import { Icon, Avatar, Button, IconButton, Input, Textarea, Field, Spinner, cx } from "./ui/Primitives.jsx";
 import { Switch } from "./ui/Primitives.jsx";
@@ -231,7 +231,7 @@ function Stat({ label, value }) {
 }
 
 export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, verified, onBlocked, sparked, onSpark, onUpdate, onDelete, trendRank, interests, authUserId, myName }) {
-  const cat = CATEGORIES.find((x) => x.name === c.category);
+  const cat = categoryOf(c.category);
     const sparks = baseSparks(c) + (sparked ? 1 : 0);
   const isAdmin = !!authUserId && c.creatorId === authUserId;
   const isLive = c.lastActive <= 10;
