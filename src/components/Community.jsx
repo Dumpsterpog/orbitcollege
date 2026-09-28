@@ -143,7 +143,7 @@ export function CommunitySettings({ c, onSave, onDelete, onClose }) {
 
         <div className="pt-1 border-t border-line">
           {!confirmDelete ? (
-            <Button variant="danger" size="md" icon={Trash2} onClick={() => setConfirmDelete(true)} className="mt-4">
+            <Button variant="danger" size="md" icon="delete" onClick={() => setConfirmDelete(true)} className="mt-4">
               Delete community
             </Button>
           ) : (
@@ -526,11 +526,16 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
     } catch { setChatDraft(t); }
   };
 
-  const TABS = [
-    { key: "posts", label: "Posts", icon: "feed" },
-    { key: "chat", label: "Chat", icon: "forum" },
-    { key: "members", label: "Members", icon: "group", count: total },
-  ];
+  // An event's space is an announcement board: the organisers post, everyone
+  // else reads. No chat, no member list, no post feed -- those belong to a
+  // community people chose to join, not to everyone holding a ticket.
+  const TABS = event
+    ? [{ key: "posts", label: "Announcements", icon: "campaign" }]
+    : [
+        { key: "posts", label: "Posts", icon: "feed" },
+        { key: "chat", label: "Chat", icon: "forum" },
+        { key: "members", label: "Members", icon: "group", count: total },
+      ];
 
   return (
     <Screen>
@@ -625,11 +630,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                     <Icon name="verified" size={11} className="text-c-blue" />Official club
                   </span>
                 )}
-                {isAdmin && (
-                  <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full bg-bg-sunken text-ink-2 text-2xs font-semibold">
-                    <Icon name="workspace_premium" size={11} className="text-c-amber" />You created this
-                  </span>
-                )}
+
               </div>
             </div>
             <div className="sm:hidden shrink-0">
@@ -655,16 +656,18 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
           {/* Meta strip. Every figure on it is real; nothing is invented to
               fill the row out. */}
           <div className="flex items-center gap-x-5 gap-y-2 mt-3.5 flex-wrap text-base text-ink-2">
-            <button onClick={() => setTab("members")} className="inline-flex items-center gap-2 hover:text-ink transition-colors">
-              <span className="flex -space-x-1.5">
-                {faceStack.map((m, i) => (
-                  <span key={m.userId || i} className="ring-2 ring-bg rounded-full">
-                    <Avatar name={m.name} size={20} />
-                  </span>
-                ))}
-              </span>
-              <span><span className="font-semibold text-ink tabular-nums">{total}</span> members</span>
-            </button>
+            {!event && (
+              <button onClick={() => setTab("members")} className="inline-flex items-center gap-2 hover:text-ink transition-colors">
+                <span className="flex -space-x-1.5">
+                  {faceStack.map((m, i) => (
+                    <span key={m.userId || i} className="ring-2 ring-bg rounded-full">
+                      <Avatar name={m.name} size={20} />
+                    </span>
+                  ))}
+                </span>
+                <span><span className="font-semibold text-ink tabular-nums">{total}</span> members</span>
+              </button>
+            )}
 
             <button onClick={() => onSpark(c.id)} aria-pressed={sparked}
               className={cx("inline-flex items-center gap-1.5 transition-colors", sparked ? "text-accent" : "hover:text-ink")}>
@@ -686,7 +689,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
             )}
           </div>
 
-          {matchedMembers.length > 0 && (
+          {!event && matchedMembers.length > 0 && (
             <div className="mt-4 flex items-center gap-2.5 bg-accent-wash rounded-xl px-3.5 py-2.5">
               <Avatar name={matchedMembers[0].name} size={24} />
               <p className="text-base text-ink-2 leading-snug min-w-0">
@@ -697,7 +700,10 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
           )}
 
           {/* Tabs */}
-          <div className="flex items-center gap-1 border-b border-line mt-6 overflow-x-auto no-scrollbar">
+          <div className={cx(
+            "flex items-center gap-1 border-b border-line mt-6 overflow-x-auto no-scrollbar",
+            event && "justify-center"
+          )}>
             {TABS.map((t) => (
               <button
                 key={t.key}
@@ -867,13 +873,19 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
         )}
         {tab === "posts" && (
           <div className="px-5 lg:px-0 pt-5 pb-16">
-            {joined && !canPost && (
+            {event && !isAdmin && (
+              <p className="text-base text-ink-2 text-center py-4 mb-4 rounded-2xl border border-line">
+                Announcements about {event.title} appear here. Only the organisers can post.
+              </p>
+            )}
+
+            {!event && joined && !canPost && (
               <p className="text-base text-ink-2 text-center py-4 mb-4 rounded-2xl border border-line">
                 Only this community&apos;s admins can post right now.
               </p>
             )}
 
-            {joined && canPost && (
+            {(event ? isAdmin : joined && canPost) && (
               <div className="rounded-2xl border border-line p-3.5 mb-5">
                 <div className="flex gap-3">
                   <Avatar name={myName} size={40} />
@@ -962,11 +974,15 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
 
             {orderedPosts.length === 0 ? (
               <div className="py-16 text-center">
-                <p className="text-lg font-bold text-ink">Nothing posted yet</p>
+                <p className="text-lg font-bold text-ink">
+                  {event ? "No announcements yet" : "Nothing posted yet"}
+                </p>
                 <p className="text-base text-ink-2 mt-2 max-w-[36ch] mx-auto leading-relaxed">
-                  {joined && canPost
-                    ? "Yours would be the first."
-                    : "Join to start the conversation here."}
+                  {event
+                    ? "Updates about the event will show up here."
+                    : joined && canPost
+                      ? "Yours would be the first."
+                      : "Join to start the conversation here."}
                 </p>
               </div>
             ) : (
