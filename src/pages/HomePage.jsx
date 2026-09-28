@@ -1,39 +1,28 @@
+import { useNavigate } from "react-router-dom";
 import { useOrbit } from "../context/OrbitContext.jsx";
-import { HomeScreen } from "../components/Home.jsx";
+import { EventsScreen } from "../components/Events.jsx";
 
-// Route components are deliberately thin: they pull what they need out of
-// context and hand it to the screen component, which still takes plain props.
-// Keeping the screens prop-driven means they stay testable and reusable
-// without a router around them.
+// Home is the events board for now.
+//
+// Registrations for the 9 October event open tonight, and the one thing every
+// visitor needs is the event and its Register button. The campus feed still
+// exists at its own routes; it is simply not what the landing page is for this
+// week. Putting events here also means the landing page no longer subscribes
+// to every post in the project, which is the read the feed was costing.
 export default function HomePage() {
+  const navigate = useNavigate();
   const o = useOrbit();
+
   return (
-    <HomeScreen
-      authUserId={o.authUser?.id}
-      communities={o.allGroups}
-      joinedIds={o.joinedIds}
-      onOpen={o.setSelectedCommunity}
-      feedPosts={o.feedPosts}
-      feedSparkIds={o.feedSparkIds}
-      pendingPosts={o.pendingPosts}
-      announcements={o.announcements}
-      ads={o.ads}
-      onSparkPost={o.handleSparkPost}
-      onCreatePost={o.handleCreatePost}
-      onCreateClick={o.openCreate}
-      userName={o.user.verified ? o.user.name : ""}
-      onJoinToggle={(id) => {
-        if (!id || !o.user.verified) { o.handleBlocked(); return; }
-        o.handleJoinToggle(id);
-      }}
-      user={o.user}
-      onGoToExplore={() => o.goToTab("explore")}
-      onSearchClick={o.openSearch}
+    <EventsScreen
       events={o.events}
       registeredEventIds={o.registeredEventIds}
-      onRegisterEvent={o.handleRegisterEvent}
-      onGoToEvents={() => o.goToTab("events")}
-      onGoToTea={o.openTea}
+      onRegister={(e) => navigate(`/events/${e.id}/register`)}
+      onOpenEvent={(e) => {
+        const c = e.linkedCommunityId && o.dbCommunities.find((x) => x.id === e.linkedCommunityId);
+        if (c) o.setSelectedCommunity(c);
+        else navigate(`/events/${e.id}/register`);
+      }}
     />
   );
 }

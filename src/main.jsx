@@ -19,6 +19,7 @@ import "./index.css";
 const HomePage            = lazy(() => import("./pages/HomePage.jsx"));
 const ExplorePage         = lazy(() => import("./pages/ExplorePage.jsx"));
 const EventsPage          = lazy(() => import("./pages/EventsPage.jsx"));
+const EventRegisterPage   = lazy(() => import("./pages/EventRegisterPage.jsx"));
 const ProfilePage         = lazy(() => import("./pages/ProfilePage.jsx"));
 const SettingsPage        = lazy(() => import("./pages/SettingsPage.jsx"));
 const CommunityPage       = lazy(() => import("./pages/CommunityPage.jsx"));
@@ -101,6 +102,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
                   <Route index element={<HomePage />} />
                   <Route path="explore" element={<ExplorePage />} />
                   <Route path="events" element={<EventsPage />} />
+                  <Route path="events/:eventId/register" element={<EventRegisterPage />} />
                   <Route path="profile" element={<ProfilePage />} />
                   <Route path="settings" element={<SettingsPage />} />
 

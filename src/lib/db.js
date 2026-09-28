@@ -794,6 +794,45 @@ export async function fetchMyRegistrations(uid) {
 // the access gate to the event's community: the first registration creates
 // that community, later ones reuse it, and either way the caller ends up a
 // member. All of it commits together or none of it does.
+/* ----------------------------------------------------- event signups */
+
+// Registration details: name, college, year, how they heard about it.
+//
+// Deliberately NOT in events/{id}/registrations, which is world-readable (it
+// is what the "N going" count is drawn from, and a collection-group rule opens
+// it further). Nobody's college and year belong in a public document, so the
+// details live here, where only the student and an admin can read them.
+export async function createSignup(eventId, uid, fields) {
+  need();
+  await setDoc(doc(db, "events", eventId, "signups", uid), {
+    ...fields,
+    uid,
+    status: "pending_payment",
+    createdAt: serverTimestamp(),
+  }, { merge: true });
+}
+
+export function watchMySignup(eventId, uid, cb) {
+  if (!firebaseReady || !eventId || !uid) { cb(null); return () => {}; }
+  return onSnapshot(
+    doc(db, "events", eventId, "signups", uid),
+    (snap) => cb(snap.exists() ? { id: snap.id, ...snap.data() } : null),
+    (err) => { watchFailed(err); cb(null); }
+  );
+}
+
+// The student saying they have paid. It is a claim, not proof: CCAvenue
+// confirms nothing back to this app, so an admin verifies against the payment
+// report before any pass is issued.
+export async function markPaymentClaimed(eventId, uid, paymentRef) {
+  need();
+  await updateDoc(doc(db, "events", eventId, "signups", uid), {
+    status: "payment_claimed",
+    paymentRef: paymentRef || null,
+    claimedAt: serverTimestamp(),
+  });
+}
+
 export async function registerForEvent(event, uid, userName) {
   need();
   const eventRef = doc(db, "events", event.id);

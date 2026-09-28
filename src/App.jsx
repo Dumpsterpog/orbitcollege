@@ -165,9 +165,17 @@ export default function App() {
   useEffect(() => db.watchEvents(
     cached("events", setEvents, reviveDates(["startsAt"]))
   ), []);
-  useEffect(() => db.watchFeed(
-    cached("feed", setFeedPosts, reviveDates(["createdAt"]))
-  ), []);
+  // The campus feed is a collectionGroup read across every post in the project,
+  // and it used to open on every page load for every visitor. Home is the
+  // events board this week and Profile is the only screen left that renders
+  // these posts, so the subscription follows the route rather than the session.
+  // On registration night that is the difference between one read per visitor
+  // and one read per post per visitor.
+  const needsFeed = location.pathname.startsWith("/profile");
+  useEffect(() => {
+    if (!needsFeed) return;
+    return db.watchFeed(cached("feed", setFeedPosts, reviveDates(["createdAt"])));
+  }, [needsFeed]);
   useEffect(() => db.watchAnnouncements(setAnnouncements), []);
   useEffect(() => db.watchAds(setAds), []);
 

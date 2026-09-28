@@ -1,13 +1,15 @@
+import { useNavigate } from "react-router-dom";
 import { useOrbit } from "../context/OrbitContext.jsx";
 import { EventsScreen } from "../components/Events.jsx";
 
 export default function EventsPage() {
+  const navigate = useNavigate();
   const o = useOrbit();
   return (
     <EventsScreen
       events={o.events}
       registeredEventIds={o.registeredEventIds}
-      onRegister={o.handleRegisterEvent}
+      onRegister={(e) => navigate(`/events/${e.id}/register`)}
       onOpenEvent={(e) => {
         // An event's linked community only exists once someone has registered,
         // so opening one before that has nowhere to go.

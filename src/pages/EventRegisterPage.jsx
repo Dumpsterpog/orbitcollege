@@ -1,0 +1,47 @@
+import { useParams, useNavigate } from "react-router-dom";
+import { useOrbit } from "../context/OrbitContext.jsx";
+import { EventRegisterScreen } from "../components/EventRegister.jsx";
+
+// The CCAvenue page the university hosts. Not an env var on purpose: it is a
+// public URL printed on the posters, and a missing env var at build time would
+// silently ship a dead Pay button on the night registrations open.
+const PAY_URL =
+  "https://formbuilder.ccavenue.com/live/ccavenue/manipal-university-jaipur-2/techideat-2026-202622";
+
+export default function EventRegisterPage() {
+  const { eventId } = useParams();
+  const navigate = useNavigate();
+  const o = useOrbit();
+
+  const event = o.events.find((e) => e.id === eventId) || null;
+
+  // Events arrive from a live subscription, so a direct hit on this URL renders
+  // before the list exists. That is loading, not a missing event.
+  if (!event && o.events.length === 0) {
+    return (
+      <div className="flex-1 grid place-items-center">
+        <span className="w-6 h-6 rounded-full border-2 border-ink border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  const openCommunity = (e) => {
+    const c = e?.linkedCommunityId && o.dbCommunities.find((x) => x.id === e.linkedCommunityId);
+    if (c) o.setSelectedCommunity(c);
+    else o.showToast("The chat opens a moment after you join");
+  };
+
+  return (
+    <EventRegisterScreen
+      event={event}
+      payUrl={PAY_URL}
+      user={o.user}
+      authUserId={o.authUser?.id}
+      onSignIn={o.goToInitialPage}
+      onBack={() => navigate("/")}
+      onToast={o.showToast}
+      onJoinCommunity={o.handleRegisterEvent}
+      onOpenCommunity={openCommunity}
+    />
+  );
+}

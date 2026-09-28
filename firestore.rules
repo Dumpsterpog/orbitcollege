@@ -344,6 +344,36 @@ service cloud.firestore {
         allow read: if true;
         allow create, delete: if isSelf(regUid);
       }
+
+      // Registration details: name, college, year, referral.
+      //
+      // Separate from registrations above because that one is public -- it
+      // carries the going count and is swept up by a collection-group read
+      // rule. Personal details are readable only by the student who entered
+      // them and by an admin.
+      //
+      // The student can write their own entry and say they have paid. They
+      // cannot mark it verified, issue themselves a pass, or edit anything
+      // once an admin has verified it: money and entry are admin-only facts.
+      match /signups/{signupUid} {
+        allow read: if isSelf(signupUid) || isAdmin();
+
+        allow create: if isSelf(signupUid) && notSuspended()
+          && request.resource.data.status == 'pending_payment'
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0
+          && request.resource.data.name.size() <= 120;
+
+        allow update: if isAdmin()
+          || (isSelf(signupUid)
+              && resource.data.status != 'verified'
+              && (request.resource.data.status == 'pending_payment'
+                  || request.resource.data.status == 'payment_claimed')
+              && !request.resource.data.diff(resource.data).affectedKeys()
+                   .hasAny(['passCode', 'checkedInAt', 'checkedInBy', 'verifiedAt', 'verifiedBy', 'amount']));
+
+        allow delete: if isAdmin();
+      }
     }
 
     /* ----------------------------------------------------- Locali-Tea */
