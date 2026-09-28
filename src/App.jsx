@@ -247,6 +247,7 @@ export default function App() {
           // Set from the admin tool. The rules are what enforce it; this only
           // lets the UI say so instead of failing every post with a bare
           // permission error.
+          university: profile?.university || "",
           suspended: profile?.suspended === true,
         });
         setStage("app");

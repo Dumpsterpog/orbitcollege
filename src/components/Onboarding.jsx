@@ -26,7 +26,11 @@ import { auth } from "../lib/firebase.js";
 // past.
 const STEPS = ["name", "study", "interests", "signin"];
 
-// Orbit is a single-campus product, so university isn't a question — it's a
+// The home campus. Not the only one any more: an event open to other colleges
+// means people arrive who are not from here, and telling them they are at MUJ
+// would be the first thing Orbit got wrong about them.
+//
+// Orbit was a single-campus product, so university wasn't a question — it's a
 // fact the step states. A chip group with one option would be asking
 // something there is no second answer to.
 const UNIVERSITY = "Manipal University Jaipur";
@@ -186,6 +190,8 @@ const SOCIALS = [
 export function Onboarding({ onDone, onGuest }) {
   const [step, setStep] = useState("name");
   const [returning, setReturning] = useState(false); // jumped straight to sign-in
+  const [fromHere, setFromHere] = useState(true);
+  const [college, setCollege] = useState("");
 
   const [name, setName] = useState("");
   const [year, setYear] = useState("");
@@ -229,7 +235,7 @@ export function Onboarding({ onDone, onGuest }) {
       await saveProfile(user.uid, {
         name: finalName,
         interests,
-        university: UNIVERSITY,
+        university: fromHere ? UNIVERSITY : college.trim(),
         year: year || null,
       });
 
@@ -368,22 +374,65 @@ export function Onboarding({ onDone, onGuest }) {
             {/* 2 — Study */}
             {step === "study" && (
               <form className="animate-rise flex flex-col flex-1"
-                    onSubmit={(e) => { e.preventDefault(); go("interests"); }}>
-                <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">What year are you in?</h1>
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!fromHere && !college.trim()) { setErrorMsg("Which college are you from?"); return; }
+                      go("interests");
+                    }}>
+                <h1 className="text-2xl sm:text-3xl font-bold text-ink tracking-tight">Where do you study?</h1>
                 <p className="text-md text-ink-2 mt-2 max-w-md">
-                  Helps put you alongside people at the same stage.
+                  Most people here are at MUJ, but events are open to other colleges too.
                 </p>
 
-                {/* University is stated, not asked — Orbit is one campus. */}
-                <div className="mt-8 max-w-md flex items-center gap-3 rounded-[14px] ring-1 ring-line px-4 py-3.5">
-                  <span className="grid place-items-center w-9 h-9 rounded-full bg-c-blue/10 shrink-0">
-                    <Icon name="school" size={20} className="text-c-blue" />
-                  </span>
-                  <span className="min-w-0 flex-1 leading-tight">
-                    <span className="block text-base font-semibold text-ink truncate">{UNIVERSITY}</span>
-                    <span className="block text-base text-ink-2">Your campus</span>
-                  </span>
-                  <Icon name="check_circle" size={20} className="text-c-green shrink-0" />
+                <div className="mt-8 max-w-md flex flex-col gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setFromHere(true)}
+                    aria-pressed={fromHere}
+                    className={cx(
+                      "flex items-center gap-3 rounded-[14px] px-4 py-3.5 text-left transition-colors",
+                      fromHere ? "ring-2 ring-accent bg-accent-wash" : "ring-1 ring-line hover:ring-line-strong"
+                    )}
+                  >
+                    <span className="grid place-items-center w-9 h-9 rounded-full bg-c-blue/10 shrink-0">
+                      <Icon name="school" size={20} className="text-c-blue" />
+                    </span>
+                    <span className="min-w-0 flex-1 leading-tight">
+                      <span className="block text-base font-semibold text-ink truncate">{UNIVERSITY}</span>
+                      <span className="block text-base text-ink-2">I study here</span>
+                    </span>
+                    {fromHere && <Icon name="check_circle" size={20} className="text-c-green shrink-0" />}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFromHere(false)}
+                    aria-pressed={!fromHere}
+                    className={cx(
+                      "flex items-center gap-3 rounded-[14px] px-4 py-3.5 text-left transition-colors",
+                      !fromHere ? "ring-2 ring-accent bg-accent-wash" : "ring-1 ring-line hover:ring-line-strong"
+                    )}
+                  >
+                    <span className="grid place-items-center w-9 h-9 rounded-full bg-c-violet/10 shrink-0">
+                      <Icon name="explore" size={20} className="text-c-violet" />
+                    </span>
+                    <span className="min-w-0 flex-1 leading-tight">
+                      <span className="block text-base font-semibold text-ink">Another college</span>
+                      <span className="block text-base text-ink-2">Here for an event</span>
+                    </span>
+                    {!fromHere && <Icon name="check_circle" size={20} className="text-c-green shrink-0" />}
+                  </button>
+
+                  {!fromHere && (
+                    <Input
+                      value={college}
+                      onChange={(e) => setCollege(e.target.value)}
+                      maxLength={120}
+                      autoFocus
+                      placeholder="Which college?"
+                      className="h-12 px-4 rounded-[14px] text-md"
+                    />
+                  )}
                 </div>
 
                 <div className="mt-8">

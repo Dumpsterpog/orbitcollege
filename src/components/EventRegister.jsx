@@ -64,7 +64,7 @@ export function EventRegisterScreen({
 
   const [form, setForm] = useState({
     name: user?.name || "",
-    college: "Manipal University Jaipur",
+    college: user?.university || "Manipal University Jaipur",
     branch: "",
     year: "",
     phone: "",

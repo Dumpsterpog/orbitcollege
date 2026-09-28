@@ -723,7 +723,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
         <div className="max-w-6xl w-full mx-auto lg:px-8 grid lg:grid-cols-[minmax(0,1fr)_310px] gap-x-8 items-start">
           <div className="min-w-0">
         {tab === "chat" && (
-          <div className="flex flex-col h-[420px]">
+          <div className="flex flex-col h-[min(64vh,600px)]">
             {(() => {
               const pinnedMessage = chatMessages.find((m) => m.pinned);
               if (!pinnedMessage) return null;
@@ -740,21 +740,62 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                 </div>
               );
             })()}
-            <div className="flex-1 overflow-y-auto no-scrollbar px-5 py-3 space-y-2.5">
+            {/* Messages as bubbles, yours on the right, runs from the same
+                person grouped under one name. It was a flat grey list where
+                every line looked the same and nothing said who was talking. */}
+            <div className="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-5 py-4 flex flex-col gap-2">
               {!joined && (
-                <p className="text-xs text-ink-2 text-center py-6">Join this {c.official ? "club" : "community"} to send messages. You can still read along.</p>
+                <div className="mx-auto max-w-sm text-center rounded-2xl bg-bg-sunken px-4 py-3 mb-2">
+                  <p className="text-base text-ink-2 leading-relaxed">
+                    {event
+                      ? "Register for the event to join the conversation. You can read along until then."
+                      : `Join this ${c.official ? "club" : "community"} to send messages. You can still read along.`}
+                  </p>
+                </div>
               )}
-              {chatMessages.map((m) => (
-                <div key={m.id} className="flex gap-2.5 group">
-                  <Avatar name={m.who} size={26} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-ink-2"><span className="font-medium text-ink">{m.who}</span></p>
-                    {m.text && <p className="text-sm text-ink-2">{m.text}</p>}
-                    {m.imageUrl && (
-                      <img src={m.imageUrl} alt="" className="mt-1 max-h-32 max-w-[160px] rounded-lg object-contain border border-line bg-bg-sunken" />
+
+              {chatMessages.length === 0 && (
+                <div className="flex-1 grid place-items-center text-center px-6">
+                  <div>
+                    <span className="grid place-items-center w-12 h-12 rounded-full bg-bg-sunken mx-auto mb-3">
+                      <Icon name="chat" size={22} className="text-ink-3" />
+                    </span>
+                    <p className="text-base font-semibold text-ink">No messages yet</p>
+                    <p className="text-xs text-ink-2 mt-1 leading-relaxed">
+                      {joined ? "Say hello to the group." : "Nothing has been said here yet."}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {chatMessages.map((m, i) => {
+                const mine = !!authUserId && m.authorId === authUserId;
+                const runOn = i > 0 && chatMessages[i - 1].authorId === m.authorId;
+                return (
+                <div key={m.id} className={cx("flex gap-2.5 group", mine && "flex-row-reverse")}>
+                  <span className={cx("shrink-0 self-end", runOn && "invisible")}>
+                    <Avatar name={m.who} size={28} />
+                  </span>
+                  <div className={cx("min-w-0 max-w-[78%] flex flex-col", mine && "items-end")}>
+                    {!runOn && (
+                      <p className="text-2xs font-semibold text-ink-2 mb-1 px-1">{mine ? "You" : m.who}</p>
                     )}
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <p className="text-[11px] text-ink-2 mono">{m.time}</p>
+                    {m.text && (
+                      <p className={cx(
+                        "px-3.5 py-2 text-[14px] leading-relaxed whitespace-pre-wrap break-words",
+                        mine
+                          ? "bg-accent text-accent-ink rounded-2xl rounded-br-md"
+                          : "bg-bg-sunken text-ink rounded-2xl rounded-bl-md"
+                      )}>{m.text}</p>
+                    )}
+                    {m.imageUrl && (
+                      <img src={m.imageUrl} alt="" className="mt-1 max-h-56 rounded-2xl object-contain border border-line bg-bg-sunken" />
+                    )}
+                    <div className={cx(
+                      "flex items-center gap-2 mt-1 px-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity",
+                      mine && "flex-row-reverse"
+                    )}>
+                      <p className="text-[11px] text-ink-3 tabular-nums">{m.time}</p>
                       {isAdmin && (
                         <button onClick={() => togglePinMessage(m)} className="text-[11px] text-ink-3 hover:text-ink flex items-center gap-0.5">
                           <Icon name="push_pin" size={10} className="text-c-amber" />{m.pinned ? "Unpin" : "Pin"}
@@ -768,7 +809,8 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                     </div>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
             {stickerPickerOpen && (
               <div className="border-t border-line px-5 py-3">

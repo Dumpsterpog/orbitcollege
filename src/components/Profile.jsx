@@ -315,9 +315,9 @@ export function ProfileScreen({
                       <span className="truncate">{email}</span>
                     </span>
                   )}
-                  <span className="inline-flex items-center gap-1.5">
+                  <span className="inline-flex items-center gap-1.5 min-w-0">
                     <Icon name="school" size={15} className="text-ink-3 shrink-0" />
-                    Manipal University Jaipur
+                    <span className="truncate">{user.university || "Manipal University Jaipur"}</span>
                   </span>
                 </div>
 
@@ -592,7 +592,7 @@ export function ProfileScreen({
                       <Icon name="school" size={16} className="text-ink-3 shrink-0" />
                       <span className="min-w-0">
                         <span className="block text-2xs font-semibold uppercase tracking-wide text-ink-3">Campus</span>
-                        <span className="block text-[13px] text-ink">Manipal University Jaipur</span>
+                        <span className="block text-[13px] text-ink truncate">{user.university || "Manipal University Jaipur"}</span>
                       </span>
                     </div>
                     <button onClick={onOpenSettings} className="flex items-center gap-3 py-2.5 pb-0 text-left group">
