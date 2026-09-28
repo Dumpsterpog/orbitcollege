@@ -174,9 +174,13 @@ service cloud.firestore {
       // count of recent documents, which is exactly the query rules cannot do.
       // Closing that properly means a Cloud Function or an App Check quota;
       // until then it slows honest users down and stops nobody determined.
-      allow create: if signedIn() && notSuspended()
-        && request.resource.data.creatorId == request.auth.uid
-        && ownedCommunities() < 2;
+      // The cap is a student limit. An admin creating an official space, such
+      // as the chat community that comes with an event, is not spending their
+      // own quota.
+      allow create: if isAdmin()
+        || (signedIn() && notSuspended()
+            && request.resource.data.creatorId == request.auth.uid
+            && ownedCommunities() < 2);
 
       // The last clause is what makes joining possible for anyone who is not
       // the creator.

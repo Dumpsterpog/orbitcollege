@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { QRCodeSVG } from "qrcode.react";
 import * as db from "../lib/db.js";
 import { Icon, Button, Input, cx } from "./ui/Primitives.jsx";
 import { Screen } from "./ui/Layout.jsx";
@@ -81,6 +82,11 @@ export function EventRegisterScreen({
   }, [user?.name]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stage = !signup ? "details" : signup.status === "pending_payment" ? "payment" : "done";
+
+  // What the scanner reads. Versioned so a future change to the format can be
+  // told apart from this one, and carrying the ids the admin tool needs to find
+  // the signup without a lookup table.
+  const passPayload = `orbit:v1:${event?.id || ""}:${authUserId || ""}:${signup?.passCode || ""}`;
 
   const submitDetails = async () => {
     const name = form.name.trim();
@@ -289,10 +295,17 @@ export function EventRegisterScreen({
             </div>
 
             {signup.passCode && (
-              <div className="mt-5 p-4 rounded-xl bg-bg-sunken text-center">
+              <div className="mt-5 p-5 rounded-xl bg-bg-sunken text-center">
                 <p className="text-2xs font-semibold uppercase tracking-wide text-ink-3">Entry pass</p>
-                <p className="text-2xl font-bold text-ink tabular-nums tracking-widest mt-1">{signup.passCode}</p>
-                <p className="text-xs text-ink-2 mt-2">Show this at the entrance on the day.</p>
+                {/* White plate behind the code on purpose: a scanner reading a
+                    dark-theme screen needs the quiet zone and the contrast. */}
+                <div className="mt-3 inline-block p-3 bg-white rounded-xl">
+                  <QRCodeSVG value={passPayload} size={168} level="M" includeMargin={false} />
+                </div>
+                <p className="text-xl font-bold text-ink tracking-[0.2em] mt-3">{signup.passCode}</p>
+                <p className="text-xs text-ink-2 mt-2 leading-relaxed">
+                  Show this at the entrance. If the scanner will not read it, they can type the code.
+                </p>
               </div>
             )}
 

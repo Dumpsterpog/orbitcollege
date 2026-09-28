@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useOrbit } from "../context/OrbitContext.jsx";
 import { EventRegisterScreen } from "../components/EventRegister.jsx";
@@ -16,8 +17,17 @@ export default function EventRegisterPage() {
   const event = o.events.find((e) => e.id === eventId) || null;
 
   // Events arrive from a live subscription, so a direct hit on this URL renders
-  // before the list exists. That is loading, not a missing event.
-  if (!event && o.events.length === 0) {
+  // before the list exists. That is loading, not a missing event -- but only
+  // for as long as it takes to arrive. Without this timeout an empty list span
+  // the page forever, which is what a student would see if the events query
+  // were slow or refused.
+  const [waited, setWaited] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setWaited(true), 6000);
+    return () => clearTimeout(t);
+  }, []);
+
+  if (!event && o.events.length === 0 && !waited) {
     return (
       <div className="flex-1 grid place-items-center">
         <span className="w-6 h-6 rounded-full border-2 border-ink border-t-transparent animate-spin" />

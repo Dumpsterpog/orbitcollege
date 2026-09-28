@@ -833,65 +833,65 @@ export async function markPaymentClaimed(eventId, uid, paymentRef) {
   });
 }
 
+// Registering touches only documents that belong to the person registering:
+// their own registration marker and their own membership row. Nothing shared
+// is read or written on the critical path, so twenty people registering in the
+// same second never queue behind each other.
+//
+// This used to be one transaction over the event document, which serialised
+// every registration through a single hot document and, on a rush, would retry
+// and fail. It also tried to create the event's chat community, which the
+// rules refuse for a student: community creation requires creatorId to be the
+// caller and counts against their two-community cap. The admin tool creates
+// the community with the event instead.
+//
+// Counters are increments applied afterwards and allowed to fail. They are a
+// display number; the signups list is the record.
 export async function registerForEvent(event, uid, userName) {
   need();
-  const eventRef = doc(db, "events", event.id);
 
-  return runTransaction(db, async (tx) => {
-    const eventSnap = await tx.get(eventRef);
-    if (!eventSnap.exists()) throw new Error("That event no longer exists.");
-    const data = eventSnap.data();
+  let communityId = event.linkedCommunityId || null;
+  if (communityId) {
+    const community = await getDoc(doc(db, "communities", communityId));
+    if (!community.exists()) communityId = null;
+  }
 
-    let communityId = data.linkedCommunityId || null;
-    let communityRef = communityId ? doc(db, "communities", communityId) : null;
-    let existingCommunity = null;
-    if (communityRef) {
-      existingCommunity = await tx.get(communityRef);
-      if (!existingCommunity.exists()) { communityRef = null; communityId = null; }
-    }
+  const regRef = doc(db, "events", event.id, "registrations", uid);
+  const memberRef = communityId ? doc(db, "communities", communityId, "members", uid) : null;
 
-    const regRef = doc(db, "events", event.id, "registrations", uid);
-    const alreadyRegistered = (await tx.get(regRef)).exists();
+  const [regSnap, memberSnap] = await Promise.all([
+    getDoc(regRef),
+    memberRef ? getDoc(memberRef) : Promise.resolve(null),
+  ]);
 
-    if (!communityRef) {
-      communityRef = doc(collection(db, "communities"));
-      communityId = communityRef.id;
-      tx.set(communityRef, {
-        name: data.title,
-        category: data.category,
-        tags: data.tags?.length ? data.tags : [data.category],
-        description: `Group chat for ${data.title}.`,
-        memberCount: 0,
-        creatorId: null,
-        creatorLabel: "Orbit",
-        official: true,
-        handle: slugify(data.title),
-        avatarUrl: data.imageUrl || null,
-        postsAdminOnly: false,
-        createdAt: serverTimestamp(),
-        lastActiveAt: serverTimestamp(),
-      });
-      tx.update(eventRef, { linkedCommunityId: communityId });
-    }
+  const isNew = !regSnap.exists();
+  const needsMembership = memberRef && !memberSnap.exists();
 
-    if (!alreadyRegistered) {
-      // The attendance count lives on the event rather than being counted from
-      // the registrations subcollection, which would be a query per event on
-      // every paint. It moves in the same transaction as the registration that
-      // changes it, and only when the registration is genuinely new -- a
-      // re-register must not inflate it.
-      tx.update(eventRef, { registeredCount: increment(1) });
-      tx.set(regRef, { uid, createdAt: serverTimestamp() });
-      const memberRef = doc(db, "communities", communityId, "members", uid);
-      const alreadyMember = await tx.get(memberRef);
-      if (!alreadyMember.exists()) {
-        tx.set(memberRef, { uid, name: userName || "Someone", role: "member", joinedAt: serverTimestamp() });
-        tx.update(communityRef, { memberCount: increment(1) });
-      }
-    }
+  const writes = [];
+  if (isNew) writes.push(setDoc(regRef, { uid, createdAt: serverTimestamp() }));
+  if (needsMembership) {
+    writes.push(setDoc(memberRef, {
+      uid,
+      name: userName || "Someone",
+      role: "member",
+      joinedAt: serverTimestamp(),
+    }));
+  }
+  await Promise.all(writes);
 
-    return communityId;
-  });
+  if (isNew) {
+    updateDoc(doc(db, "events", event.id), { registeredCount: increment(1) }).catch(() => {});
+  }
+  if (needsMembership) {
+    updateDoc(doc(db, "communities", communityId), {
+      memberCount: increment(1),
+      lastActiveAt: serverTimestamp(),
+    }).catch(() => {});
+  }
+
+  // null means the event has no chat community yet. Registration still stands;
+  // the caller says the chat opens shortly rather than failing the signup.
+  return communityId;
 }
 
 /* -------------------------------------------------------- Locali-Tea */

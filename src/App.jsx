@@ -552,13 +552,16 @@ export default function App() {
       showToast("Registration failed, try again");
       return;
     }
-    if (!communityId) { showToast("Registration failed, try again"); return; }
-
-    setRegisteredEventIds((ids) => [...ids, event.id]);
-    setJoinedIds((ids) => (ids.includes(communityId) ? ids : [...ids, communityId]));
-    setEvents((es) => es.map((e) => (e.id === event.id ? { ...e, linkedCommunityId: communityId } : e)));
+    // No community yet is not a failed registration. The signup stands; the
+    // chat appears once an admin links one to the event.
+    setRegisteredEventIds((ids) => (ids.includes(event.id) ? ids : [...ids, event.id]));
+    if (communityId) {
+      setJoinedIds((ids) => (ids.includes(communityId) ? ids : [...ids, communityId]));
+      setEvents((es) => es.map((e) => (e.id === event.id ? { ...e, linkedCommunityId: communityId } : e)));
+    }
     // watchCommunities delivers the new community on its own; no manual fetch.
-    showToast(`Registered for ${event.title}`);
+    showToast(communityId ? `Registered for ${event.title}` : "Registered. The event chat opens shortly.");
+    return communityId;
   };
 
   // Locali-Tea: anonymous, 48h self-expiring — real Firestore data (posts,
