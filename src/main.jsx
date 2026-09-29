@@ -103,6 +103,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
                   <Route path="explore" element={<ExplorePage />} />
                   <Route path="events" element={<EventsPage />} />
                   <Route path="events/:eventId/register" element={<EventRegisterPage />} />
+                  {/* The short one, for posters and stories: /e/techideate.
+                      Same page, and the same sign-in gate in front of it. */}
+                  <Route path="e/:eventId" element={<EventRegisterPage />} />
                   <Route path="profile" element={<ProfilePage />} />
                   <Route path="settings" element={<SettingsPage />} />
 

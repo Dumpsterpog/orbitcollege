@@ -14,7 +14,14 @@ export default function EventRegisterPage() {
   const navigate = useNavigate();
   const o = useOrbit();
 
-  const event = o.events.find((e) => e.id === eventId) || null;
+  // The parameter is an id from an in-app link, or a slug from a poster. A
+  // title that changes changes the slug with it, so the id always works as a
+  // fallback and printed links keep pointing at the right event.
+  const slugify = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+  const wanted = slugify(eventId);
+  const event = o.events.find((e) => e.id === eventId)
+    || o.events.find((e) => slugify(e.title) === wanted)
+    || null;
 
   // Events arrive from a live subscription, so a direct hit on this URL renders
   // before the list exists. That is loading, not a missing event -- but only
@@ -46,6 +53,7 @@ export default function EventRegisterPage() {
       event={event}
       payUrl={PAY_URL}
       user={o.user}
+      email={o.authUser?.email}
       authUserId={o.authUser?.id}
       onSignIn={o.goToInitialPage}
       onBack={() => navigate("/")}

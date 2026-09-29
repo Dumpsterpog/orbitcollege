@@ -104,7 +104,7 @@ function Choice({ on, onClick, title, sub, right }) {
 }
 
 export function EventRegisterScreen({
-  event, payUrl, user, authUserId, onSignIn, onBack, onJoinCommunity, onOpenCommunity, onToast,
+  event, payUrl, user, email, authUserId, onSignIn, onBack, onJoinCommunity, onOpenCommunity, onToast,
 }) {
   const [signup, setSignup] = useState(null);
   const [loaded, setLoaded] = useState(false);
@@ -112,6 +112,7 @@ export function EventRegisterScreen({
   const [error, setError] = useState("");
   const [paymentOpened, setPaymentOpened] = useState(false);
   const [paymentRef, setPaymentRef] = useState("");
+  const [checking, setChecking] = useState(false);
 
   // Everything before the signup document exists is local: details first, then
   // slot and pass. Once it exists, the document decides what is on screen.
@@ -175,6 +176,11 @@ export function EventRegisterScreen({
     if (digits.length > 13) { setError("That phone number looks too long."); return; }
 
     setError("");
+    setChecking(true);
+  };
+
+  const confirmDetails = () => {
+    setChecking(false);
     setLocalStep("options");
   };
 
@@ -201,6 +207,7 @@ export function EventRegisterScreen({
         phone: form.phone.replace(/[^0-9+]/g, ""),
         referral: form.referral,
         eventTitle: event.title || "",
+        email: email || "",
         slot: form.slot,
         slotLabel: chosenSlot?.label || "",
         passType: form.passType,
@@ -352,6 +359,48 @@ export function EventRegisterScreen({
               <Button tone="blue" size="lg" className="w-full mt-5" onClick={submitDetails}>
                 Next: slot and pass
               </Button>
+
+              {checking && (
+                <div className="fixed inset-0 z-[90] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 animate-fade-in"
+                     onClick={() => setChecking(false)}>
+                  <div onClick={(e) => e.stopPropagation()}
+                       className="w-full sm:max-w-md max-h-[90dvh] overflow-y-auto bg-bg-raised rounded-t-2xl sm:rounded-2xl shadow-pop animate-pop">
+                    <div className="p-5 sm:p-6">
+                      <h2 className="text-lg font-bold text-ink">Are these right?</h2>
+                      <p className="text-base text-ink-2 mt-1 leading-relaxed">
+                        {CLUB} matches your payment to these details. If the name or registration number is
+                        wrong, your pass cannot be confirmed.
+                      </p>
+
+                      <dl className="mt-4 rounded-xl bg-bg-sunken px-4 py-3 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-base">
+                        <dt className="text-ink-3">Name</dt>
+                        <dd className="text-ink text-right break-words">{form.name.trim()}</dd>
+                        <dt className="text-ink-3">Registration no.</dt>
+                        <dd className="text-ink text-right font-mono text-xs break-words">{form.regNo.trim()}</dd>
+                        <dt className="text-ink-3">College</dt>
+                        <dd className="text-ink text-right break-words">{form.college.trim()}</dd>
+                        <dt className="text-ink-3">Year</dt>
+                        <dd className="text-ink text-right">{form.year}</dd>
+                        <dt className="text-ink-3">Phone</dt>
+                        <dd className="text-ink text-right tabular-nums">{form.phone}</dd>
+                        {email && (<>
+                          <dt className="text-ink-3">Email</dt>
+                          <dd className="text-ink text-right break-all text-xs">{email}</dd>
+                        </>)}
+                      </dl>
+
+                      <div className="grid gap-2 sm:grid-cols-2 mt-5">
+                        <Button variant="soft" size="lg" onClick={() => setChecking(false)}>
+                          Change something
+                        </Button>
+                        <Button tone="blue" size="lg" onClick={confirmDetails}>
+                          Yes, continue
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </section>
           ) : stage === "options" ? (
             <section className={cx(card, "p-4 sm:p-5")}>
@@ -550,6 +599,7 @@ export function EventRegisterScreen({
                 </dd>
                 <dt className="text-ink-3">College</dt><dd className="text-ink text-right break-words">{signup.college}</dd>
                 {signup.regNo && (<><dt className="text-ink-3">Registration no.</dt><dd className="text-ink text-right font-mono text-xs">{signup.regNo}</dd></>)}
+                {(signup.email || email) && (<><dt className="text-ink-3">Email</dt><dd className="text-ink text-right break-all text-xs">{signup.email || email}</dd></>)}
                 <dt className="text-ink-3">Year</dt><dd className="text-ink text-right">{signup.year}</dd>
                 {signup.branch && <><dt className="text-ink-3">Branch</dt><dd className="text-ink text-right">{signup.branch}</dd></>}
               </dl>
