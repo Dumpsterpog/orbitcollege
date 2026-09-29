@@ -1,5 +1,6 @@
 import { ICONS } from "./icons.js";
 import { forwardRef } from "react";
+import { Img } from "./Img.jsx";
 
 // Primitive vocabulary.
 //
@@ -156,7 +157,7 @@ export function Avatar({ name = "", src, size = 32, ring = false, className }) {
       )}
       style={{ width: size, height: size, fontSize: Math.max(9, Math.round(size * 0.38)) }}
     >
-      {src ? <img src={src} alt="" className="w-full h-full object-cover" /> : initials}
+      {src ? <Img src={src} className="w-full h-full object-cover" fallback={initials} /> : initials}
     </span>
   );
 

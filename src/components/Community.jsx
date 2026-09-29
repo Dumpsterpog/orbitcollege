@@ -44,6 +44,7 @@ import { EmptyState } from "./EmptyState.jsx";
 import { PostComments } from "./Common.jsx";
 import * as db from "../lib/db.js";
 import { classifyPost } from "../lib/moderation.js";
+import { Img } from "./ui/Img.jsx";
 
 export function CommunitySettings({ c, onSave, onDelete, onClose }) {
   const [name, setName] = useState(c.name);
@@ -614,11 +615,11 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
         )}>
           {event ? (
             <>
-              <img src={event.imageUrl || EVENT_BANNER} alt="" className="absolute inset-0 w-full h-full object-cover" />
+              <Img src={event.imageUrl || EVENT_BANNER} className="absolute inset-0 w-full h-full object-cover" />
               <span className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/55 to-transparent" />
             </>
           ) : c.avatarUrl && (
-            <img src={c.avatarUrl} alt="" aria-hidden="true"
+            <Img src={c.avatarUrl} aria-hidden="true"
                  className="absolute inset-0 w-full h-full object-cover opacity-25 blur-xl scale-110" />
           )}
           <div className="absolute top-3 right-4 flex items-center gap-2">
@@ -644,7 +645,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
             <div className="relative shrink-0">
               <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden ring-4 ring-bg bg-bg-sunken grid place-items-center">
                 {c.avatarUrl
-                  ? <img src={c.avatarUrl} alt="" className="w-full h-full object-cover" />
+                  ? <Img src={c.avatarUrl} className="w-full h-full object-cover" />
                   : <Icon name={cat.msr} size={38} className={cat.tint} />}
               </div>
               {c.official && (
@@ -904,7 +905,7 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                       )}>{m.text}</p>
                     )}
                     {m.imageUrl && (
-                      <img src={m.imageUrl} alt="" className="mt-1 max-h-56 rounded-2xl object-contain border border-line bg-bg-sunken" />
+                      <Img src={m.imageUrl} className="mt-1 max-h-56 rounded-2xl object-contain border border-line bg-bg-sunken" />
                     )}
                     <div className={cx(
                       "flex items-center gap-2 mt-1 px-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity",
@@ -1152,9 +1153,8 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                         </div>
 
                         {p.imageUrl && (
-                          <img
+                          <Img
                             src={p.imageUrl}
-                            alt=""
                             loading="lazy"
                             className="w-full max-h-[520px] object-cover rounded-xl border border-line mt-3"
                           />

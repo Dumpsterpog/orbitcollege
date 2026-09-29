@@ -3,8 +3,8 @@ import {
   deleteDoc, onSnapshot, query, orderBy, where, limit, increment, serverTimestamp,
   runTransaction, writeBatch, Timestamp, arrayUnion, arrayRemove,
 } from "firebase/firestore";
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
-import { db, storage, firebaseReady } from "./firebase.js";
+import { db, firebaseReady } from "./firebase.js";
+import { saveImage } from "./storedImage.js";
 
 // Firestore data layer. Replaces lib/supabaseClient.js and every direct
 // Supabase call that used to live in App.jsx and Community.jsx.
@@ -1112,28 +1112,33 @@ export async function createReport({ reporterId, target, reason }) {
 
 /* ---------------------------------------------------------- storage */
 
-// Buckets became folders. The three Supabase buckets map to three prefixes in
-// the single Firebase Storage bucket, so the paths stay recognisable.
-export async function uploadImage(folder, file, uid) {
+// Supabase buckets became Storage folders, and Storage became Firestore when
+// the free plan turned out not to include it. The folder name survives as the
+// thing that says how big the picture needs to be, and every caller still gets
+// back { url, path } as it always did.
+const KIND_FOR_FOLDER = {
+  "community-avatars": "avatar",
+  stickers: "sticker",
+  "community-media": "photo",
+};
+
+export async function uploadImage(folder, file, uid, kind) {
   need();
-  const safe = file.name.replace(/[^A-Za-z0-9._-]/g, "_");
-  const path = `${folder}/${uid || "anon"}/${Date.now()}-${safe}`;
-  const r = ref(storage, path);
   try {
-    await uploadBytes(r, file, { contentType: file.type });
+    return await saveImage(file, uid, kind || KIND_FOR_FOLDER[folder] || "photo");
   } catch (err) {
-    // Storage is a paid-plan feature and this project is on the free plan, so
-    // the bucket is not there at all. What comes back says "unknown error",
-    // which tells the person holding the phone nothing.
     console.error("[orbit/db] image upload failed", err);
-    throw new Error("Pictures cannot be uploaded at the moment. Everything else still works.");
+    if (err?.message === "not-an-image") throw new Error("That file is not an image.");
+    if (err?.message === "image-too-large") throw new Error("That picture is too big. Crop it and try again.");
+    throw new Error("The picture did not save. Try again.");
   }
-  return { url: await getDownloadURL(r), path };
 }
 
 export async function deleteImage(path) {
   if (!firebaseReady || !path) return;
-  try { await deleteObject(ref(storage, path)); } catch { /* already gone */ }
+  const id = String(path).startsWith("images/") ? String(path).slice("images/".length) : null;
+  if (!id) return; // a leftover Storage path; there is no bucket to delete from
+  try { await deleteDoc(doc(db, "images", id)); } catch { /* already gone */ }
 }
 
 /* ------------------------------------------------------------ admin */

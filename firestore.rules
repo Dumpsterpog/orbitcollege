@@ -488,6 +488,33 @@ service cloud.firestore {
     // Banners the admin tool puts at the top of everyone's home feed. Public
     // to read, because a notice about a campus closure is for guests too;
     // admin-only to write.
+    // Pictures.
+    //
+    // Storage is a Blaze-plan feature and this project is not on Blaze, so a
+    // picture is a shrunken JPEG in a document here and whatever shows it
+    // stores a reference to this id. Each one is read only when it is about to
+    // be drawn, which is why they are not fields on the posts themselves.
+    //
+    // Readable by anyone, exactly like the Storage download URLs they replace:
+    // those were public to whoever held the link, and a picture attached to a
+    // post is shown to whoever can see the post. The id is the capability.
+    match /images/{imageId} {
+      allow read: if true;
+
+      allow create: if isSignedIn() && notSuspended()
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.dataUrl is string
+        && request.resource.data.dataUrl.size() <= 700000
+        && request.resource.data.dataUrl.matches('data:image/.*');
+
+      // A picture is never edited, only replaced by a new one. Letting it be
+      // rewritten would let whatever is already on screen be swapped out
+      // under everyone who can see it.
+      allow update: if false;
+
+      allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+    }
+
     match /announcements/{announcementId} {
       allow read: if true;
       allow create, update, delete: if isAdmin();

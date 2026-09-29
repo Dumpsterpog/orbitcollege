@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Icon, Avatar, Button, cx } from "../ui/Primitives.jsx";
 import { trackAd } from "../../lib/db.js";
+import { Img } from "../ui/Img.jsx";
 
 // Promoted content, published only from the admin tool.
 //
@@ -68,7 +69,7 @@ export function AdCard({ ad, compact = false }) {
         <button onClick={open} disabled={!href} className="block w-full text-left disabled:cursor-default"
                 aria-label={ad.headline || ad.advertiser || "Promoted"}>
           {ad.imageUrl && (
-            <img src={ad.imageUrl} alt="" loading="lazy"
+            <Img src={ad.imageUrl} loading="lazy"
                  className={cx("block w-full object-cover", compact ? "aspect-[16/9]" : "aspect-[3/1]")} />
           )}
           <span className="absolute top-2.5 left-2.5 rounded-full bg-black/65 px-2 py-0.5 text-2xs font-semibold text-white">
@@ -104,7 +105,7 @@ export function AdCard({ ad, compact = false }) {
       {ad.format === "image" && ad.imageUrl ? (
         <button onClick={open} disabled={!href}
                 className="mt-3 block w-full overflow-hidden rounded-xl border border-line text-left disabled:cursor-default">
-          <img src={ad.imageUrl} alt="" loading="lazy" className="block w-full aspect-[16/9] object-cover" />
+          <Img src={ad.imageUrl} loading="lazy" className="block w-full aspect-[16/9] object-cover" />
           {(ad.headline || href) && (
             <span className="block px-3.5 py-2.5 bg-bg-sunken">
               {href && <span className="block text-2xs text-ink-3 truncate">{domainOf(href)}</span>}

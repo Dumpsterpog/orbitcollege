@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Icon, cx } from "../ui/Primitives.jsx";
+import { Img } from "../ui/Img.jsx";
 
 // A month grid that marks the days something is actually on.
 //
@@ -143,7 +144,7 @@ export function CampusCalendar({ events, selected, onSelect, onOpenEvent, onView
               >
                 <span className="w-9 h-9 rounded-lg overflow-hidden bg-accent-wash shrink-0 grid place-items-center">
                   {e.imageUrl
-                    ? <img src={e.imageUrl} alt="" className="w-full h-full object-cover" />
+                    ? <Img src={e.imageUrl} className="w-full h-full object-cover" />
                     : <Icon name="confirmation_number" size={16} className="text-accent" />}
                 </span>
                 <span className="min-w-0 flex-1 leading-tight">

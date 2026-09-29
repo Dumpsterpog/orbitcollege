@@ -521,7 +521,8 @@ export default function App() {
 
     showToast(`Uploading ${noun.toLowerCase()}…`);
     try {
-      const { url } = await db.uploadImage("community-media", file, authUser.id);
+      const { url } = await db.uploadImage("community-media", file, authUser.id,
+                                          kind === "banner" ? "banner" : "avatar");
       await saveProfile(authUser.id, { [field]: url });
       setUser((u) => ({ ...u, [field]: url }));
       showToast(`${noun} updated`);

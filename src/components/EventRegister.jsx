@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import * as db from "../lib/db.js";
-import { shrinkToDataUrl } from "../lib/proofImage.js";
+import { shrinkToDataUrl, IMAGE_KINDS } from "../lib/storedImage.js";
 import { Icon, Button, Input, cx } from "./ui/Primitives.jsx";
 import { Screen } from "./ui/Layout.jsx";
 
@@ -173,7 +173,7 @@ export function EventRegisterScreen({
     setError("");
     setShrinking(true);
     try {
-      const dataUrl = await shrinkToDataUrl(file);
+      const dataUrl = await shrinkToDataUrl(file, IMAGE_KINDS.proof);
       setProof({ name: file.name, bytes: dataUrl.length });
       setProofData(dataUrl);
     } catch (err) {

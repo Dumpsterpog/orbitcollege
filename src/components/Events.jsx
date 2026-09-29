@@ -3,6 +3,7 @@ import { CATEGORIES } from "../data/constants.js";
 import { Screen } from "./ui/Layout.jsx";
 import { Icon, cx } from "./ui/Primitives.jsx";
 import { CampusCalendar } from "./events/Calendar.jsx";
+import { useImageSrc } from "./ui/Img.jsx";
 
 // Campus events.
 //
@@ -184,12 +185,17 @@ function BannerSlides({ slides, interval = 5000 }) {
 // copy of itself, which fills the band without inventing artwork or hiding
 // any of it.
 function Poster({ src, className, alt = "", fit = "contain" }) {
+  const resolved = useImageSrc(src);
   return (
     <div className={cx("relative overflow-hidden bg-bg-sunken", className)}>
-      <img src={src} alt="" aria-hidden="true"
-           className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60" />
-      <img src={src} alt={alt} loading="lazy"
-           className={cx("relative w-full h-full", fit === "cover" ? "object-cover" : "object-contain")} />
+      {resolved && (
+        <>
+          <img src={resolved} alt="" aria-hidden="true"
+               className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60" />
+          <img src={resolved} alt={alt} loading="lazy"
+               className={cx("relative w-full h-full", fit === "cover" ? "object-cover" : "object-contain")} />
+        </>
+      )}
     </div>
   );
 }

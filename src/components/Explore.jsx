@@ -3,6 +3,7 @@ import { CATEGORIES } from "../data/constants.js";
 import { communityTrendScore } from "../utils/helpers.js";
 import { Icon, Avatar, Button, Input, Tag, cx } from "./ui/Primitives.jsx";
 import { Screen, Column, Empty } from "./ui/Layout.jsx";
+import { Img } from "./ui/Img.jsx";
 
 // Explore -- a directory.
 //
@@ -49,7 +50,7 @@ function Row({ c, joined, onOpen, onJoin }) {
     >
       <span className="shrink-0 w-11 h-11 rounded-xl overflow-hidden">
         {c.avatarUrl ? (
-          <img src={c.avatarUrl} alt="" loading="lazy" className="w-full h-full object-cover" />
+          <Img src={c.avatarUrl} loading="lazy" className="w-full h-full object-cover" />
         ) : (
           <span className={cx("w-full h-full grid place-items-center bg-gradient-to-br", wash)}>
             <Icon name={cat?.msr || "groups"} size={22} className={cx(cat?.tint, "opacity-90")} />

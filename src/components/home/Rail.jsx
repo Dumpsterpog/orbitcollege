@@ -1,5 +1,6 @@
 import { CATEGORIES } from "../../data/constants.js";
 import { Icon, cx } from "../ui/Primitives.jsx";
+import { Img } from "../ui/Img.jsx";
 
 // The right rail: one header card and four sections, all fed by documents.
 //
@@ -112,7 +113,7 @@ export function UpcomingEvents({ events, registeredIds, onOpen, onAll }) {
               >
                 <span className="grid place-items-center w-11 h-11 rounded-xl bg-accent-wash shrink-0 overflow-hidden">
                   {e.imageUrl
-                    ? <img src={e.imageUrl} alt="" className="w-full h-full object-cover" />
+                    ? <Img src={e.imageUrl} className="w-full h-full object-cover" />
                     : <Icon name={cat?.msr || "calendar_today"} size={19} className="text-accent" />}
                 </span>
 
@@ -154,7 +155,7 @@ export function CommunitiesForYou({ communities, joinedIds, onOpen, onJoin, onAl
               <button onClick={() => onOpen(c)} className="grid place-items-center w-10 h-10 rounded-xl
                 overflow-hidden bg-bg-sunken shrink-0">
                 {c.avatarUrl
-                  ? <img src={c.avatarUrl} alt="" className="w-full h-full object-cover" />
+                  ? <Img src={c.avatarUrl} className="w-full h-full object-cover" />
                   : <Icon name={cat?.msr || "groups"} size={18} className={cat?.tint || "text-ink-3"} />}
               </button>
 

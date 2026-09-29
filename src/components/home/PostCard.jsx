@@ -3,6 +3,7 @@ import { CATEGORIES } from "../../data/constants.js";
 import { Icon, Avatar, cx } from "../ui/Primitives.jsx";
 import { PostComments } from "../Common.jsx";
 import { CodeBlock, parseSegments } from "./CodeBlock.jsx";
+import { Img } from "../ui/Img.jsx";
 
 const nameHead = (name = "") => name.split(" — ")[0];
 
@@ -97,7 +98,7 @@ export function PostCard({
               >
                 <span className="grid place-items-center w-4 h-4 rounded overflow-hidden shrink-0">
                   {community.avatarUrl
-                    ? <img src={community.avatarUrl} alt="" className="w-full h-full object-cover" />
+                    ? <Img src={community.avatarUrl} className="w-full h-full object-cover" />
                     : <Icon name={cat?.msr || "groups"} size={12} className={cat?.tint || "text-ink-3"} />}
                 </span>
                 <span className="text-[11.5px] font-medium text-ink-2 truncate">
@@ -186,9 +187,8 @@ export function PostCard({
         )}
 
         {post.imageUrl && (
-          <img
+          <Img
             src={post.imageUrl}
-            alt=""
             loading="lazy"
             className="w-full max-h-[460px] object-cover rounded-xl border border-line"
           />
