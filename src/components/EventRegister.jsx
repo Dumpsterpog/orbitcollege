@@ -265,24 +265,60 @@ export function EventRegisterScreen({
     window.open(payUrl, "_blank", "noopener,noreferrer");
   };
 
+  // Money has already left this person's account by the time they are on this
+  // step. Nothing here may refuse them: not a screenshot that will not shrink,
+  // not a laptop with no screenshot on it, not a flaky upload on campus wifi.
+  // The screenshot is how the club checks a payment quickly, so it is asked
+  // for firmly; a reference number is accepted instead, and if the picture
+  // fails to save the claim still goes through and can be completed later.
   const confirmPaid = async () => {
-    if (!proofData) { setError("Attach the payment screenshot so the club can check it."); return; }
+    const ref = paymentRef.trim();
+    if (!proofData && ref.length < 4) {
+      setError("Attach the screenshot, or type the reference number from the payment page.");
+      return;
+    }
     setBusy(true);
     setError("");
+    let stored = false;
+    if (proofData) {
+      try {
+        await db.savePaymentProof(event.id, authUserId, proofData);
+        stored = true;
+      } catch (err) {
+        console.error("[orbit] could not store the screenshot", err);
+      }
+    }
     try {
-      // The screenshot lands first. If it fails, the signup stays unclaimed
-      // rather than becoming a claim with nothing behind it.
-      await db.savePaymentProof(event.id, authUserId, proofData);
-      await db.markPaymentClaimed(event.id, authUserId, {
-        paymentRef: paymentRef.trim() || null,
-        proofStored: true,
-      });
-      setStoredProof(proofData);
+      await db.markPaymentClaimed(event.id, authUserId, { paymentRef: ref || null, proofStored: stored });
+      if (stored) setStoredProof(proofData);
       await onJoinCommunity?.(event);
-      onToast?.("You are in. The event chat is open.");
+      onToast?.(stored
+        ? "You are in. The event chat is open."
+        : "You are in. Add the screenshot from this page when you can.");
     } catch (err) {
       console.error("[orbit] payment claim failed", err);
       setError("Could not send that. Check your connection and try again.");
+    }
+    setBusy(false);
+  };
+
+  // The same attachment, offered again after the claim: for the student whose
+  // upload failed, who paid on a laptop, or who only found the receipt later.
+  const sendProofLater = async () => {
+    if (!proofData) return;
+    setBusy(true);
+    setError("");
+    try {
+      await db.savePaymentProof(event.id, authUserId, proofData);
+      await db.markPaymentClaimed(event.id, authUserId, {
+        paymentRef: paymentRef.trim() || signup?.paymentRef || null,
+        proofStored: true,
+      });
+      setStoredProof(proofData);
+      onToast?.("Screenshot sent. The club can see it now.");
+    } catch (err) {
+      console.error("[orbit] could not store the screenshot", err);
+      setError("That did not send. Try again, or show the receipt at the desk on the day.");
     }
     setBusy(false);
   };
@@ -610,8 +646,13 @@ export function EventRegisterScreen({
                   disabled={busy || shrinking}
                   loading={busy}
                 >
-                  {busy ? "Sending…" : "Submit screenshot and join the chat"}
+                  {busy ? "Sending…" : proofData ? "Submit screenshot and join the chat" : "I have paid, open the chat"}
                 </Button>
+
+                <p className="text-xs text-ink-3 mt-2 leading-relaxed">
+                  No screenshot to hand? Type the reference number above instead and carry on. You can add the
+                  picture from this page afterwards.
+                </p>
               </div>
 
               {error && <p className="text-base text-c-red mt-4 leading-relaxed">{error}</p>}
@@ -635,6 +676,39 @@ export function EventRegisterScreen({
                   </p>
                 </div>
               </div>
+
+              {!storedProof && !signup.proofUrl && signup.status !== "verified" && (
+                <div className="mt-5 p-4 rounded-xl bg-c-amber/10 ring-1 ring-c-amber/25">
+                  <p className="text-base font-semibold text-ink">Add your payment screenshot</p>
+                  <p className="text-xs text-ink-2 mt-1 leading-relaxed">
+                    {CLUB} can confirm you much faster with it. Without one they have to find your payment in the
+                    report by hand.
+                  </p>
+                  <div className="flex items-center gap-2.5 mt-3">
+                    <label className={cx(
+                      "relative grid place-items-center w-[72px] h-[72px] rounded-xl cursor-pointer overflow-hidden shrink-0 transition-colors",
+                      proofData ? "ring-1 ring-line" : "bg-bg-sunken ring-1 ring-dashed ring-line-strong hover:ring-accent"
+                    )}>
+                      {proofData
+                        ? <img src={proofData} alt="Payment screenshot" className="w-full h-full object-cover" />
+                        : <Icon name={shrinking ? "hourglass_empty" : "photo_camera"} size={18} className="text-ink-3" />}
+                      <input type="file" accept="image/*" className="hidden"
+                             onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; attachProof(f); }} />
+                    </label>
+                    <Button
+                      variant={proofData ? "primary" : "soft"}
+                      tone={proofData ? "blue" : undefined}
+                      className="flex-1"
+                      onClick={sendProofLater}
+                      disabled={!proofData || busy || shrinking}
+                      loading={busy}
+                    >
+                      {proofData ? "Send it" : shrinking ? "Reading…" : "Choose a picture"}
+                    </Button>
+                  </div>
+                  {error && <p className="text-xs text-c-red mt-2 leading-relaxed">{error}</p>}
+                </div>
+              )}
 
               {signup.passCode && (
                 <div className="mt-5 p-5 rounded-xl bg-bg-sunken text-center">
