@@ -381,6 +381,22 @@ service cloud.firestore {
                    .hasAny(['passCode', 'checkedInAt', 'checkedInBy', 'verifiedAt', 'verifiedBy', 'amount']));
 
         allow delete: if isAdmin();
+
+        // The payment screenshot, in a document of its own so that listing a
+        // few hundred registrations does not also pull a few hundred images
+        // down with them. It would live in Storage if Storage were on this
+        // plan; it is not, so it is a shrunken JPEG data URL and the size
+        // ceiling here is what keeps it under Firestore's document limit.
+        match /proof/{proofId} {
+          allow read: if isSelf(signupUid) || isAdmin();
+
+          allow create, update: if isSelf(signupUid) && notSuspended()
+            && request.resource.data.dataUrl is string
+            && request.resource.data.dataUrl.size() <= 700000
+            && request.resource.data.dataUrl.matches('data:image/.*');
+
+          allow delete: if isAdmin();
+        }
       }
     }
 

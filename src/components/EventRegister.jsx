@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import * as db from "../lib/db.js";
+import { shrinkToDataUrl } from "../lib/proofImage.js";
 import { Icon, Button, Input, cx } from "./ui/Primitives.jsx";
 import { Screen } from "./ui/Layout.jsx";
 
@@ -113,7 +114,9 @@ export function EventRegisterScreen({
   const [paymentOpened, setPaymentOpened] = useState(false);
   const [paymentRef, setPaymentRef] = useState("");
   const [proof, setProof] = useState(null);
-  const [proofPreview, setProofPreview] = useState(null);
+  const [proofData, setProofData] = useState(null);
+  const [shrinking, setShrinking] = useState(false);
+  const [storedProof, setStoredProof] = useState(null);
   const [checking, setChecking] = useState(false);
 
   // Everything before the signup document exists is local: details first, then
@@ -152,18 +155,34 @@ export function EventRegisterScreen({
     if (user?.name && !form.name) setForm((f) => ({ ...f, name: user.name }));
   }, [user?.name]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // An object URL is a live handle into memory; dropping the reference without
-  // revoking it leaks the image for the tab's life.
-  useEffect(() => () => { if (proofPreview) URL.revokeObjectURL(proofPreview); }, [proofPreview]);
+  // Show the student the screenshot the club is actually looking at, whether
+  // they attached it a second ago or came back to this page a day later.
+  useEffect(() => {
+    let alive = true;
+    if (!signup?.proofStored) { setStoredProof(null); return () => { alive = false; }; }
+    db.fetchPaymentProof(event.id, authUserId)
+      .then((d) => { if (alive) setStoredProof(d); })
+      .catch(() => {});
+    return () => { alive = false; };
+  }, [signup?.proofStored, event.id, authUserId]);
 
-  const attachProof = (file) => {
+  const attachProof = async (file) => {
     if (!file) return;
     if (!file.type?.startsWith("image/")) { setError("That file is not an image."); return; }
-    if (file.size > 5 * 1024 * 1024) { setError("Screenshots have to be under 5 MB."); return; }
+    if (file.size > 12 * 1024 * 1024) { setError("That screenshot is enormous. Crop it and try again."); return; }
     setError("");
-    if (proofPreview) URL.revokeObjectURL(proofPreview);
-    setProof(file);
-    setProofPreview(URL.createObjectURL(file));
+    setShrinking(true);
+    try {
+      const dataUrl = await shrinkToDataUrl(file);
+      setProof({ name: file.name, bytes: dataUrl.length });
+      setProofData(dataUrl);
+    } catch (err) {
+      console.error("[orbit] could not prepare the screenshot", err);
+      setError(err?.message === "not-an-image"
+        ? "That image could not be opened. Try a PNG or JPG."
+        : "That screenshot is too detailed to send. Crop it to just the receipt and try again.");
+    }
+    setShrinking(false);
   };
 
   const stage = !signup
@@ -247,23 +266,23 @@ export function EventRegisterScreen({
   };
 
   const confirmPaid = async () => {
-    if (!proof) { setError("Attach the payment screenshot so the club can check it."); return; }
+    if (!proofData) { setError("Attach the payment screenshot so the club can check it."); return; }
     setBusy(true);
     setError("");
     try {
-      const { url, path } = await db.uploadPaymentProof(authUserId, proof);
+      // The screenshot lands first. If it fails, the signup stays unclaimed
+      // rather than becoming a claim with nothing behind it.
+      await db.savePaymentProof(event.id, authUserId, proofData);
       await db.markPaymentClaimed(event.id, authUserId, {
         paymentRef: paymentRef.trim() || null,
-        proofUrl: url,
-        proofPath: path,
+        proofStored: true,
       });
+      setStoredProof(proofData);
       await onJoinCommunity?.(event);
       onToast?.("You are in. The event chat is open.");
     } catch (err) {
       console.error("[orbit] payment claim failed", err);
-      setError(err?.code === "storage/unauthorized"
-        ? "The upload was refused by Storage. Tell the club, and try the reference number instead."
-        : "Could not record that. Try again.");
+      setError("Could not send that. Check your connection and try again.");
     }
     setBusy(false);
   };
@@ -545,19 +564,19 @@ export function EventRegisterScreen({
                 <div className="grid gap-2.5 sm:grid-cols-[auto_1fr] mt-3">
                   <label className={cx(
                     "relative grid place-items-center w-full sm:w-[104px] h-[104px] rounded-xl cursor-pointer overflow-hidden transition-colors",
-                    proofPreview ? "ring-1 ring-line" : "bg-bg-sunken ring-1 ring-dashed ring-line-strong hover:ring-accent"
+                    proofData ? "ring-1 ring-line" : "bg-bg-sunken ring-1 ring-dashed ring-line-strong hover:ring-accent"
                   )}>
-                    {proofPreview ? (
+                    {proofData ? (
                       <>
-                        <img src={proofPreview} alt="Payment screenshot" className="w-full h-full object-cover" />
+                        <img src={proofData} alt="Payment screenshot" className="w-full h-full object-cover" />
                         <span className="absolute bottom-1 right-1 grid place-items-center w-6 h-6 rounded-full bg-black/60 text-white">
                           <Icon name="edit" size={13} />
                         </span>
                       </>
                     ) : (
                       <span className="flex flex-col items-center gap-1 text-ink-3">
-                        <Icon name="photo_camera" size={20} />
-                        <span className="text-2xs font-semibold">Attach</span>
+                        <Icon name={shrinking ? "hourglass_empty" : "photo_camera"} size={20} />
+                        <span className="text-2xs font-semibold">{shrinking ? "Reading" : "Attach"}</span>
                       </span>
                     )}
                     <input type="file" accept="image/*" className="hidden"
@@ -576,19 +595,19 @@ export function EventRegisterScreen({
                     </Field>
                     {proof && (
                       <p className="text-xs text-ink-3 mt-1.5 truncate">
-                        {proof.name} · {(proof.size / 1024).toFixed(0)} KB
+                        {proof.name} · {(proof.bytes / 1024).toFixed(0)} KB attached
                       </p>
                     )}
                   </div>
                 </div>
 
                 <Button
-                  variant={proof ? "primary" : "soft"}
-                  tone={proof ? "blue" : undefined}
+                  variant={proofData ? "primary" : "soft"}
+                  tone={proofData ? "blue" : undefined}
                   size="lg"
                   className="w-full mt-3"
                   onClick={confirmPaid}
-                  disabled={busy}
+                  disabled={busy || shrinking}
                   loading={busy}
                 >
                   {busy ? "Sending…" : "Submit screenshot and join the chat"}
@@ -655,13 +674,13 @@ export function EventRegisterScreen({
                 {signup.branch && <><dt className="text-ink-3">Branch</dt><dd className="text-ink text-right">{signup.branch}</dd></>}
               </dl>
 
-              {signup.proofUrl && (
+              {(storedProof || signup.proofUrl) && (
                 <div className="mt-5 pt-5 border-t border-line">
                   <p className="text-xs font-semibold text-ink-2 uppercase tracking-wide mb-2.5">Payment screenshot</p>
-                  <a href={signup.proofUrl} target="_blank" rel="noopener noreferrer"
-                     className="block w-full max-w-[220px] rounded-xl overflow-hidden ring-1 ring-line hover:ring-line-strong transition-colors">
-                    <img src={signup.proofUrl} alt="Your payment screenshot" className="w-full block" />
-                  </a>
+                  <div className="w-full max-w-[220px] rounded-xl overflow-hidden ring-1 ring-line">
+                    <img src={storedProof || signup.proofUrl} alt="Your payment screenshot" className="w-full block" />
+                  </div>
+                  <p className="text-xs text-ink-3 mt-2">{CLUB} checks this against the payment report.</p>
                 </div>
               )}
 

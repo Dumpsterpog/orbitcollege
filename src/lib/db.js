@@ -1,7 +1,7 @@
 import {
   collection, collectionGroup, doc, addDoc, setDoc, getDoc, getDocs, updateDoc,
   deleteDoc, onSnapshot, query, orderBy, where, limit, increment, serverTimestamp,
-  runTransaction, writeBatch, Timestamp,
+  runTransaction, writeBatch, Timestamp, arrayUnion, arrayRemove,
 } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
 import { db, storage, firebaseReady } from "./firebase.js";
@@ -620,17 +620,25 @@ export async function setPostPinned(communityId, postId, pinned) {
   await updateDoc(doc(db, "communities", communityId, "posts", postId), { pinned });
 }
 
+// Which posts this person has sparked, read from their own profile.
+//
+// This used to be collectionGroup("sparks") filtered on uid, which needs a
+// single-field collection-group index that has to be created by hand. Without
+// it every sign-in logged a failed-precondition and every heart rendered
+// hollow. The list is kept on the profile by toggleSpark instead: one document
+// read, no index, and nothing to configure.
+//
+// Sparks given before this existed are not in the list, so those hearts read
+// as unsparked until they are tapped again. The counts on the posts are
+// unaffected -- they come from the spark documents, which are still written.
 export async function fetchMySparks(uid) {
   if (!firebaseReady || !uid) return [];
   try {
-    const snap = await getDocs(query(collectionGroup(db, "sparks"), where("uid", "==", uid)));
-    return snap.docs.map((d) => d.ref.parent.parent?.id).filter(Boolean);
+    const snap = await getDoc(doc(db, "profiles", uid));
+    const ids = snap.exists() ? snap.data().sparkedPosts : null;
+    return Array.isArray(ids) ? ids : [];
   } catch (err) {
-    // Sparks hang off posts, which are spread across every community and the
-    // root collection, so there is no cheap parent walk. Degrade to "nothing
-    // sparked": hearts render unfilled until the index exists, and sparking
-    // still works.
-    watchFailed(err);
+    console.warn("[orbit/db] could not read your sparks", err);
     return [];
   }
 }
@@ -653,6 +661,16 @@ export async function toggleSpark(communityId, postId, uid) {
       nowSparked = true;
     }
   });
+
+  // The same fact on the profile, which is what fetchMySparks reads. Best
+  // effort: a spark that fails to record here still counted, and the heart
+  // comes back hollow on the next reload rather than the post being wrong.
+  setDoc(
+    doc(db, "profiles", uid),
+    { sparkedPosts: nowSparked ? arrayUnion(postId) : arrayRemove(postId) },
+    { merge: true },
+  ).catch(() => {});
+
   return nowSparked;
 }
 
@@ -824,23 +842,38 @@ export function watchMySignup(eventId, uid, cb) {
 // The student saying they have paid. It is a claim, not proof: CCAvenue
 // confirms nothing back to this app, so an admin verifies against the payment
 // report before any pass is issued.
-export async function markPaymentClaimed(eventId, uid, { paymentRef, proofUrl, proofPath } = {}) {
+export async function markPaymentClaimed(eventId, uid, { paymentRef, proofStored } = {}) {
   need();
   await updateDoc(doc(db, "events", eventId, "signups", uid), {
     status: "payment_claimed",
     paymentRef: paymentRef || null,
-    proofUrl: proofUrl || null,
-    proofPath: proofPath || null,
+    proofStored: !!proofStored,
     claimedAt: serverTimestamp(),
   });
 }
 
 // The screenshot of the payment, which is the only evidence this app ever
-// sees: CCAvenue tells it nothing. Stored in the same folder as the user's
-// other uploads, because that is what the Storage rules already permit.
-export async function uploadPaymentProof(uid, file) {
+// sees: CCAvenue tells it nothing.
+//
+// It would belong in Storage, but Storage is a paid-plan feature and this
+// project is on the free plan, so it goes into Firestore as a shrunken JPEG
+// data URL. It gets a document of its own rather than a field on the signup,
+// because the admin tool lists every registration at once and a field would
+// make that list drag a few hundred images along with it.
+export async function savePaymentProof(eventId, uid, dataUrl) {
   need();
-  return uploadImage("community-media", file, uid);
+  if (!dataUrl) throw new Error("no-proof");
+  await setDoc(doc(db, "events", eventId, "signups", uid, "proof", "payment"), {
+    dataUrl,
+    uid,
+    createdAt: serverTimestamp(),
+  });
+}
+
+export async function fetchPaymentProof(eventId, uid) {
+  if (!firebaseReady || !eventId || !uid) return null;
+  const snap = await getDoc(doc(db, "events", eventId, "signups", uid, "proof", "payment"));
+  return snap.exists() ? snap.data().dataUrl || null : null;
 }
 
 // Registering touches only documents that belong to the person registering:
@@ -1086,7 +1119,15 @@ export async function uploadImage(folder, file, uid) {
   const safe = file.name.replace(/[^A-Za-z0-9._-]/g, "_");
   const path = `${folder}/${uid || "anon"}/${Date.now()}-${safe}`;
   const r = ref(storage, path);
-  await uploadBytes(r, file, { contentType: file.type });
+  try {
+    await uploadBytes(r, file, { contentType: file.type });
+  } catch (err) {
+    // Storage is a paid-plan feature and this project is on the free plan, so
+    // the bucket is not there at all. What comes back says "unknown error",
+    // which tells the person holding the phone nothing.
+    console.error("[orbit/db] image upload failed", err);
+    throw new Error("Pictures cannot be uploaded at the moment. Everything else still works.");
+  }
   return { url: await getDownloadURL(r), path };
 }
 
