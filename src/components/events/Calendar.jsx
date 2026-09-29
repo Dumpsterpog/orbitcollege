@@ -12,21 +12,32 @@ const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const sameDay = (a, b) =>
   a && b && a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
-export function CampusCalendar({ events, selected, onSelect, onViewAll }) {
+export function CampusCalendar({ events, selected, onSelect, onOpenEvent, onViewAll }) {
   const today = new Date();
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
 
-  // Which days in this month have something on them.
-  const busy = useMemo(() => {
-    const set = new Set();
+  // Which days in this month have something on them, and what.
+  const byDay = useMemo(() => {
+    const map = new Map();
     for (const e of events) {
       const d = e.startsAt;
       if (d && d.getFullYear() === cursor.getFullYear() && d.getMonth() === cursor.getMonth()) {
-        set.add(d.getDate());
+        const list = map.get(d.getDate()) || [];
+        list.push(e);
+        map.set(d.getDate(), list);
       }
     }
-    return set;
+    return map;
   }, [events, cursor]);
+
+  // What the panel under the grid is showing. A marked day is worth a tap
+  // even before it filters the list beside it: the question is "what is on
+  // then", and the answer was two screens away.
+  const chosen = selected
+    && selected.getFullYear() === cursor.getFullYear()
+    && selected.getMonth() === cursor.getMonth()
+      ? byDay.get(selected.getDate()) || []
+      : [];
 
   // A leading run of blanks so the 1st lands under the right weekday.
   const firstWeekday = new Date(cursor.getFullYear(), cursor.getMonth(), 1).getDay();
@@ -83,30 +94,71 @@ export function CampusCalendar({ events, selected, onSelect, onViewAll }) {
           const date = new Date(cursor.getFullYear(), cursor.getMonth(), day);
           const isToday = sameDay(date, today);
           const isSelected = sameDay(date, selected);
-          const hasEvents = busy.has(day);
+          const dayEvents = byDay.get(day) || [];
+          const hasEvents = dayEvents.length > 0;
 
           return (
             <button
               key={day}
               disabled={!hasEvents}
               onClick={() => onSelect(isSelected ? null : date)}
-              aria-label={`${day}${hasEvents ? ", has events" : ""}`}
+              aria-label={`${day}${hasEvents ? `, ${dayEvents.length} event${dayEvents.length > 1 ? "s" : ""}` : ""}`}
               className={cx(
-                "grid place-items-center h-9 w-9 mx-auto rounded-full text-[12.5px] tabular-nums transition-colors",
+                "relative grid place-items-center h-9 w-9 mx-auto rounded-full text-[12.5px] tabular-nums transition-colors",
                 isSelected
                   ? "bg-accent text-accent-ink font-bold"
                   : isToday
                     ? "bg-accent-wash text-accent font-bold"
                     : hasEvents
-                      ? "text-ink font-semibold hover:bg-bg-sunken"
+                      ? "text-ink font-semibold hover:bg-bg-sunken ring-1 ring-accent/30"
                       : "text-ink-3 cursor-default"
               )}
             >
               {day}
+              {/* A dot per event, capped at three: the mark says "something is
+                  on", and counting past three on a 36px circle is decoration. */}
+              {hasEvents && !isSelected && (
+                <span className="absolute bottom-1 flex items-center gap-[3px]">
+                  {dayEvents.slice(0, 3).map((_, n) => (
+                    <span key={n} className="w-1 h-1 rounded-full bg-accent" />
+                  ))}
+                </span>
+              )}
             </button>
           );
         })}
       </div>
+
+      {chosen.length > 0 && (
+        <div className="mt-3 pt-3 border-t border-line">
+          <p className="text-[11px] font-semibold uppercase tracking-wide text-ink-3 mb-2">
+            {selected.toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" })}
+          </p>
+          <div className="flex flex-col gap-2">
+            {chosen.map((e) => (
+              <button
+                key={e.id}
+                onClick={() => onOpenEvent?.(e)}
+                className="group w-full flex items-start gap-2.5 p-2 -mx-1 rounded-xl text-left hover:bg-bg-sunken transition-colors"
+              >
+                <span className="w-9 h-9 rounded-lg overflow-hidden bg-accent-wash shrink-0 grid place-items-center">
+                  {e.imageUrl
+                    ? <img src={e.imageUrl} alt="" className="w-full h-full object-cover" />
+                    : <Icon name="confirmation_number" size={16} className="text-accent" />}
+                </span>
+                <span className="min-w-0 flex-1 leading-tight">
+                  <span className="block text-[13px] font-semibold text-ink truncate group-hover:text-accent transition-colors">
+                    {e.title}
+                  </span>
+                  <span className="block text-[11.5px] text-ink-2 truncate mt-0.5">{e.when}</span>
+                  {e.where && <span className="block text-[11.5px] text-ink-3 truncate">{e.where}</span>}
+                </span>
+                <Icon name="chevron_right" size={16} className="text-ink-3 shrink-0 mt-1" />
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {selected && (
         <button

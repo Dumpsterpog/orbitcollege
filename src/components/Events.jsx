@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { CATEGORIES } from "../data/constants.js";
 import { Screen } from "./ui/Layout.jsx";
 import { Icon, cx } from "./ui/Primitives.jsx";
@@ -27,6 +27,72 @@ const FILTERS = [
   { key: "Music",             label: "Cultural",      icon: "star" },
   { key: "Sports",            label: "Sports",        icon: "local_fire_department" },
 ];
+
+// A native select inherits the operating system's menu: a grey Windows list
+// in the middle of a rounded, tokenised page, ignoring the theme entirely.
+// This is the same control drawn in the app's own language.
+function RangePicker({ value, options, onChange }) {
+  const [open, setOpen] = useState(false);
+  const boxRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const away = (e) => { if (boxRef.current && !boxRef.current.contains(e.target)) setOpen(false); };
+    const esc = (e) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", away);
+    document.addEventListener("touchstart", away);
+    window.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", away);
+      document.removeEventListener("touchstart", away);
+      window.removeEventListener("keydown", esc);
+    };
+  }, [open]);
+
+  const current = options.find((o) => o.key === value) || options[0];
+
+  return (
+    <div ref={boxRef} className="relative shrink-0">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        className={cx(
+          "inline-flex items-center gap-2 h-10 pl-4 pr-3 rounded-full border text-[12.5px] font-semibold transition-colors",
+          open ? "bg-bg-sunken border-line-strong text-ink" : "bg-bg-raised border-line text-ink-2 hover:text-ink"
+        )}
+      >
+        {current.label}
+        <Icon name="expand_more" size={16}
+              className={cx("text-ink-3 transition-transform duration-200", open && "rotate-180")} />
+      </button>
+
+      {open && (
+        <div role="listbox"
+             className="absolute right-0 top-12 z-30 w-44 p-1 rounded-2xl bg-bg-raised border border-line shadow-pop animate-pop">
+          {options.map((o) => {
+            const on = o.key === value;
+            return (
+              <button
+                key={o.key}
+                role="option"
+                aria-selected={on}
+                onClick={() => { onChange(o.key); setOpen(false); }}
+                className={cx(
+                  "w-full flex items-center gap-2 px-3 h-9 rounded-xl text-left text-[13px] transition-colors",
+                  on ? "bg-accent-wash text-accent font-semibold" : "text-ink hover:bg-bg-sunken"
+                )}
+              >
+                <span className="flex-1 truncate">{o.label}</span>
+                {on && <Icon name="check" size={15} />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
 
 const RANGES = [
   { key: "all",   label: "Any time" },
@@ -223,12 +289,6 @@ function EventCard({ e, registered, onRegister, onOpen }) {
               {e.where}
             </span>
           )}
-          {e.going > 0 && (
-            <span className="inline-flex items-center gap-1.5">
-              <Icon name="groups" size={14} className="text-ink-3" />
-              {e.going} going
-            </span>
-          )}
         </div>
 
         {tags.length > 0 && (
@@ -323,14 +383,7 @@ export function EventsScreen({
               ))}
             </div>
 
-            <select
-              value={range}
-              onChange={(e) => setRange(e.target.value)}
-              className="h-10 px-3 rounded-full bg-bg-raised border border-line text-[12.5px]
-                font-semibold text-ink-2 outline-none cursor-pointer shrink-0"
-            >
-              {RANGES.map((r) => <option key={r.key} value={r.key}>{r.label}</option>)}
-            </select>
+            <RangePicker value={range} options={RANGES} onChange={setRange} />
           </div>
 
           {shown.length === 0 ? (
@@ -419,6 +472,7 @@ export function EventsScreen({
               events={sorted}
               selected={day}
               onSelect={setDay}
+              onOpenEvent={(e) => onRegister?.(e)}
               onViewAll={() => { setDay(null); setFilter("all"); setRange("all"); }}
             />
 
@@ -457,12 +511,6 @@ export function EventsScreen({
                           <span className="flex items-center gap-1 text-[11.5px] text-ink-2 truncate mt-0.5">
                             <Icon name="location_on" size={12} className="text-ink-3 shrink-0" />
                             {e.where}
-                          </span>
-                        )}
-                        {e.going > 0 && (
-                          <span className="flex items-center gap-1 text-[11.5px] text-ink-3 mt-0.5">
-                            <Icon name="groups" size={12} className="shrink-0" />
-                            {e.going} going
                           </span>
                         )}
                       </span>
