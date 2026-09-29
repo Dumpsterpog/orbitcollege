@@ -112,6 +112,8 @@ export function EventRegisterScreen({
   const [error, setError] = useState("");
   const [paymentOpened, setPaymentOpened] = useState(false);
   const [paymentRef, setPaymentRef] = useState("");
+  const [proof, setProof] = useState(null);
+  const [proofPreview, setProofPreview] = useState(null);
   const [checking, setChecking] = useState(false);
 
   // Everything before the signup document exists is local: details first, then
@@ -149,6 +151,20 @@ export function EventRegisterScreen({
   useEffect(() => {
     if (user?.name && !form.name) setForm((f) => ({ ...f, name: user.name }));
   }, [user?.name]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // An object URL is a live handle into memory; dropping the reference without
+  // revoking it leaks the image for the tab's life.
+  useEffect(() => () => { if (proofPreview) URL.revokeObjectURL(proofPreview); }, [proofPreview]);
+
+  const attachProof = (file) => {
+    if (!file) return;
+    if (!file.type?.startsWith("image/")) { setError("That file is not an image."); return; }
+    if (file.size > 5 * 1024 * 1024) { setError("Screenshots have to be under 5 MB."); return; }
+    setError("");
+    if (proofPreview) URL.revokeObjectURL(proofPreview);
+    setProof(file);
+    setProofPreview(URL.createObjectURL(file));
+  };
 
   const stage = !signup
     ? localStep
@@ -231,15 +247,23 @@ export function EventRegisterScreen({
   };
 
   const confirmPaid = async () => {
+    if (!proof) { setError("Attach the payment screenshot so the club can check it."); return; }
     setBusy(true);
     setError("");
     try {
-      await db.markPaymentClaimed(event.id, authUserId, paymentRef.trim() || null);
+      const { url, path } = await db.uploadPaymentProof(authUserId, proof);
+      await db.markPaymentClaimed(event.id, authUserId, {
+        paymentRef: paymentRef.trim() || null,
+        proofUrl: url,
+        proofPath: path,
+      });
       await onJoinCommunity?.(event);
       onToast?.("You are in. The event chat is open.");
     } catch (err) {
       console.error("[orbit] payment claim failed", err);
-      setError("Could not record that. Try again.");
+      setError(err?.code === "storage/unauthorized"
+        ? "The upload was refused by Storage. Tell the club, and try the reference number instead."
+        : "Could not record that. Try again.");
     }
     setBusy(false);
   };
@@ -511,36 +535,63 @@ export function EventRegisterScreen({
                 Open the payment page
               </Button>
 
-              <div className="mt-5 pt-5 border-t border-line">
-                <p className="text-base font-semibold text-ink">Paid already?</p>
+              <div className="mt-4 pt-4 border-t border-line">
+                <p className="text-base font-semibold text-ink">Paid? Show us the screenshot</p>
                 <p className="text-xs text-ink-2 mt-1 leading-relaxed">
-                  CCAvenue does not tell Orbit when a payment lands, so tell us here. {CLUB} checks it and your
-                  pass appears on this page.
+                  CCAvenue tells Orbit nothing, so the screenshot is what {CLUB} checks your payment against.
+                  Attach it and the event chat opens straight away.
                 </p>
 
-                <div className="mt-2.5">
-                  <Field label="Payment reference" optional
-                         hint="The CCAvenue order id, if you have it. It makes checking quicker.">
-                    <Input
-                      value={paymentRef}
-                      maxLength={60}
-                      onChange={(e) => setPaymentRef(e.target.value)}
-                      placeholder="e.g. 1234567890"
-                      className="h-11"
-                    />
-                  </Field>
+                <div className="grid gap-2.5 sm:grid-cols-[auto_1fr] mt-3">
+                  <label className={cx(
+                    "relative grid place-items-center w-full sm:w-[104px] h-[104px] rounded-xl cursor-pointer overflow-hidden transition-colors",
+                    proofPreview ? "ring-1 ring-line" : "bg-bg-sunken ring-1 ring-dashed ring-line-strong hover:ring-accent"
+                  )}>
+                    {proofPreview ? (
+                      <>
+                        <img src={proofPreview} alt="Payment screenshot" className="w-full h-full object-cover" />
+                        <span className="absolute bottom-1 right-1 grid place-items-center w-6 h-6 rounded-full bg-black/60 text-white">
+                          <Icon name="edit" size={13} />
+                        </span>
+                      </>
+                    ) : (
+                      <span className="flex flex-col items-center gap-1 text-ink-3">
+                        <Icon name="photo_camera" size={20} />
+                        <span className="text-2xs font-semibold">Attach</span>
+                      </span>
+                    )}
+                    <input type="file" accept="image/*" className="hidden"
+                           onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; attachProof(f); }} />
+                  </label>
+
+                  <div className="min-w-0">
+                    <Field label="Payment reference" optional hint="The CCAvenue order id, if you have it.">
+                      <Input
+                        value={paymentRef}
+                        maxLength={60}
+                        onChange={(e) => setPaymentRef(e.target.value)}
+                        placeholder="e.g. 1234567890"
+                        className="h-11"
+                      />
+                    </Field>
+                    {proof && (
+                      <p className="text-xs text-ink-3 mt-1.5 truncate">
+                        {proof.name} · {(proof.size / 1024).toFixed(0)} KB
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 <Button
-                  variant={paymentOpened ? "primary" : "soft"}
-                  tone={paymentOpened ? "blue" : undefined}
+                  variant={proof ? "primary" : "soft"}
+                  tone={proof ? "blue" : undefined}
                   size="lg"
                   className="w-full mt-3"
                   onClick={confirmPaid}
                   disabled={busy}
                   loading={busy}
                 >
-                  I have paid, open the event chat
+                  {busy ? "Sending…" : "Submit screenshot and join the chat"}
                 </Button>
               </div>
 
@@ -603,6 +654,16 @@ export function EventRegisterScreen({
                 <dt className="text-ink-3">Year</dt><dd className="text-ink text-right">{signup.year}</dd>
                 {signup.branch && <><dt className="text-ink-3">Branch</dt><dd className="text-ink text-right">{signup.branch}</dd></>}
               </dl>
+
+              {signup.proofUrl && (
+                <div className="mt-5 pt-5 border-t border-line">
+                  <p className="text-xs font-semibold text-ink-2 uppercase tracking-wide mb-2.5">Payment screenshot</p>
+                  <a href={signup.proofUrl} target="_blank" rel="noopener noreferrer"
+                     className="block w-full max-w-[220px] rounded-xl overflow-hidden ring-1 ring-line hover:ring-line-strong transition-colors">
+                    <img src={signup.proofUrl} alt="Your payment screenshot" className="w-full block" />
+                  </a>
+                </div>
+              )}
 
               {stagOnFile && signup.participants?.length > 0 && (
                 <div className="mt-5 pt-5 border-t border-line">

@@ -824,13 +824,23 @@ export function watchMySignup(eventId, uid, cb) {
 // The student saying they have paid. It is a claim, not proof: CCAvenue
 // confirms nothing back to this app, so an admin verifies against the payment
 // report before any pass is issued.
-export async function markPaymentClaimed(eventId, uid, paymentRef) {
+export async function markPaymentClaimed(eventId, uid, { paymentRef, proofUrl, proofPath } = {}) {
   need();
   await updateDoc(doc(db, "events", eventId, "signups", uid), {
     status: "payment_claimed",
     paymentRef: paymentRef || null,
+    proofUrl: proofUrl || null,
+    proofPath: proofPath || null,
     claimedAt: serverTimestamp(),
   });
+}
+
+// The screenshot of the payment, which is the only evidence this app ever
+// sees: CCAvenue tells it nothing. Stored in the same folder as the user's
+// other uploads, because that is what the Storage rules already permit.
+export async function uploadPaymentProof(uid, file) {
+  need();
+  return uploadImage("community-media", file, uid);
 }
 
 // Registering touches only documents that belong to the person registering:
