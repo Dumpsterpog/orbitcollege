@@ -36,7 +36,10 @@ export function BetaTag({ className }) {
   return (
     <span
       className={cx(
-        "inline-flex items-center h-[18px] px-1.5 rounded-md bg-accent-wash text-accent ring-1 ring-accent/25",
+        // Teal rather than the accent: next to the wordmark the two indigos
+        // read as one blurred shape, and the tag is meant to be a separate
+        // remark about the app, not part of its name.
+        "inline-flex items-center h-[18px] px-1.5 rounded-md bg-c-teal/15 text-c-teal ring-1 ring-c-teal/30",
         "text-[10px] font-bold uppercase tracking-[0.08em] leading-none shrink-0",
         className
       )}

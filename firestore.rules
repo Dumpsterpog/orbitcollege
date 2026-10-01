@@ -507,7 +507,7 @@ service cloud.firestore {
     match /images/{imageId} {
       allow read: if true;
 
-      allow create: if isSignedIn() && notSuspended()
+      allow create: if signedIn() && notSuspended()
         && request.resource.data.uid == request.auth.uid
         && request.resource.data.dataUrl is string
         && request.resource.data.dataUrl.size() <= 700000
@@ -518,7 +518,7 @@ service cloud.firestore {
       // under everyone who can see it.
       allow update: if false;
 
-      allow delete: if isAdmin() || (isSignedIn() && resource.data.uid == request.auth.uid);
+      allow delete: if isAdmin() || (signedIn() && resource.data.uid == request.auth.uid);
     }
 
     match /announcements/{announcementId} {
