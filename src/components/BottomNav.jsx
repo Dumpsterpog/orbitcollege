@@ -1,12 +1,12 @@
 import { Icon, Avatar, cx } from "./ui/Primitives.jsx";
 
-// Mobile tab bar. Five destinations, no labels — at this size the glyph plus
+// Mobile tab bar. Four destinations, no labels — at this size the glyph plus
 // its colour is the label, and dropping the text buys back vertical space
-// for the feed.
+// for the feed. Create was the fifth, and is gone while new communities are
+// paused.
 const TABS = [
   { key: "home", icon: "home", label: "Home", tint: "text-c-blue" },
   { key: "explore", icon: "explore", label: "Explore", tint: "text-c-violet" },
-  { key: "create", icon: "add_circle", label: "Create", tint: "text-accent", action: true },
   { key: "events", icon: "confirmation_number", label: "Events", tint: "text-c-orange" },
   { key: "profile", icon: "account_circle", label: "Profile", tint: "text-c-green" },
 ];

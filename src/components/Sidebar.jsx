@@ -180,7 +180,12 @@ export function Sidebar({
             );
           })}
 
-          <Row icon="add" label="Create community" onClick={onCreateClick} />
+          <div className="flex items-start gap-2 px-3 py-2 mt-0.5">
+            <Icon name="info" size={14} className="text-ink-3 shrink-0 mt-0.5" />
+            <p className="text-2xs text-ink-3 leading-relaxed">
+              New communities are paused for now.
+            </p>
+          </div>
         </div>
 
         <GroupLabel>Personal</GroupLabel>

@@ -5,7 +5,7 @@ import { Composer, FeedTabs } from "./home/Composer.jsx";
 import { PostCard } from "./home/PostCard.jsx";
 import { AdCard } from "./home/AdCard.jsx";
 import {
-  PulseHeader, Trending, UpcomingEvents, CommunitiesForYou, StartCommunityCard,
+  PulseHeader, Trending, UpcomingEvents, CommunitiesForYou,
 } from "./home/Rail.jsx";
 
 // Home is the campus feed, with everything that is not a post in the rail.
@@ -285,7 +285,6 @@ export function HomeScreen({
               onJoin={onJoinToggle}
               onAll={onGoToExplore}
             />
-            <StartCommunityCard onCreate={onCreateClick} />
           </div>
         </aside>
       </div>

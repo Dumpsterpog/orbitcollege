@@ -4,6 +4,7 @@ import { communityTrendScore } from "../utils/helpers.js";
 import { Icon, Avatar, Button, Input, Tag, cx } from "./ui/Primitives.jsx";
 import { Screen, Column, Empty } from "./ui/Layout.jsx";
 import { Img } from "./ui/Img.jsx";
+import { CommunityPauseNotice } from "./CommunityPause.jsx";
 
 // Explore -- a directory.
 //
@@ -144,6 +145,8 @@ export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, j
   return (
     <Screen>
       <Column className="pt-8 pb-16">
+        <CommunityPauseNotice className="mb-6" />
+
         {/* Search is the primary control on a discovery page, so it leads —
             large, centred, and the only element above the fold that has any
             fill to it. */}
@@ -177,16 +180,6 @@ export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, j
             )}
           </div>
 
-          {/* Creating a community belongs here rather than in the nav rail:
-              this is the page you are on when you go looking for one and do
-              not find it. */}
-          <p className="text-base text-ink-2 text-center mt-4">
-            Not here yet?{" "}
-            <button onClick={onCreate} className="font-semibold text-accent hover:opacity-70">
-              Start a community
-            </button>
-            .
-          </p>
         </div>
 
         {/* Scope + category filters. Pills only — no segmented control with
@@ -246,10 +239,7 @@ export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, j
             title="Nothing found"
             body="Try a different search, or clear the topic filter."
             action={
-              <div className="flex flex-wrap items-center justify-center gap-2">
-                <Button tone="blue" onClick={() => { setQuery(""); setCat(null); }}>Clear filters</Button>
-                <Button variant="outline" onClick={onCreate}>Start a community</Button>
-              </div>
+              <Button tone="blue" onClick={() => { setQuery(""); setCat(null); }}>Clear filters</Button>
             }
           />
         ) : (

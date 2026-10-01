@@ -177,10 +177,16 @@ service cloud.firestore {
       // The cap is a student limit. An admin creating an official space, such
       // as the chat community that comes with an event, is not spending their
       // own quota.
-      allow create: if isAdmin()
-        || (signedIn() && notSuspended()
-            && request.resource.data.creatorId == request.auth.uid
-            && ownedCommunities() < 2);
+      //
+      // Students cannot create one at all for the moment. The buttons are gone
+      // from the app, but that is a decision the client would be making about
+      // itself; this is the one that holds. Restoring it means putting the
+      // commented clause below back, and the two-per-account cap it carries
+      // still works.
+      allow create: if isAdmin();
+      //   || (signedIn() && notSuspended()
+      //       && request.resource.data.creatorId == request.auth.uid
+      //       && ownedCommunities() < 2);
 
       // The last clause is what makes joining possible for anyone who is not
       // the creator.
