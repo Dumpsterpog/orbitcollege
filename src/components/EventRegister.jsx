@@ -4,6 +4,7 @@ import * as db from "../lib/db.js";
 import { shrinkToDataUrl, IMAGE_KINDS } from "../lib/storedImage.js";
 import { Icon, Button, Input, cx } from "./ui/Primitives.jsx";
 import { Screen } from "./ui/Layout.jsx";
+import { PASSES, passOf, rupees } from "../data/passes.js";
 
 // Event registration: details, then slot and pass, then payment, then the pass
 // itself.
@@ -27,10 +28,8 @@ const SLOTS = [
 
 // A stag pass is one payment covering four people, and one pass code for all
 // of them: the person who registered carries it and brings the other three.
-const PASSES = [
-  { key: "single", label: "Single pass", people: 1, amount: 189, blurb: "One person." },
-  { key: "stag", label: "Stag pass", people: 4, amount: 700, blurb: "Four people on one pass." },
-];
+// The prices themselves live in data/passes.js, because the home page quotes
+// them too.
 
 const YEARS = ["1st year", "2nd year", "3rd year", "4th year", "5th year", "Postgraduate", "PhD"];
 const REFERRALS = [
@@ -42,9 +41,7 @@ const card = "w-full bg-bg-raised rounded-2xl border border-line";
 const selectClass =
   "w-full h-11 px-3 rounded bg-bg-sunken text-ink border border-transparent focus:outline-none focus:border-line-strong text-base";
 
-const passOf = (key) => PASSES.find((p) => p.key === key) || PASSES[0];
 const slotOf = (key) => SLOTS.find((s) => s.key === key) || null;
-const rupees = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;
 
 function Field({ label, hint, optional, children }) {
   return (
@@ -79,6 +76,32 @@ function Step({ n, label, state }) {
 
 // A choice that reads as a choice: the whole tile is the control, and the one
 // that is picked says so without relying on colour alone.
+// The old price beside the new one. Struck through and smaller, because the
+// number that matters is the one being paid; the other is only there to say
+// how much is being taken off.
+function Price({ pass }) {
+  return (
+    <span className="inline-flex items-baseline gap-1.5">
+      {pass.was > pass.amount && (
+        <span className="text-xs font-semibold text-ink-3 line-through tabular-nums">{rupees(pass.was)}</span>
+      )}
+      <span className="tabular-nums">{rupees(pass.amount)}</span>
+    </span>
+  );
+}
+
+function EarlyBird({ className }) {
+  return (
+    <span className={cx(
+      "inline-flex items-center h-[18px] px-1.5 rounded-md bg-c-green/15 text-c-green ring-1 ring-c-green/30",
+      "text-[10px] font-bold uppercase tracking-[0.06em] leading-none shrink-0",
+      className
+    )}>
+      Early bird
+    </span>
+  );
+}
+
 function Choice({ on, onClick, title, sub, right }) {
   return (
     <button
@@ -502,7 +525,10 @@ export function EventRegisterScreen({
               </div>
 
               <div className="mt-4">
-                <p className="text-xs font-semibold text-ink-2 uppercase tracking-wide mb-2">Pass</p>
+                <div className="flex items-center justify-between gap-2 mb-2">
+                  <p className="text-xs font-semibold text-ink-2 uppercase tracking-wide">Pass</p>
+                  <EarlyBird />
+                </div>
                 <div className="flex flex-col gap-2">
                   {PASSES.map((p) => (
                     <Choice
@@ -511,7 +537,7 @@ export function EventRegisterScreen({
                       onClick={() => setForm((f) => ({ ...f, passType: p.key }))}
                       title={`${p.label}${p.people > 1 ? ` (${p.people})` : ""}`}
                       sub={p.blurb}
-                      right={rupees(p.amount)}
+                      right={<Price pass={p} />}
                     />
                   ))}
                 </div>
@@ -546,9 +572,23 @@ export function EventRegisterScreen({
                 </div>
               )}
 
-              <div className="mt-4 pt-3 border-t border-line flex items-center justify-between gap-3">
-                <span className="text-base text-ink-2">Total to pay</span>
-                <span className="text-xl font-bold text-ink tabular-nums">{rupees(chosenPass.amount)}</span>
+              <div className="mt-4 pt-3 border-t border-line">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="text-base text-ink-2">Total to pay</span>
+                  <span className="flex items-baseline gap-2">
+                    {chosenPass.was > chosenPass.amount && (
+                      <span className="text-base font-semibold text-ink-3 line-through tabular-nums">
+                        {rupees(chosenPass.was)}
+                      </span>
+                    )}
+                    <span className="text-xl font-bold text-ink tabular-nums">{rupees(chosenPass.amount)}</span>
+                  </span>
+                </div>
+                {chosenPass.was > chosenPass.amount && (
+                  <p className="text-xs font-semibold text-c-green text-right mt-1">
+                    Early bird price. You save {rupees(chosenPass.was - chosenPass.amount)}.
+                  </p>
+                )}
               </div>
 
               {error && <p className="text-base text-c-red mt-4 leading-relaxed">{error}</p>}
@@ -802,6 +842,7 @@ export function EventRegisterScreen({
               <div className="flex items-center gap-2 mb-2">
                 <Icon name="confirmation_number" size={16} className="text-c-green" />
                 <h3 className="text-[13px] font-bold text-ink tracking-tight">Passes</h3>
+                <EarlyBird className="ml-auto" />
               </div>
               <div className="flex flex-col gap-1.5">
                 {PASSES.map((p) => (
@@ -809,7 +850,7 @@ export function EventRegisterScreen({
                     <span className="text-ink-2 min-w-0 truncate">
                       {p.label}{p.people > 1 ? ` (${p.people})` : ""}
                     </span>
-                    <span className="text-ink font-semibold tabular-nums shrink-0">{rupees(p.amount)}</span>
+                    <span className="text-ink font-semibold shrink-0"><Price pass={p} /></span>
                   </div>
                 ))}
               </div>

@@ -4,6 +4,7 @@ import { Screen } from "./ui/Layout.jsx";
 import { Icon, cx } from "./ui/Primitives.jsx";
 import { CampusCalendar } from "./events/Calendar.jsx";
 import { useImageSrc } from "./ui/Img.jsx";
+import { cheapestPass, isEarlyBird, rupees } from "../data/passes.js";
 
 // Campus events.
 //
@@ -184,6 +185,72 @@ function BannerSlides({ slides, interval = 5000 }) {
 // cuts the title off. This shows the whole poster over a blurred, enlarged
 // copy of itself, which fills the band without inventing artwork or hiding
 // any of it.
+// The one thing a visitor needs to know the week registrations open.
+//
+// It takes the soonest event still ahead of us rather than naming one, so it
+// stops being true by itself once the day passes instead of having to be
+// taken down by hand. Someone already registered is told that instead, since
+// "register now" to a person holding a pass reads as a fault.
+function TicketsLive({ event, registered, onRegister, onOpenPass }) {
+  if (!event) return null;
+  const saving = cheapestPass.was - cheapestPass.amount;
+
+  return (
+    <section className={cx(
+      "w-full rounded-2xl p-4 sm:px-5",
+      "bg-gradient-to-r from-c-green/15 via-c-green/8 to-transparent ring-1 ring-c-green/25",
+      "flex flex-col sm:flex-row sm:items-center gap-3"
+    )}>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-center gap-2">
+          {/* A dot that moves, because "live" is the claim being made. */}
+          <span className="relative grid place-items-center w-2 h-2 shrink-0">
+            <span className="absolute inset-0 rounded-full bg-c-green animate-ping opacity-75" />
+            <span className="relative w-2 h-2 rounded-full bg-c-green" />
+          </span>
+          <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-c-green">
+            {registered ? "You are in" : "Registrations are open"}
+          </span>
+          {!registered && isEarlyBird && (
+            <span className="inline-flex items-center h-[18px] px-1.5 rounded-md bg-c-green/15 text-c-green
+              ring-1 ring-c-green/30 text-[10px] font-bold uppercase tracking-[0.06em] leading-none shrink-0">
+              Early bird
+            </span>
+          )}
+        </span>
+
+        <span className="block text-lg font-bold text-ink mt-1.5 truncate">{event.title}</span>
+        <span className="block text-xs text-ink-2 mt-0.5 truncate">
+          {event.when}{event.where ? ` · ${event.where}` : ""}
+        </span>
+
+        {!registered && (
+          <span className="flex items-baseline gap-1.5 mt-2">
+            <span className="text-xs text-ink-2">Passes from</span>
+            {isEarlyBird && (
+              <span className="text-xs font-semibold text-ink-3 line-through tabular-nums">
+                {rupees(cheapestPass.was)}
+              </span>
+            )}
+            <span className="text-base font-bold text-ink tabular-nums">{rupees(cheapestPass.amount)}</span>
+            {saving > 0 && (
+              <span className="text-xs font-semibold text-c-green">save {rupees(saving)}</span>
+            )}
+          </span>
+        )}
+      </span>
+
+      <button
+        onClick={() => (registered ? onOpenPass?.(event) : onRegister?.(event))}
+        className="shrink-0 h-11 px-6 rounded-full bg-c-green text-white text-[13.5px] font-bold
+          hover:opacity-90 active:scale-[0.98] transition-all"
+      >
+        {registered ? "View your pass" : "Register now"}
+      </button>
+    </section>
+  );
+}
+
 function Poster({ src, className, alt = "", fit = "contain" }) {
   const resolved = useImageSrc(src);
   return (
@@ -359,6 +426,13 @@ export function EventsScreen({
     return FILTERS.filter((f) => f.key === "all" || present.has(f.key));
   }, [events]);
 
+  // The next event that has not happened yet, which is what the strip above
+  // the artwork is about.
+  const next = useMemo(
+    () => sorted.find((e) => !e.startsAt || e.startsAt.getTime() > Date.now() - 6 * 3600e3) || null,
+    [sorted]
+  );
+
   return (
     <Screen>
       <div className="w-full mx-auto px-4 sm:px-6 py-6 grid justify-center gap-6
@@ -366,6 +440,12 @@ export function EventsScreen({
 
         {/* -------------------------------------------------------- main */}
         <div className="min-w-0 flex flex-col gap-4">
+          <TicketsLive
+            event={next}
+            registered={next ? registeredEventIds.includes(next.id) : false}
+            onRegister={onRegister}
+            onOpenPass={onRegister}
+          />
           {/* The artwork carries it. The copy that was here said what the page
               title and the filters below already say. */}
           <BannerSlides slides={BANNER_SLIDES} />
