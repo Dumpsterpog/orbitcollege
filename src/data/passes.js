@@ -6,8 +6,8 @@
 // higher than `amount`, the screens show it struck through.
 
 export const PASSES = [
-  { key: "single", label: "Single pass", people: 1, amount: 149, was: 189, blurb: "One person." },
-  { key: "stag", label: "Stag pass", people: 4, amount: 500, was: 700, blurb: "Four people on one pass." },
+  { key: "single", label: "Single pass", people: 1, amount: 51, was: 189, blurb: "One person." },
+  { key: "stag", label: "Stag pass", people: 4, amount: 170, was: 700, blurb: "Four people on one pass." },
 ];
 
 export const rupees = (n) => `₹${Number(n || 0).toLocaleString("en-IN")}`;

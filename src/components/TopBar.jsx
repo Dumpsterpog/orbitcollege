@@ -67,7 +67,7 @@ export function TopBar({
       style={{ paddingTop: "env(safe-area-inset-top)" }}
     >
       {/* The rail carries the wordmark on desktop. */}
-      <button onClick={onLogoClick} className="flex lg:hidden items-center gap-2 shrink-0" aria-label="Orbit home">
+      <button onClick={onLogoClick} className="flex lg:hidden items-center gap-2 shrink-0 h-11 pr-1 -ml-1 pl-1 rounded-xl" aria-label="Orbit home">
         <img src="/orbitcollege.png" alt="" width={30} height={30} className="w-[30px] h-[30px] rounded-lg object-contain" />
         <BetaTag />
       </button>

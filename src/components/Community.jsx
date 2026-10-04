@@ -3,7 +3,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { CATEGORIES, categoryOf } from "../data/constants.js";
 
 // Event artwork: horizontal for the banner, vertical for the rail.
-const EVENT_BANNER = "/techideate.jpg";
+const EVENT_BANNER = "/techideate_51.jpg";
 const EVENT_POSTER = "/poster.jpg";
 
 // Where the club actually talks to people. Fill these in and the card appears;

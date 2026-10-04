@@ -595,7 +595,7 @@ export function ProfileScreen({
                         <span className="block text-[13px] text-ink truncate">{user.university || "Manipal University Jaipur"}</span>
                       </span>
                     </div>
-                    <button onClick={onOpenSettings} className="flex items-center gap-3 py-2.5 pb-0 text-left group">
+                    <button onClick={onOpenSettings} className="flex items-center gap-3 py-3 text-left group min-h-[44px]">
                       <Icon name="settings" size={16} className="text-ink-3 shrink-0" />
                       <span className="flex-1 text-[13px] font-semibold text-ink group-hover:text-accent transition-colors">
                         Theme and notifications

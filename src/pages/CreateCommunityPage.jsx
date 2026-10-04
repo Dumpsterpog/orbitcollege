@@ -24,11 +24,11 @@ export default function CreateCommunityPage() {
           <p className="text-base text-ink-2 mt-2 leading-relaxed">{PAUSE_BODY}</p>
 
           <div className="flex flex-col sm:flex-row gap-2.5 mt-7">
-            <Button variant="primary" tone="blue" size="lg" className="flex-1"
+            <Button variant="primary" tone="blue" size="lg" className="w-full sm:flex-1"
                     onClick={() => navigate("/explore")}>
               Browse communities
             </Button>
-            <Button variant="soft" size="lg" className="flex-1" onClick={() => navigate("/")}>
+            <Button variant="soft" size="lg" className="w-full sm:flex-1" onClick={() => navigate("/")}>
               Back
             </Button>
           </div>

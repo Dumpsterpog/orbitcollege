@@ -104,7 +104,7 @@ const RANGES = [
 
 // Colour per badge, as whole class strings so Tailwind's scanner keeps them.
 // The poster doubles as the page banner and as the fallback card cover.
-const EVENT_POSTER = "/techideate.jpg";
+const EVENT_POSTER = "/techideate_51.jpg";
 
 // The banner rotates rather than picking one image: the event poster is what
 // matters this month, the campus artwork is what the page is for the rest of
@@ -115,7 +115,7 @@ const EVENT_POSTER = "/techideate.jpg";
 // 3:1 and would lose its own title to a crop -- "CAMPUS EVENTS" became
 // "S EVENTS" -- so it is shown whole against a blurred copy of itself.
 const BANNER_SLIDES = [
-  { src: "/techideate.jpg", alt: "TechIdeate 2026, Beyond Human", fit: "cover" },
+  { src: "/techideate_51.jpg", alt: "TechIdeate 2026, Beyond Human", fit: "cover" },
   { src: "/mujsideview.png", alt: "Campus events at Manipal University Jaipur", fit: "cover" },
 ];
 
@@ -162,18 +162,22 @@ function BannerSlides({ slides, interval = 5000 }) {
       ))}
 
       {slides.length > 1 && (
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center gap-2">
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex items-center">
           {slides.map((slide, i) => (
             <button
               key={slide.src}
               onClick={() => setAt(i)}
               aria-label={`Show ${slide.alt}`}
               aria-current={i === at}
-              className={cx(
-                "h-2 rounded-full transition-all",
-                i === at ? "w-6 bg-white" : "w-2 bg-white/50 hover:bg-white/80"
-              )}
-            />
+              className="grid place-items-center h-8 w-8 -my-3"
+            >
+              <span
+                className={cx(
+                  "block h-2 rounded-full transition-all",
+                  i === at ? "w-6 bg-white" : "w-2 bg-white/50 hover:bg-white/80"
+                )}
+              />
+            </button>
           ))}
         </div>
       )}
@@ -327,7 +331,7 @@ function EventCard({ e, registered, onRegister, onOpen }) {
 
       <div className="min-w-0 flex-1 flex flex-col">
         <div className="flex items-start justify-between gap-3">
-          <button onClick={() => onOpen?.(e)} className="min-w-0 text-left">
+          <button onClick={() => onOpen?.(e)} className="min-w-0 text-left py-1.5 -my-1.5">
             <h3 className="text-[16px] font-bold text-ink leading-snug">{e.title}</h3>
           </button>
 

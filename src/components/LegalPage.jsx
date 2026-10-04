@@ -63,11 +63,11 @@ function LegalPageBody({ content, otherHref, otherLabel }) {
   return (
     <div className="min-h-dvh bg-bg" style={{ fontFamily: "'Inter', system-ui, sans-serif" }}>
       <div className="max-w-2xl mx-auto px-6 py-10 sm:py-14">
-        <a href="/" className="text-sm text-ink-2 hover:text-ink transition-colors">&larr; Back to Orbit</a>
+        <a href="/" className="inline-flex items-center h-11 text-sm text-ink-2 hover:text-ink transition-colors">&larr; Back to Orbit</a>
         <div className="mt-6">{renderLines(content)}</div>
         <div className="mt-12 pt-6 border-t border-line flex gap-5 text-sm">
-          <a href="/" className="text-ink hover:text-ink-2 transition-colors">Back to Orbit</a>
-          <a href={otherHref} className="text-ink-2 hover:text-ink transition-colors">{otherLabel}</a>
+          <a href="/" className="inline-flex items-center h-11 text-ink hover:text-ink-2 transition-colors">Back to Orbit</a>
+          <a href={otherHref} className="inline-flex items-center h-11 text-ink-2 hover:text-ink transition-colors">{otherLabel}</a>
         </div>
       </div>
     </div>
