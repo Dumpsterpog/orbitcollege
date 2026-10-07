@@ -5,6 +5,7 @@ import { shrinkToDataUrl, IMAGE_KINDS } from "../lib/storedImage.js";
 import { Icon, Button, Input, cx } from "./ui/Primitives.jsx";
 import { Screen } from "./ui/Layout.jsx";
 import { PASSES, passOf, rupees } from "../data/passes.js";
+import { EventAvailability } from "./events/EventAvailability.jsx";
 
 // Event registration: details, then slot and pass, then payment, then the pass
 // itself.
@@ -371,6 +372,7 @@ export function EventRegisterScreen({
               Registering for {event.title} takes a minute. Sign in with Google first so your pass and the
               event chat stay attached to your account.
             </p>
+            <EventAvailability event={event} className="mt-4 justify-center" />
             <Button tone="blue" size="lg" className="w-full mt-6" onClick={onSignIn}>Sign in with Google</Button>
           </div>
         </div>
@@ -396,6 +398,10 @@ export function EventRegisterScreen({
               <p className="text-xs text-ink-3 truncate">{event.when}{event.where ? ` · ${event.where}` : ""}</p>
             </div>
           </div>
+
+          {stage !== "done" && (
+            <EventAvailability event={event} className="rounded-xl bg-bg-raised border border-line px-4 py-3" />
+          )}
 
           <div className={cx(card, "px-4 py-3 flex items-center gap-2 sm:gap-4 overflow-x-auto no-scrollbar")}>
             <Step n={1} label="Your details" state={stage === "details" ? "on" : "done"} />

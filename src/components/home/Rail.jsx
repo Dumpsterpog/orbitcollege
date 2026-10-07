@@ -1,6 +1,7 @@
 import { CATEGORIES } from "../../data/constants.js";
 import { Icon, cx } from "../ui/Primitives.jsx";
 import { Img } from "../ui/Img.jsx";
+import { EventAvailability } from "../events/EventAvailability.jsx";
 
 // The right rail: one header card and four sections, all fed by documents.
 //
@@ -125,6 +126,7 @@ export function UpcomingEvents({ events, registeredIds, onOpen, onAll }) {
                     {[whenLabel(e.startsAt), e.when].filter(Boolean).join(" · ")}
                   </span>
                   <span className="text-[11.5px] text-ink-3 truncate">{e.where}</span>
+                  <EventAvailability event={e} className="mt-2" />
                 </span>
 
                 {going

@@ -3,6 +3,7 @@ import { CATEGORIES } from "../data/constants.js";
 import { Screen } from "./ui/Layout.jsx";
 import { Icon, cx } from "./ui/Primitives.jsx";
 import { CampusCalendar } from "./events/Calendar.jsx";
+import { EventAvailability } from "./events/EventAvailability.jsx";
 import { useImageSrc } from "./ui/Img.jsx";
 import { cheapestPass, isEarlyBird, rupees } from "../data/passes.js";
 
@@ -228,6 +229,8 @@ function TicketsLive({ event, registered, onRegister, onOpenPass }) {
           {event.when}{event.where ? ` · ${event.where}` : ""}
         </span>
 
+        {!registered && <EventAvailability event={event} className="mt-2.5" />}
+
         {!registered && (
           <span className="flex items-baseline gap-1.5 mt-2">
             <span className="text-xs text-ink-2">Passes from</span>
@@ -367,6 +370,8 @@ function EventCard({ e, registered, onRegister, onOpen }) {
             </span>
           )}
         </div>
+
+        <EventAvailability event={e} className="mt-3" />
 
         {tags.length > 0 && (
           <div className="flex items-center flex-wrap gap-1.5 mt-2.5">
@@ -603,6 +608,7 @@ export function EventsScreen({
                             {e.where}
                           </span>
                         )}
+                        <EventAvailability event={e} className="mt-2" />
                       </span>
 
                       <Icon name="chevron_right" size={18} className="text-ink-3 shrink-0" />
