@@ -6,6 +6,7 @@ import { Icon, Button, Input, cx } from "./ui/Primitives.jsx";
 import { Screen } from "./ui/Layout.jsx";
 import { PASSES, passOf, rupees } from "../data/passes.js";
 import { EventAvailability } from "./events/EventAvailability.jsx";
+import { EVENT_SLOTS, useEventSchedule } from "./events/eventTiming.js";
 
 // Event registration: details, then slot and pass, then payment, then the pass
 // itself.
@@ -22,11 +23,6 @@ import { EventAvailability } from "./events/EventAvailability.jsx";
 
 const CLUB = "IEI Mechatronics";
 
-const SLOTS = [
-  { key: "slot1", label: "12:00 pm to 2:00 pm", short: "Slot 1" },
-  { key: "slot2", label: "4:00 pm to 6:00 pm", short: "Slot 2" },
-];
-
 // A stag pass is one payment covering four people, and one pass code for all
 // of them: the person who registered carries it and brings the other three.
 // The prices themselves live in data/passes.js, because the home page quotes
@@ -42,7 +38,7 @@ const card = "w-full bg-bg-raised rounded-2xl border border-line";
 const selectClass =
   "w-full h-11 px-3 rounded bg-bg-sunken text-ink border border-transparent focus:outline-none focus:border-line-strong text-base";
 
-const slotOf = (key) => SLOTS.find((s) => s.key === key) || null;
+const slotOf = (key) => EVENT_SLOTS.find((s) => s.key === key) || null;
 
 function Field({ label, hint, optional, children }) {
   return (
@@ -103,14 +99,15 @@ function EarlyBird({ className }) {
   );
 }
 
-function Choice({ on, onClick, title, sub, right }) {
+function Choice({ on, onClick, title, sub, right, disabled = false }) {
   return (
     <button
       type="button"
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       aria-pressed={on}
       className={cx(
-        "w-full flex items-center gap-3 rounded-xl px-4 py-2.5 text-left transition-colors",
+        "w-full flex items-center gap-3 rounded-xl px-4 py-2.5 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-55",
         on ? "ring-2 ring-accent bg-accent-wash" : "ring-1 ring-line hover:ring-line-strong"
       )}
     >
@@ -120,9 +117,9 @@ function Choice({ on, onClick, title, sub, right }) {
       </span>
       {right && <span className="text-base font-bold text-ink shrink-0">{right}</span>}
       <Icon
-        name={on ? "check_circle" : "radio_button_unchecked"}
+        name={disabled ? "block" : on ? "check_circle" : "radio_button_unchecked"}
         size={20}
-        className={cx("shrink-0", on ? "text-c-green" : "text-ink-3")}
+        className={cx("shrink-0", disabled ? "text-c-red" : on ? "text-c-green" : "text-ink-3")}
       />
     </button>
   );
@@ -131,6 +128,7 @@ function Choice({ on, onClick, title, sub, right }) {
 export function EventRegisterScreen({
   event, payUrl, user, email, authUserId, onSignIn, onBack, onJoinCommunity, onOpenCommunity, onToast,
 }) {
+  const schedule = useEventSchedule(event);
   const [signup, setSignup] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -178,6 +176,13 @@ export function EventRegisterScreen({
   useEffect(() => {
     if (user?.name && !form.name) setForm((f) => ({ ...f, name: user.name }));
   }, [user?.name]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  useEffect(() => {
+    if (!form.slot) return;
+    if (schedule.slots.find((slot) => slot.key === form.slot)?.unavailable) {
+      setForm((current) => ({ ...current, slot: "" }));
+    }
+  }, [form.slot, schedule.slots]);
 
   // Show the student the screenshot the club is actually looking at, whether
   // they attached it a second ago or came back to this page a day later.
@@ -245,6 +250,11 @@ export function EventRegisterScreen({
 
   const submitOptions = async () => {
     if (!form.slot) { setError("Pick the slot you want to attend."); return; }
+    if (schedule.slots.find((slot) => slot.key === form.slot)?.unavailable) {
+      setForm((current) => ({ ...current, slot: "" }));
+      setError("That slot is no longer available because it has started.");
+      return;
+    }
 
     const members = form.passType === "stag"
       ? team.map((row) => ({ name: row.name.trim(), regNo: row.regNo.trim() }))
@@ -354,6 +364,25 @@ export function EventRegisterScreen({
           <p className="text-lg font-bold text-ink">Event not found</p>
           <p className="text-base text-ink-2 mt-2">It may have been removed.</p>
           <Button tone="blue" className="mt-6" onClick={onBack}>Back to events</Button>
+        </div>
+      </Screen>
+    );
+  }
+
+  if (schedule.isComplete) {
+    return (
+      <Screen>
+        <div className="w-full max-w-[620px] mx-auto px-3 sm:px-6 py-10">
+          <section className={cx(card, "p-6 sm:p-8 text-center")}>
+            <span className="grid place-items-center w-14 h-14 rounded-full bg-c-green/15 mx-auto mb-4">
+              <Icon name="celebration" size={27} className="text-c-green" />
+            </span>
+            <h1 className="text-xl font-bold text-ink">Thank you for attending</h1>
+            <p className="text-base text-ink-2 mt-2 leading-relaxed">
+              {event.title} has ended. All participants who attended the event will be given a certificate.
+            </p>
+            <Button tone="blue" size="lg" className="mt-6" onClick={onBack}>Back to events</Button>
+          </section>
         </div>
       </Screen>
     );
@@ -518,13 +547,15 @@ export function EventRegisterScreen({
               <div className="mt-4">
                 <p className="text-xs font-semibold text-ink-2 uppercase tracking-wide mb-2">Slot</p>
                 <div className="flex flex-col gap-2">
-                  {SLOTS.map((s) => (
+                  {schedule.slots.map((s) => (
                     <Choice
                       key={s.key}
                       on={form.slot === s.key}
                       onClick={() => setForm((f) => ({ ...f, slot: s.key }))}
                       title={s.short}
-                      sub={s.label}
+                      sub={s.unavailable ? `${s.label} · Unavailable — this slot has started` : s.label}
+                      right={s.unavailable ? <span className="text-xs font-bold text-c-red">Unavailable</span> : null}
+                      disabled={s.unavailable}
                     />
                   ))}
                 </div>
