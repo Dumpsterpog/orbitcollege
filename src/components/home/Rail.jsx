@@ -126,7 +126,7 @@ export function UpcomingEvents({ events, registeredIds, onOpen, onAll }) {
                     {[whenLabel(e.startsAt), e.when].filter(Boolean).join(" · ")}
                   </span>
                   <span className="text-[11.5px] text-ink-3 truncate">{e.where}</span>
-                  <EventAvailability event={e} className="mt-2" />
+                  <EventAvailability event={e} className="mt-2" compact />
                 </span>
 
                 {going

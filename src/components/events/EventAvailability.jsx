@@ -1,16 +1,18 @@
 import { Icon, cx } from "../ui/Primitives.jsx";
 import { useEventSchedule } from "./eventTiming.js";
+import { noticeFor } from "./eventNotice.js";
 
-// The organiser's current availability notice belongs only to this event.
-// Keep this snapshot separate from registration totals and future events.
-const AVAILABILITY = {
-  U8uiUHLfTMAGkzBdWsFo: { seatsRemaining: 40 },
-};
-
-export function EventAvailability({ event, className }) {
+// The organiser's current word on this event, wherever it is mentioned: the
+// event card, the home strip, the rail, the sign-in gate and the registration
+// page all render this, so none of them can be left saying something the
+// others have stopped saying.
+//
+// `compact` is for the narrow places, which have room for the headline and
+// the time but not the explanation.
+export function EventAvailability({ event, className, compact = false }) {
   const schedule = useEventSchedule(event);
-  const availability = AVAILABILITY[event?.id];
-  if (!availability) return null;
+  const notice = noticeFor(event);
+  if (!notice) return null;
 
   if (schedule.isComplete) {
     return (
@@ -22,14 +24,16 @@ export function EventAvailability({ event, className }) {
   }
 
   return (
-    <span className={cx("flex flex-wrap items-center gap-x-2.5 gap-y-1.5", className)}>
-      <span className="inline-flex items-center gap-1 rounded-full bg-c-orange/15 px-2 py-1
-        text-[10px] font-bold text-c-orange ring-1 ring-inset ring-c-orange/30 leading-none whitespace-nowrap">
-        <Icon name="local_fire_department" size={12} className="shrink-0" />
-        Filling fast
-      </span>
-      <span className="text-xs font-semibold text-ink-2">
-        Only <span className="font-bold text-ink tabular-nums">{availability.seatsRemaining}</span> seats remaining
+    <span className={cx("flex items-start gap-2.5", className)}>
+      <Icon name="info" size={16} className="text-c-amber shrink-0 mt-0.5" />
+      <span className="min-w-0">
+        <span className="block text-xs font-bold text-ink">{notice.title}</span>
+        {notice.time && (
+          <span className="block text-xs font-semibold text-c-amber mt-0.5">{notice.time}</span>
+        )}
+        {!compact && notice.lines?.map((line) => (
+          <span key={line} className="block text-xs text-ink-2 mt-1 leading-relaxed">{line}</span>
+        ))}
       </span>
     </span>
   );

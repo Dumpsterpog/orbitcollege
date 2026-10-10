@@ -7,6 +7,7 @@ import { Screen } from "./ui/Layout.jsx";
 import { PASSES, passOf, rupees } from "../data/passes.js";
 import { EventAvailability } from "./events/EventAvailability.jsx";
 import { EVENT_SLOTS, useEventSchedule } from "./events/eventTiming.js";
+import { isRegistrationClosed, noticeFor } from "./events/eventNotice.js";
 
 // Event registration: details, then slot and pass, then payment, then the pass
 // itself.
@@ -129,6 +130,7 @@ export function EventRegisterScreen({
   event, payUrl, user, email, authUserId, onSignIn, onBack, onJoinCommunity, onOpenCommunity, onToast,
 }) {
   const schedule = useEventSchedule(event);
+  const registrationClosed = isRegistrationClosed(event);
   const [signup, setSignup] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -388,6 +390,39 @@ export function EventRegisterScreen({
     );
   }
 
+  // Closed, with nothing of theirs to show. Anyone part-way through keeps
+  // their page: a registration already made can still be paid for, because
+  // closing the doors is about new sign-ups, not about stranding someone who
+  // started before they shut.
+  if (registrationClosed && !signup) {
+    const notice = noticeFor(event);
+    return (
+      <Screen>
+        <div className="w-full max-w-[620px] mx-auto px-3 sm:px-6 py-10">
+          <section className={cx(card, "p-6 sm:p-8 text-center")}>
+            <span className="grid place-items-center w-14 h-14 rounded-full bg-c-amber/15 mx-auto mb-4">
+              <Icon name="lock" size={26} className="text-c-amber" />
+            </span>
+            <h1 className="text-xl font-bold text-ink">{notice?.title || "Registrations are closed"}</h1>
+            {notice?.time && <p className="text-base font-semibold text-c-amber mt-2">{notice.time}</p>}
+            {notice?.lines?.map((line) => (
+              <p key={line} className="text-base text-ink-2 mt-2 leading-relaxed">{line}</p>
+            ))}
+            <p className="text-sm text-ink-3 mt-4 leading-relaxed">
+              Registered already? Sign in with the same account and your pass is on this page.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-2.5 mt-6">
+              {!authUserId && (
+                <Button tone="blue" size="lg" className="w-full sm:flex-1" onClick={onSignIn}>Sign in</Button>
+              )}
+              <Button variant="soft" size="lg" className="w-full sm:flex-1" onClick={onBack}>Back to events</Button>
+            </div>
+          </section>
+        </div>
+      </Screen>
+    );
+  }
+
   if (!authUserId) {
     return (
       <Screen>
@@ -428,9 +463,7 @@ export function EventRegisterScreen({
             </div>
           </div>
 
-          {stage !== "done" && (
-            <EventAvailability event={event} className="rounded-xl bg-bg-raised border border-line px-4 py-3" />
-          )}
+          <EventAvailability event={event} className="rounded-xl bg-bg-raised border border-line px-4 py-3" />
 
           <div className={cx(card, "px-4 py-3 flex items-center gap-2 sm:gap-4 overflow-x-auto no-scrollbar")}>
             <Step n={1} label="Your details" state={stage === "details" ? "on" : "done"} />
@@ -542,7 +575,7 @@ export function EventRegisterScreen({
           ) : stage === "options" ? (
             <section className={cx(card, "p-4 sm:p-5")}>
               <h1 className="text-xl font-bold text-ink">Pick your slot and pass</h1>
-              <p className="text-base text-ink-2 mt-0.5">Both slots cover the same workshop.</p>
+              <p className="text-base text-ink-2 mt-0.5">One session for everyone, from 2:00 pm.</p>
 
               <div className="mt-4">
                 <p className="text-xs font-semibold text-ink-2 uppercase tracking-wide mb-2">Slot</p>

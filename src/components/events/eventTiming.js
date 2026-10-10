@@ -2,9 +2,13 @@ import { useEffect, useState } from "react";
 
 // Event times are always interpreted in India Standard Time. Browser-local
 // timezones must not change when registration closes for an on-campus event.
+// The two slots were combined into one session on the day. `closesHour` is
+// when a slot stops being joinable: for a slot among several that is the
+// moment it starts, because you cannot join one already running while another
+// is still ahead of you. For a single combined session there is nothing else
+// to move to, so it stays open until the session itself ends.
 export const EVENT_SLOTS = [
-  { key: "slot1", label: "12:00 pm to 2:00 pm", short: "Slot 1", startHour: 12, endHour: 14 },
-  { key: "slot2", label: "4:00 pm to 6:00 pm", short: "Slot 2", startHour: 16, endHour: 18 },
+  { key: "combined", label: "2:00 pm onwards", short: "One session", startHour: 14, endHour: 18, closesHour: 18 },
 ];
 
 const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
@@ -30,7 +34,8 @@ export function getEventSchedule(event, now = Date.now()) {
   const slots = EVENT_SLOTS.map((slot) => {
     const startsAt = istInstant(date, slot.startHour);
     const endsAt = istInstant(date, slot.endHour);
-    return { ...slot, startsAt, endsAt, unavailable: now >= startsAt };
+    const closesAt = istInstant(date, slot.closesHour ?? slot.startHour);
+    return { ...slot, startsAt, endsAt, closesAt, unavailable: now >= closesAt };
   });
 
   return { slots, isComplete: now >= slots[slots.length - 1].endsAt };

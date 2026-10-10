@@ -4,6 +4,7 @@ import { Screen } from "./ui/Layout.jsx";
 import { Icon, cx } from "./ui/Primitives.jsx";
 import { CampusCalendar } from "./events/Calendar.jsx";
 import { EventAvailability } from "./events/EventAvailability.jsx";
+import { isRegistrationClosed } from "./events/eventNotice.js";
 import { useImageSrc } from "./ui/Img.jsx";
 import { cheapestPass, isEarlyBird, rupees } from "../data/passes.js";
 
@@ -199,6 +200,16 @@ function BannerSlides({ slides, interval = 5000 }) {
 function TicketsLive({ event, registered, onRegister, onOpenPass }) {
   if (!event) return null;
   const saving = cheapestPass.was - cheapestPass.amount;
+  const closed = isRegistrationClosed(event);
+  // Nothing to offer and nothing of theirs to open: the strip is an invitation,
+  // and there is none left to make.
+  if (closed && !registered) {
+    return (
+      <section className="w-full rounded-2xl p-4 sm:px-5 bg-bg-raised ring-1 ring-line">
+        <EventAvailability event={event} />
+      </section>
+    );
+  }
 
   return (
     <section className={cx(
@@ -216,7 +227,7 @@ function TicketsLive({ event, registered, onRegister, onOpenPass }) {
           <span className="text-[11px] font-bold uppercase tracking-[0.08em] text-c-green">
             {registered ? "You are in" : "Registrations are open"}
           </span>
-          {!registered && isEarlyBird && (
+          {!registered && !closed && isEarlyBird && (
             <span className="inline-flex items-center h-[18px] px-1.5 rounded-md bg-c-green/15 text-c-green
               ring-1 ring-c-green/30 text-[10px] font-bold uppercase tracking-[0.06em] leading-none shrink-0">
               Early bird
@@ -229,9 +240,9 @@ function TicketsLive({ event, registered, onRegister, onOpenPass }) {
           {event.when}{event.where ? ` · ${event.where}` : ""}
         </span>
 
-        {!registered && <EventAvailability event={event} className="mt-2.5" />}
+        <EventAvailability event={event} className="mt-2.5" compact={registered} />
 
-        {!registered && (
+        {!registered && !closed && (
           <span className="flex items-baseline gap-1.5 mt-2">
             <span className="text-xs text-ink-2">Passes from</span>
             {isEarlyBird && (
@@ -304,6 +315,7 @@ const tagsOf = (e) =>
 /* ------------------------------------------------------------- card */
 
 function EventCard({ e, registered, onRegister, onOpen }) {
+  const closed = isRegistrationClosed(e);
   const cat = CATEGORIES.find((x) => x.name === e.category);
   const badge = e.featured ? "Featured"
     : e.category === "Workshop" ? "Workshop"
@@ -339,16 +351,18 @@ function EventCard({ e, registered, onRegister, onOpen }) {
           </button>
 
           <button
-            onClick={() => !registered && onRegister?.(e)}
-            disabled={registered}
+            onClick={() => !registered && !closed && onRegister?.(e)}
+            disabled={registered || closed}
             className={cx(
               "shrink-0 h-9 px-4 rounded-full text-[12.5px] font-semibold transition-all",
               registered
                 ? "bg-accent-wash text-accent cursor-default"
-                : "bg-accent text-accent-ink hover:bg-accent-press active:scale-[0.98]"
+                : closed
+                  ? "bg-bg-sunken text-ink-3 cursor-default"
+                  : "bg-accent text-accent-ink hover:bg-accent-press active:scale-[0.98]"
             )}
           >
-            {registered ? "Registered" : "Register"}
+            {registered ? "Registered" : closed ? "Closed" : "Register"}
           </button>
         </div>
 
@@ -608,7 +622,7 @@ export function EventsScreen({
                             {e.where}
                           </span>
                         )}
-                        <EventAvailability event={e} className="mt-2" />
+                        <EventAvailability event={e} className="mt-2" compact />
                       </span>
 
                       <Icon name="chevron_right" size={18} className="text-ink-3 shrink-0" />
