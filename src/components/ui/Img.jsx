@@ -29,3 +29,4 @@ export function Img({ src, alt = "", fallback = null, ...rest }) {
   if (!resolved) return fallback;
   return <img src={resolved} alt={alt} {...rest} />;
 }
+8

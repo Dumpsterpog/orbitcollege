@@ -4,7 +4,7 @@ import { Screen } from "./ui/Layout.jsx";
 import { Icon, cx } from "./ui/Primitives.jsx";
 import { CampusCalendar } from "./events/Calendar.jsx";
 import { EventAvailability } from "./events/EventAvailability.jsx";
-import { isRegistrationClosed } from "./events/eventNotice.js";
+import { isDemoOpen, isRegistrationClosed } from "./events/eventNotice.js";
 import { useImageSrc } from "./ui/Img.jsx";
 import { cheapestPass, isEarlyBird, rupees } from "../data/passes.js";
 
@@ -452,7 +452,7 @@ export function EventsScreen({
   // The next event that has not happened yet, which is what the strip above
   // the artwork is about.
   const next = useMemo(
-    () => sorted.find((e) => !e.startsAt || e.startsAt.getTime() > Date.now() - 6 * 3600e3) || null,
+    () => sorted.find((e) => isDemoOpen(e) || !e.startsAt || e.startsAt.getTime() > Date.now() - 6 * 3600e3) || null,
     [sorted]
   );
 

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { isDemoOpen } from "./eventNotice.js";
 
 // Event times are always interpreted in India Standard Time. Browser-local
 // timezones must not change when registration closes for an on-campus event.
@@ -28,6 +29,14 @@ function istInstant(date, hour) {
 }
 
 export function getEventSchedule(event, now = Date.now()) {
+  // A reopened event ignores its own date. Everything here is a comparison
+  // against the day it was held, and that day has gone, so without this the
+  // session reads as finished and the page shows the thank-you screen instead
+  // of the form someone is trying to be shown.
+  if (isDemoOpen(event)) {
+    return { slots: EVENT_SLOTS.map((slot) => ({ ...slot, unavailable: false })), isComplete: false };
+  }
+
   const date = eventDateInIst(event);
   if (!date) return { slots: EVENT_SLOTS.map((slot) => ({ ...slot, unavailable: false })), isComplete: false };
 

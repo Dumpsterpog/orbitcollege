@@ -191,11 +191,14 @@ export function EventRegisterScreen({
   useEffect(() => {
     let alive = true;
     if (!signup?.proofStored) { setStoredProof(null); return () => { alive = false; }; }
-    db.fetchPaymentProof(event.id, authUserId)
+    db.fetchPaymentProof(event?.id, authUserId)
       .then((d) => { if (alive) setStoredProof(d); })
       .catch(() => {});
     return () => { alive = false; };
-  }, [signup?.proofStored, event.id, authUserId]);
+    // event?.id, not event.id: a dependency array is read on every render,
+    // including the one before the event has loaded, and reading .id off null
+    // there throws before the guard further down ever runs.
+  }, [signup?.proofStored, event?.id, authUserId]);
 
   const attachProof = async (file) => {
     if (!file) return;
