@@ -1,12 +1,3 @@
-// Plain-text content for the live /privacy and /terms pages, rendered by
-// LegalPage.jsx. Mirrors the drafts in the legal/ compliance docs — kept as
-// simple markdown-lite line arrays (same format used to generate the docx
-// versions) so they're easy to review and update without touching JSX.
-//
-// IMPORTANT: several lines below still contain bracketed placeholders
-// (e.g. "[Insert Grievance Officer's full name]"). Fill these in with real
-// values before this is deployed publicly — see README_LAUNCH.md.
-
 export const privacyContent = [
 "# Orbit — Privacy Policy",
 "**Last updated:** 17 August 2026 (DRAFT — replace with your real publish date before going live)",

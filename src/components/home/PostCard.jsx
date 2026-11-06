@@ -7,16 +7,9 @@ import { Img } from "../ui/Img.jsx";
 
 const nameHead = (name = "") => name.split(" — ")[0];
 
-// Orbit has no usernames. The mock shows an @handle, so this derives one from
-// the display name rather than inventing a field or printing the same
-// placeholder under everybody's post. If real handles ever land, this is the
-// one line that changes.
 const handleFor = (name = "") =>
   name.trim().toLowerCase().replace(/[^a-z0-9]+/g, "") || "member";
 
-// Hashtags are written into ordinary post text, so they are found by reading it
-// rather than stored as a field. That means an old post starts showing tags
-// with no migration, and deleting the feature later removes no data.
 const TAG = /(^|\s)(#[a-zA-Z][\w-]{1,30})/g;
 
 function withTags(text, onTag) {
@@ -65,9 +58,6 @@ export function PostCard({
     };
   }, [menuOpen]);
 
-  // Clicking the post opens its thread. Guarded so it does not fire when the
-  // click was really meant for a control inside the card, or when someone was
-  // selecting text to copy.
   const openFromBody = (e) => {
     if (e.target.closest("button, a, input, textarea, img")) return;
     if (window.getSelection()?.toString()) return;
@@ -76,8 +66,6 @@ export function PostCard({
 
   return (
     <article className="w-full bg-bg-raised rounded-2xl border border-line p-5">
-      {/* The person leads and the room follows: a feed is written by people,
-          and which room they were standing in is context for that. */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-start gap-3 min-w-0">
           <Avatar name={post.who} size={42} />

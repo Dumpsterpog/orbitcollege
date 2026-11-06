@@ -4,40 +4,13 @@ import { Icon, Input, cx } from "./ui/Primitives.jsx";
 import { signInWithGoogle, saveProfile, fetchProfile } from "../lib/authService.js";
 import { auth } from "../lib/firebase.js";
 
-// Onboarding — two-pane card, five steps, sign-in last.
-//
-// Sign-in moving to the end changes the shape of the flow: there's no uid
-// while the questions are being answered, so everything is held in local
-// state and written in a single saveProfile once Google returns. Nothing is
-// persisted before then, which is also the honest behaviour — abandon it
-// halfway and you've left nothing behind.
-//
-// The cost of asking first is returning users, who shouldn't re-answer four
-// screens to get back in. Step one carries a "Sign in" shortcut that jumps
-// straight to the last step; if that account already has a profile it goes
-// through, and if it doesn't they land back at step one to fill it.
-//
-// saveProfile is setDoc(merge) on Firestore, so university / year
-// are new fields on the existing profile doc — no migration needed.
 
-// Four steps. Phone sat between interests and sign-in: optional, skippable,
-// and asking for a number before anyone had an account to attach it to. It
-// bought a field almost nobody filled and cost a step everybody had to get
-// past.
 const STEPS = ["name", "study", "interests", "signin"];
 
-// The home campus. Not the only one any more: an event open to other colleges
-// means people arrive who are not from here, and telling them they are at MUJ
-// would be the first thing Orbit got wrong about them.
-//
-// Orbit was a single-campus product, so university wasn't a question — it's a
-// fact the step states. A chip group with one option would be asking
-// something there is no second answer to.
 const UNIVERSITY = "Manipal University Jaipur";
 
 const YEARS = ["1st year", "2nd year", "3rd year", "4th year", "5th year+"];
 
-/* --------------------------------------------------------------- pieces */
 
 function GoogleMark({ size = 18 }) {
   return (
@@ -71,10 +44,6 @@ function InfoBlock({ title, body, children, last }) {
   );
 }
 
-// Selected fill per hue. `text-bg` rather than a literal white: the palette
-// inverts between themes (c-blue is a deep blue on white and a light blue on
-// black), so the label has to follow the page background to stay legible in
-// both. Whole class strings so Tailwind's scanner keeps them.
 const FILL = {
   "text-c-blue": "bg-c-blue text-bg",
   "text-c-violet": "bg-c-violet text-bg",
@@ -91,10 +60,6 @@ const YEAR_TONES = [
   "text-c-orange", "text-c-teal", "text-c-green",
 ];
 
-// `tone` is the category's own hue. Selected chips take that colour rather
-// than all going black — with sixteen of them, a single fill turns the grid
-// into an unreadable block, and the colour is already how each category is
-// identified everywhere else in the app.
 function Chip({ selected, onClick, children, tone }) {
   return (
     <button
@@ -185,7 +150,6 @@ const SOCIALS = [
   { label: "Email", icon: "mail", href: "mailto:team.orbit@gmail.com" },
 ];
 
-/* ----------------------------------------------------------------- flow */
 
 export function Onboarding({ onDone, onGuest }) {
   const [step, setStep] = useState("name");
@@ -247,10 +211,6 @@ export function Onboarding({ onDone, onGuest }) {
     }
   };
 
-  // The campus photo comes in from the step that names the campus onward, so
-  // it lands as a response to "you're at MUJ" rather than as decoration that
-  // was always there. Scrimmed heavily — it is a backdrop behind a form, and
-  // the card has to stay the thing you read.
   const showCampus = index >= 1;
 
   return (
@@ -274,7 +234,6 @@ export function Onboarding({ onDone, onGuest }) {
       <div className="relative min-h-full w-full flex items-center justify-center p-4 sm:p-8">
         <div className="w-full max-w-[1040px] bg-bg rounded-[20px] shadow-pop overflow-hidden flex flex-col lg:flex-row">
 
-          {/* ---------------- Left: context ---------------- */}
           <div className="lg:w-[350px] shrink-0 bg-bg-sunken lg:bg-bg border-b lg:border-b-0 lg:border-r border-line p-6 sm:p-8 flex flex-col">
             <div className="flex items-center gap-3">
               <Mark size={36} radius="rounded-[10px]" />
@@ -331,7 +290,6 @@ export function Onboarding({ onDone, onGuest }) {
             </div>
           </div>
 
-          {/* ---------------- Right: the step ---------------- */}
           <div className="flex-1 min-w-0 p-6 sm:p-10 lg:p-12 flex flex-col">
             <Mark size={44} />
 
@@ -512,9 +470,6 @@ export function Onboarding({ onDone, onGuest }) {
                     : "Sign in with Google to save your profile. Nothing has been stored until now."}
                 </p>
 
-                {/* What's about to be saved. Shown because this is the moment
-                    it actually gets written, and it's the last chance to go
-                    back and change any of it. */}
                 {!returning && (
                   <dl className="mt-7 max-w-md rounded-[14px] ring-1 ring-line divide-y divide-line">
                     {[

@@ -1,19 +1,5 @@
 import { Icon } from "./ui/Primitives.jsx";
 
-// Maintenance screen, rendered as the landing page.
-//
-// main.jsx returns this *instead of* App, not on top of it. That matters:
-// App is what starts the Firebase auth listener and the Firestore
-// subscriptions, so swapping it out means none of that runs -- no session is
-// restored, no sign-in popup can open, no read is attempted. Nobody signs in
-// because the code that signs people in never mounts.
-//
-// The bundle still downloads, which a hosting-level rewrite would avoid. That
-// is the accepted trade for having this be a real component: it uses the
-// app's own tokens, so it follows the light and dark theme and looks like
-// Orbit rather than like an error page.
-//
-// To go live again: in main.jsx, drop Maintenance from the Root expression.
 
 export function Maintenance() {
   return (

@@ -18,22 +18,7 @@ import { GuestBanner, Toast, ThemeNotice, Logo } from "./components/Common.jsx";
 import { Onboarding } from "./components/Onboarding.jsx";
 import { ReportModal } from "./components/ReportModal.jsx";
 
-// Firestore document -> app shape mapping now lives in lib/db.js, next to the
-// queries that produce it, so a collection and the shape it yields cannot
-// drift apart.
-// One row per post, across every community (not just joined ones) — powers
-// Home's Instagram-style "Latest posts" feed. Uses the same profiles!author_id
-// relationship hint as Community.jsx's mapPostRow (see the comment there —
-// plain profiles(name) returns an ambiguous-relationship HTTP 300 on this
-// table specifically).
 
-// Tea/Confessions are deliberately anonymous server-side — author_id is
-// never selectable (see schema_tea.sql), so there's no way to ask the
-// server "which of these are mine?". Instead we remember locally, at the
-// moment of posting, which ids are ours — that's enough to show a delete
-// button on your own content without ever exposing authorship to anyone
-// else or changing the anonymity model. Persisted so it survives a reload
-// (posts only live 48h anyway, so this never grows unbounded for long).
 function loadIdSet(key) {
   try {
     const raw = localStorage.getItem(key);
@@ -46,9 +31,6 @@ function saveIdSet(key, set) {
   try { localStorage.setItem(key, JSON.stringify([...set])); } catch { /* ignore */ }
 }
 
-// Dev landing switch: with VITE_SKIP_AUTH=true the app boots straight into the
-// full-width Home dashboard as a guest, skipping the phone-frame OTP card.
-// Unset it (or set false) and the normal onboarding flow comes back untouched.
 const SKIP_AUTH = import.meta.env.VITE_SKIP_AUTH === "true";
 
 export default function App() {
@@ -68,10 +50,6 @@ export default function App() {
   const [events, setEvents] = useState([]);
   const [joinedIds, setJoinedIds] = useState([]);
   const [registeredEventIds, setRegisteredEventIds] = useState([]);
-  // Home dashboard: Instagram-style "Latest posts" feed — every community's
-  // posts, newest first (not just joined ones) — see the feedPosts effect
-  // below. feedSparkIds tracks which of those posts the signed-in user has
-  // already sparked, same one-row-per-user-per-post pattern as Community.jsx.
   const [feedPosts, setFeedPosts] = useState([]);
   const [pendingPosts, setPendingPosts] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
@@ -87,9 +65,6 @@ export default function App() {
   const [notifPrefs, setNotifPrefs] = useState({ events: true, posts: true, replies: true });
   const [notifOpen, setNotifOpen] = useState(false);
   const [toastMsg, setToastMsg] = useState("");
-  // "/" opens search, the way the sidebar's kbd hint advertises. Ignored while
-  // the user is typing into a field or a contentEditable, otherwise the key
-  // would be unusable in every text input in the app.
   useEffect(() => {
     const onKey = (e) => {
       if (e.key !== "/" || e.metaKey || e.ctrlKey || e.altKey) return;
@@ -109,10 +84,6 @@ export default function App() {
   const [myTeaCommentIds, setMyTeaCommentIds] = useState(() => loadIdSet("orbit_my_tea_comment_ids"));
   const [exploreTab, setExploreTab] = useState("clubs");
 
-  // Demo content, reachable from the browser console while signed in. It
-  // writes through the same rules the app obeys, so a refusal here is a
-  // refusal the app would also have hit -- which makes it a smoke test as much
-  // as a way to get something on screen.
   useEffect(() => {
     window.orbitSeed = async () => {
       const { seedDemo } = await import("./lib/seed.js");
@@ -133,14 +104,6 @@ export default function App() {
     setTimeout(() => setToastMsg(""), 2200);
   }, []);
 
-  // Both queries below are RLS-scoped "to authenticated" — see the
-  // getSession() note in Community.jsx for why each one waits on a fresh
-  // session first. Without it, a stale/expiring JWT could make one of these
-  // silently come back empty (200 OK, not an error) and wipe joinedIds /
-  // registeredEventIds, which would visibly flip "Joined ✓" back to "Join"
-  // even though the membership/registration row was never actually deleted.
-  // db.js degrades rather than throwing for these, but a rejection here would
-  // otherwise be unhandled and take out whatever called it.
   const fetchMyJoins = useCallback(async (userId) => {
     try { setJoinedIds(await db.fetchMyJoins(userId)); }
     catch (e) { console.error("[orbit] fetchMyJoins", e); }
@@ -150,28 +113,12 @@ export default function App() {
     catch (e) { console.error("[orbit] fetchMyRegistrations", e); }
   }, []);
 
-  // Communities, events and the feed are all live subscriptions now. In
-  // Firestore onSnapshot delivers the first page and every later change
-  // through the same callback, so the separate initial-fetch effects and the
-  // three Realtime channels this used to need collapse into one line each.
-  //
-  // All three read signed out as well as signed in, so a guest sees the real
-  // campus feed instead of an empty page.
-  // Each watcher paints from the last snapshot first, then live data replaces
-  // it. See lib/cache.js -- the subscription is unchanged, this only fills the
-  // gap that used to be a skeleton on every reload.
   useEffect(() => db.watchCommunities(
     cached("communities", setDbCommunities, reviveDates(["createdAt"]))
   ), []);
   useEffect(() => db.watchEvents(
     cached("events", setEvents, reviveDates(["startsAt"]))
   ), []);
-  // The campus feed is a collectionGroup read across every post in the project,
-  // and it used to open on every page load for every visitor. Home is the
-  // events board this week and Profile is the only screen left that renders
-  // these posts, so the subscription follows the route rather than the session.
-  // On registration night that is the difference between one read per visitor
-  // and one read per post per visitor.
   const needsFeed = location.pathname.startsWith("/profile");
   useEffect(() => {
     if (!needsFeed) return;
@@ -191,9 +138,6 @@ export default function App() {
     return () => { alive = false; };
   }, [authUser]);
 
-  // Event passes: one listener per event this account registered for. The
-  // status and pass code are written by an admin after they check the payment,
-  // so this has to be live rather than fetched once.
   useEffect(() => {
     if (!authUser || registeredEventIds.length === 0) { setMyPasses([]); return; }
     const byEvent = new Map();
@@ -214,13 +158,6 @@ export default function App() {
     return db.watchMyPendingPosts(authUser.id, setPendingPosts);
   }, [authUser]);
 
-  // Session bootstrap — returning users with a live Firebase session skip
-  // onboarding entirely, matching "no repeated re-verification."
-  //
-  // onAuthChange replaces the old getSession() + onAuthStateChange pair:
-  // Firebase resolves persisted sessions asynchronously and reports the
-  // result through this one listener, so the first callback (user or null) is
-  // also what tells us the session check has finished.
   useEffect(() => {
     let mounted = true;
     // Picks up a sign-in that came back via the redirect fallback; resolves
@@ -239,14 +176,8 @@ export default function App() {
           verified: true,
           interests: profile?.interests || [],
           bio: profile?.bio || "",
-          // No fallback to the Google photo here: the profile already stores
-          // it on creation, and falling back would bring a removed photo back
-          // on the next reload.
           avatarUrl: profile?.avatarUrl || null,
           bannerUrl: profile?.bannerUrl || null,
-          // Set from the admin tool. The rules are what enforce it; this only
-          // lets the UI say so instead of failing every post with a bare
-          // permission error.
           university: profile?.university || "",
           suspended: profile?.suspended === true,
         });
@@ -268,17 +199,11 @@ export default function App() {
   const communities = useMemo(() => dbCommunities.filter((c) => !c.official), [dbCommunities]);
   const clubs = useMemo(() => dbCommunities.filter((c) => c.official), [dbCommunities]);
   const allGroups = dbCommunities;
-  // Tea/Confessions has no per-post admin (it's not tied to a community) —
-  // the Orbit community's creator doubles as the app-wide moderator for
-  // anonymous content, matching the "orbit admin can delete any tea ..."
-  // policies in schema_media_and_moderation.sql.
   const isTeaModerator = !!authUser && dbCommunities.some((c) => c.handle === "orbit" && c.creatorId === authUser.id);
   const joinedCommunities = useMemo(() => allGroups.filter((c) => joinedIds.includes(c.id)), [allGroups, joinedIds]);
   const topTrendingIds = useMemo(() => (
     [...communities].sort((a, b) => communityTrendScore(b) - communityTrendScore(a)).slice(0, 3).map((c) => c.id)
   ), [communities]);
-  // Derived, not stored — always in sync with events, no separate map to
-  // keep updated by hand (the old mock version kept this as its own state).
   const eventCommunityMap = useMemo(() => (
     Object.fromEntries(events.filter((e) => e.linkedCommunityId).map((e) => [e.id, e.linkedCommunityId]))
   ), [events]);
@@ -308,23 +233,9 @@ export default function App() {
     setSparkedIds((ids) => (ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]));
   };
 
-  // Sparking a post from Home's feed — real, persisted to community_post_sparks,
-  // same table/pattern Community.jsx's Posts tab already uses (see its
-  // toggleSpark). Optimistic update with rollback on failure, same as every
-  // other write in this app.
-  // Posting from Home. The same community_posts insert Community.jsx does,
-  // except the community is chosen in the composer instead of being implied
-  // by which page you're on — which is what makes Home a feed you can post
-  // to rather than a feed you can only read.
   const handleCreatePost = async (communityId, text, file = null) => {
     if (!user.verified || !authUser) { handleBlocked(); return false; }
 
-    // Checked before the upload, not after: burning a photo upload on a write
-    // that is about to be refused wastes the slowest part of the operation.
-    // Three outcomes, not two. Slurs and invite links are refused here; sexual,
-    // dating and adult-link posts are held for a moderator instead of being
-    // refused, because a word list cannot tell a consent workshop from a
-    // hookup post and a person can.
     if (user.suspended) { showToast("Your account is suspended, so posting is turned off"); return false; }
     const verdict = classifyPost(text);
     if (verdict.action === "block") { showToast(verdict.reason); return false; }
@@ -332,9 +243,6 @@ export default function App() {
     const limit = checkPostLimit();
     if (!limit.ok) { showToast(limit.message); return false; }
     const body = text.trim();
-    // A photo with no caption is a valid post, so only the pair being empty
-    // is a reason to refuse.
-    // communityId null is a campus post, addressed to everyone.
     if (!body && !file) return false;
 
     let created;
@@ -408,9 +316,6 @@ export default function App() {
   const handleCreate = async ({ name, category, desc, tags, rules = [], avatarFile = null }) => {
     if (!authUser) { handleBlocked(); return; }
 
-    // Counted from the live list rather than a stored tally, so it cannot
-    // drift. firestore.rules enforces the same cap server-side; this exists to
-    // say so before the form is filled in rather than after.
     const clean = checkFields([
       name, desc,
       ...rules.flatMap((r) => [r.title, r.body]),
@@ -421,10 +326,6 @@ export default function App() {
     const cap = checkCommunityLimit(owned);
     if (!cap.ok) { showToast(cap.message); return; }
     const handle = `${slugify(name)}-${Math.random().toString(36).slice(2, 8)}`;
-    // tags now comes from the creator's own multi-select (CreateCommunity
-    // step 3), not just [category] — this is the real signal a future
-    // personalization/recommendation pass needs. Falls back to [category]
-    // if somehow empty so a row is never written with no tags at all.
     const finalTags = tags && tags.length ? tags : [category];
     let mapped;
     try {
@@ -433,10 +334,6 @@ export default function App() {
         creatorId: authUser.id,
         creatorLabel: user.name || "You",
       });
-      // The photo is uploaded after the fact because Storage paths are keyed
-      // by community id, which does not exist until the document does. A
-      // failed upload leaves a real community with no picture rather than
-      // losing the community, so it is caught separately.
       if (avatarFile) {
         try {
           const { url } = await db.uploadImage("community-avatars", avatarFile, authUser.id);
@@ -472,17 +369,6 @@ export default function App() {
     showToast(error ? "Update failed" : "Updated");
   };
 
-  // "Edit profile" used to only update local React state (setUser) — it
-  // looked like it saved, but nothing ever reached the database: the name
-  // change was invisible to every other user/community, and reset back to
-  // whatever profiles.name actually held on the next reload. Bio was worse
-  // — there wasn't even a bio column, so it was never anything more than
-  // component state. Both now write to profiles for real.
-  // Takes ({ name, bio, interests }) or the older (name, bio) form.
-  //
-  // The profile page has always called this with one object while it read two
-  // strings, so `name.trim()` threw on an object and Edit profile never saved
-  // anything. Both shapes are accepted so no caller can hit that again.
   const handleUpdateProfile = async (nameOrFields, bioArg) => {
     const input = nameOrFields && typeof nameOrFields === "object"
       ? nameOrFields
@@ -502,9 +388,6 @@ export default function App() {
     showToast(error ? "Couldn't save profile, try again" : "Profile updated");
   };
 
-  // Profile photo and banner. kind is "avatar" or "banner"; a null file
-  // removes it. Uploads go to the same Storage folder post photos use, so the
-  // Storage rules that already let a user write their own folder cover them.
   const handleProfileImage = async (kind, file) => {
     if (!user.verified || !authUser) { handleBlocked(); return; }
     const field = kind === "banner" ? "bannerUrl" : "avatarUrl";
@@ -540,13 +423,6 @@ export default function App() {
     showToast(error ? "Delete failed, refresh and retry" : "Deleted");
   };
 
-  // Previously this only console.log'd — nothing was ever saved, so reports
-  // silently vanished even though the UI said "submitted for review." Now a
-  // real document in the reports collection;
-  // view submissions from the Firebase console.
-  // `detail` is the optional free-text box the rebuilt ReportModal adds. It's
-  // appended to the reason rather than sent as its own column, since the
-  // reports table has no field for it — a schema change is backend work.
   const handleReportSubmit = async (reason, detail) => {
     const target = reportTarget;
     setReportTarget(null);
@@ -557,11 +433,6 @@ export default function App() {
     await db.createReport({ reporterId: authUser.id, target, reason: body });
   };
 
-  // Registering for an event is the access gate to its community — the
-  // Registering is the access gate to an event's community. db.registerForEvent
-  // runs it as a Firestore transaction: create-or-reuse the linked community,
-  // add the registration, add the membership, bump the count — all or nothing,
-  // the same guarantee the plpgsql function used to give.
   const handleRegisterEvent = async (event) => {
     if (!authUser) { handleBlocked(); return; }
     let communityId;
@@ -583,10 +454,6 @@ export default function App() {
     return communityId;
   };
 
-  // Locali-Tea: anonymous, 48h self-expiring — real Firestore data (posts,
-  // votes, comments), just not realtime-subscribed (see schema_tea.sql for
-  // why: postgres_changes would leak author_id over the wire, breaking the
-  // anonymity the whole feature is built on). Refetches on open instead.
   const fetchTea = useCallback(async () => {
     const rows = await db.fetchTea();
     setTeaPosts((prev) => {
@@ -607,10 +474,6 @@ export default function App() {
   useEffect(() => {
     if (location.pathname !== "/tea") return;
     fetchTea();
-    // Polls instead of Realtime (see the comment on fetchTea above) — still
-    // "auto refresh," just on a short interval rather than a live push, so
-    // new tea/confessions and updated vote counts show up without the user
-    // manually reopening the screen.
     const id = setInterval(fetchTea, 5000);
     return () => clearInterval(id);
   }, [location.pathname, fetchTea]);
@@ -742,21 +605,6 @@ export default function App() {
     setStage("onboarding");
   };
 
-  // Base height reads the JS-tracked --app-height custom property (see
-  // useViewportHeight) instead of a raw dvh unit, so the shell actually
-  // shrinks to match the visible screen once a keyboard opens instead of
-  // staying sized for the pre-keyboard viewport. Falls back to 100dvh when
-  // the property isn't set yet (first paint) or visualViewport is
-  // unsupported. The sm: desktop-frame override is untouched — physical
-  // keyboards don't trigger this bug, so it stays on plain dvh.
-  // Auth-flow shell is now full-bleed at every width: the rebuilt Onboarding
-  // owns its own responsive two-pane layout (brand column + form), so wrapping
-  // it in the phone card would re-cage the thing that was just uncaged.
-  // Signed-in shell. Below lg it's a plain full-height column — the floating
-  // phone card with its rounded corners and drop shadow is gone, since this
-  // renders as a web app at every size rather than a simulated handset.
-  // App frame. No phone card, no max-width cage: the rail sits against the
-  // content and each screen owns its own measure.
   const shellClass = "w-full h-[var(--app-height,100dvh)] bg-bg text-ink overflow-hidden relative flex flex-col";
   const shellClassAuth = shellClass;
   const shellClassApp = `${shellClass} lg:flex-row`;
@@ -778,10 +626,6 @@ export default function App() {
         <style>{FONT_IMPORT}</style>
         <Onboarding
           onDone={async (name, interests) => {
-            // onAuthChange above has usually already set authUser/user by the
-            // time this runs; this applies the name and interests the user just
-            // picked, which the listener's profile read may have missed by a
-            // beat, and moves the stage on regardless.
             const fbUser = auth?.currentUser;
             if (fbUser) {
               setAuthUser({ id: fbUser.uid, email: fbUser.email });
@@ -797,23 +641,15 @@ export default function App() {
     );
   }
 
-  // Which nav item is lit, derived from the URL rather than held in state.
-  // The old `activeTab` was the only thing that decided what you saw, which is
-  // why nothing here had a route: the address bar never changed. Now the URL
-  // is the truth and the rail just reads it.
   const TAB_FOR_PATH = { "": "home", explore: "explore", events: "events", profile: "profile", settings: "settings" };
   const seg = location.pathname.replace(/^\/+|\/+$/g, "").split("/")[0];
   const activeTab = TAB_FOR_PATH[seg] || "home";
 
-  // A sub-page owns the whole viewport: no bottom bar, no top bar, no guest
-  // pill competing with its own back affordance.
   const SUBPAGE_SEGMENTS = ["c", "create", "search", "tea"];
   const showingSubPage = SUBPAGE_SEGMENTS.includes(seg);
 
   const goToTab = (tab) => navigate(tab === "home" ? "/" : `/${tab}`);
 
-  // Kept named as it was so the twenty call sites below did not all have to
-  // change. It navigates now instead of setting state.
   const setSelectedCommunity = (c) => { if (c?.id) navigate(`/c/${c.id}`); };
 
   // Shared by both nav surfaces so mobile and desktop cannot drift apart.
@@ -822,10 +658,6 @@ export default function App() {
   const openCreate = () => { if (!user.verified) { handleBlocked(); return; } navigate("/create"); };
   const openComposer = () => { if (!user.verified) { handleBlocked(); return; } setComposerOpen(true); };
 
-  // Everything the routed screens need. They cannot be handed props any more,
-  // because the router renders them, not this component.
-  // The only badge with a real number behind it. Notifications are not built,
-  // so that row carries no count rather than a decorative one.
   const openEventCount = events.filter((e) => !registeredEventIds.includes(e.id)).length;
 
   // Surfaced so the create flow can refuse up front instead of at submit.
@@ -902,14 +734,9 @@ export default function App() {
           )}
         </div>
 
-        {/* Global overlays: they float above whatever route is showing, so
-            they belong to the layout rather than to any one page. */}
         {reportTarget && (
           <ReportModal target={reportTarget} onClose={() => setReportTarget(null)} onSubmit={handleReportSubmit} />
         )}
-        {/* One floating pill at a time. Stacked, the two covered a third of a
-            phone screen -- the feed a guest came to look at. The theme notice
-            is once-ever, so it goes first and the guest prompt follows it. */}
         {!showingSubPage && !user.verified && !themeNotice && <GuestBanner onVerify={goToInitialPage} />}
         {themeNotice && (
           <ThemeNotice

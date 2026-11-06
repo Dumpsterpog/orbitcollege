@@ -1,20 +1,9 @@
 import { useEffect, useState, useCallback } from "react";
 
-// Theme control. Applies Tailwind's `dark` class strategy (tailwind.config.js
-// — darkMode: "class") to <html>, so every dark: variant in the app switches
-// from one place.
-//
-// Three modes, matching the Settings mock's Light / Dark / System picker.
-// "system" is not a third stylesheet — it resolves to light or dark from the
-// OS preference and keeps following it, so a machine that flips to dark at
-// sunset flips the app with it without a reload.
 const STORAGE_KEY = "orbit_theme";
 const NOTICE_KEY = "orbit_theme_notice";
 const MODES = ["light", "dark", "system"];
 
-// First visit follows the OS rather than forcing a look. Someone whose machine
-// is light gets a light app, which is the common case and was previously
-// overridden for no reason.
 function getInitialMode() {
   try {
     const saved = localStorage.getItem(STORAGE_KEY);
@@ -76,9 +65,6 @@ export function useTheme() {
     try { localStorage.setItem(STORAGE_KEY, mode); } catch { /* ignore */ }
   }, [theme, mode]);
 
-  // Kept for the sidebar's one-tap Appearance button. Toggling out of
-  // "system" resolves to the opposite of whatever is currently painted,
-  // which is what someone pressing it is asking for.
   const dismissThemeNotice = useCallback(() => {
     setAnnouncing(false);
     try { localStorage.setItem(NOTICE_KEY, "1"); } catch { /* ignore */ }

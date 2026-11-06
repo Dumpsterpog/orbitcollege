@@ -2,24 +2,11 @@ import { ICONS } from "./icons.js";
 import { forwardRef } from "react";
 import { Img } from "./Img.jsx";
 
-// Primitive vocabulary.
-//
-// Two deliberate absences from the previous version:
-//
-//   No <Card>. A bordered, shadowed, tinted box was being reached for as the
-//   default container, which is how a screen ends up as boxes inside boxes.
-//   Grouping is done with whitespace and a hairline at the call site now, so
-//   using a container is a decision rather than a reflex.
-//
-//   No rectangular buttons. Every action is a pill or a bare icon hit-area —
-//   an 8px-radius rectangle is the shape that made the old "New Post" read
-//   as unfinished.
 
 export function cx(...parts) {
   return parts.filter(Boolean).join(" ");
 }
 
-/* ---------------------------------------------------------------- Button */
 
 const BASE =
   "inline-flex items-center justify-center gap-1.5 font-semibold whitespace-nowrap select-none " +
@@ -43,13 +30,6 @@ const VARIANTS = {
   danger: "text-danger hover:bg-danger-wash",
 };
 
-// Per-action fills. A screen where every button is the same blue makes the
-// buttons furniture — nothing tells you which action you came for. `tone`
-// gives an action its own hue, assigned by what it does (create is violet,
-// join is green, register is orange) and kept consistent across screens.
-//
-// `text-bg` rather than white: the palette inverts between themes, so the
-// label follows the page background to stay legible on both.
 const TONES = {
   blue: "bg-c-blue text-bg hover:opacity-90",
   violet: "bg-c-violet text-bg hover:opacity-90",
@@ -85,8 +65,6 @@ export const Button = forwardRef(function Button(
   );
 });
 
-// Bare icon action. Circular hit-area, no chrome until hover — the toolbar
-// idiom that keeps a header from looking like a row of buttons.
 export const IconButton = forwardRef(function IconButton(
   { icon, label, size = 22, active = false, className, ...rest },
   ref
@@ -111,7 +89,6 @@ export const IconButton = forwardRef(function IconButton(
   );
 });
 
-/* ------------------------------------------------------------------ Icon */
 
 // Lucide, wrapped so the app can keep calling icons by their old Material
 // Symbol names. See ui/icons.js for why, and for the mapping.
@@ -139,11 +116,7 @@ export function Icon({ name, size = 20, thin = false, className, style, strokeWi
   );
 }
 
-/* ---------------------------------------------------------------- Avatar */
 
-// `ring` draws the gradient story ring; `size` is the avatar diameter, the
-// ring sits outside it so a ringed and unringed avatar align on the same
-// baseline.
 export function Avatar({ name = "", src, size = 32, ring = false, className }) {
   const initials =
     name.split(" ").filter(Boolean).slice(0, 2).map((w) => w[0]).join("").toUpperCase() || "?";
@@ -175,7 +148,6 @@ export function Avatar({ name = "", src, size = 32, ring = false, className }) {
   );
 }
 
-/* ----------------------------------------------------------------- Input */
 
 const FIELD =
   "w-full bg-bg-sunken text-ink placeholder:text-ink-3 border border-transparent rounded " +
@@ -225,7 +197,6 @@ export function Switch({ checked, onChange, label }) {
   );
 }
 
-/* ------------------------------------------------------------- Structure */
 
 // Section heading. Weight and a hairline, not a container.
 export function SectionHead({ title, action, className }) {

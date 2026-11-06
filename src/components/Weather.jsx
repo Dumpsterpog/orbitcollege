@@ -1,15 +1,6 @@
 import { useEffect, useState } from "react";
 import { Icon } from "./ui/Primitives.jsx";
 
-// Campus weather, in the header.
-//
-// It renders nothing at all until it has a real reading. A weather widget that
-// shows a spinner, a dash, or "unavailable" is worse than no widget: it draws
-// the eye to a thing that has nothing to say, on every page, forever. So the
-// failure mode here is absence.
-//
-// The key lives in api/weather.js, server-side. See the note there.
-
 const CACHE_KEY = "orbit_weather";
 const TTL_MS = 10 * 60 * 1000;
 

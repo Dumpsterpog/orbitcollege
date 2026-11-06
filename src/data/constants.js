@@ -6,21 +6,6 @@ import {
   Library, Camera, PawPrint, HeartHandshake,
 } from "lucide-react";
 
-// `icon` is the lucide component the pre-M3 screens still render; `msr` is
-// the filled Material Symbols ligature the rebuilt dashboard uses. `tint`
-// gives each category its own filled colour so a directory of sixteen
-// doesn't read as sixteen identical grey glyphs.
-// Each category owns a filled glyph and a hue for the life of the app, so
-// the same subject is recognisable at a glance in a feed row, a directory
-// tile and a filter pill without reading the label. `icon` is the legacy
-// lucide component, kept only for screens not yet migrated.
-// Every category lookup goes through this.
-//
-// A community or event can carry a category this build has never heard of: an
-// older name, something typed into the admin tool, or a list that has since
-// changed. CATEGORIES.find then returns undefined, and the next line that
-// reads cat.tint takes the whole page down with it -- which is exactly what
-// happened to the event chat when its community was created as "Competition".
 export const categoryOf = (name) =>
   CATEGORIES.find((c) => c.name === name) || FALLBACK_CATEGORY;
 
@@ -49,12 +34,6 @@ export const CATEGORIES = [
   { name: "Volunteering", icon: HeartHandshake, color: "stone", msr: "volunteer_activism", tint: "text-c-green", ring: "bg-c-green" },
 ];
 
-// Strictly grayscale (per the black-and-white rebrand — no hue anywhere in
-// the app, including category tags). The 16 category keys are kept as-is
-// (every call site looks them up by name) but now cycle through four
-// zinc-only "flavors" of differing intensity, purely so adjacent categories
-// in a list still read as visually distinct from each other by weight, not
-// by color — differentiation comes from that plus each category's icon.
 const FLAVORS = {
   a: { tint: "bg-zinc-900/5 dark:bg-zinc-50/10", text: "text-zinc-600 dark:text-zinc-400", ringc: "ring-zinc-400/20 dark:ring-zinc-500/20", grad: "from-zinc-300 to-zinc-400 dark:from-zinc-700 dark:to-zinc-600" },
   b: { tint: "bg-zinc-900/8 dark:bg-zinc-50/12", text: "text-zinc-700 dark:text-zinc-300", ringc: "ring-zinc-500/20 dark:ring-zinc-400/20", grad: "from-zinc-400 to-zinc-500 dark:from-zinc-600 dark:to-zinc-500" },
@@ -68,16 +47,6 @@ export const COLOR_MAP = {
   teal: FLAVORS.a, cyan: FLAVORS.b, lime: FLAVORS.c, stone: FLAVORS.d,
 };
 
-// NOTE: the old SEED_COMMUNITIES / CLUBS / MOCK_EVENTS / MOCK_NOTIFICATIONS /
-// MOCK_INCOMING_REQUESTS / MOCK_OUTGOING_REQUESTS / MOCK_INDIVIDUAL_CHATS /
-// MOCK_SUGGESTED_PEOPLE / MOCK_TEA mock-data arrays that used to live here
-// were removed (PDF improvement list, item 7 — "removal of seed data").
-// Every one of them was already dead: communities/events/Locali-Tea have
-// been reading from the live database since early in the build (see App.jsx),
-// and the one component that still imported the two chat-related mocks
-// (Chat.jsx) was itself never imported by anything — a leftover from before
-// DMs got gated as "coming soon". Deleted both rather than leave unreachable
-// code + fake names sitting in the bundle.
 
 export const REPORT_REASONS = ["Spam or scam", "Harassment or bullying", "Inappropriate content", "Fake community or impersonation", "Something else"];
 

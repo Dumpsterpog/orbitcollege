@@ -3,16 +3,6 @@ import { BetaTag } from "./Common.jsx";
 import { CATEGORIES } from "../data/constants.js";
 import { Icon, Avatar, cx } from "./ui/Primitives.jsx";
 
-// Navigation rail.
-//
-// Three labelled groups plus an unlabelled one at the top, because the
-// destinations are not peers: Home/Explore/Saved are where you live, Campus is
-// the shared stuff, Communities are the rooms you belong to, and Personal is
-// account furniture. Communities sit above Personal deliberately -- they are
-// the most revisited thing here and the least worth scrolling for.
-//
-// Below xl it collapses to icons; below lg the bottom bar takes over. Labels
-// become tooltips rather than vanishing.
 
 const GROUPS = [
   {
@@ -142,9 +132,6 @@ export function Sidebar({
           <div key={group.label || gi}>
             {group.label && <GroupLabel>{group.label}</GroupLabel>}
             <div className="flex flex-col gap-0.5">
-              {/* key is this app's identifier for the row, not React's, so it
-                  is pulled out of the spread: React 19 warns when a spread
-                  carries one, and it never reaches the component anyway. */}
               {group.items.map(({ key, ...row }) => (
                 <Row
                   key={key}
@@ -202,8 +189,6 @@ export function Sidebar({
         </div>
       </nav>
 
-      {/* Campus mark. Decorative, so it is hidden from assistive tech and drops
-          out entirely on the collapsed rail where there is no room for it. */}
       <div className="hidden xl:block relative shrink-0 h-[104px] overflow-hidden" aria-hidden="true">
         <img
           src="/muj.png"
@@ -275,8 +260,6 @@ export function Sidebar({
           <span className="hidden xl:block min-w-0 leading-tight flex-1 text-left">
             <span className="block text-[13.5px] font-bold text-ink truncate">{user?.name || "Guest"}</span>
             <span className="block text-[11px] text-ink-3 truncate">
-              {/* The mock shows course and year. Orbit stores neither, so this
-                  falls back to what it does know rather than inventing them. */}
               {verified ? (user?.bio || "Member") : "Browsing as guest"}
             </span>
           </span>

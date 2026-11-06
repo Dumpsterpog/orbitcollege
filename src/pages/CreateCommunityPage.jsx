@@ -3,13 +3,6 @@ import { Icon, Button } from "../components/ui/Primitives.jsx";
 import { Screen, Column } from "../components/ui/Layout.jsx";
 import { PAUSE_BODY, PAUSE_TITLE } from "../components/CommunityPause.jsx";
 
-// The route stays, and answers instead of creating.
-//
-// The buttons that led here are gone, but the address is in people's history
-// and in whatever they have sent each other. Removing the route would meet
-// them with a blank screen; the form itself cannot be left in place, because
-// the rules now refuse the write and it would fail at the last step after
-// everything had been filled in.
 export default function CreateCommunityPage() {
   const navigate = useNavigate();
 

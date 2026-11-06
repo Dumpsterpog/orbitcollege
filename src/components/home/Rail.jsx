@@ -3,19 +3,11 @@ import { Icon, cx } from "../ui/Primitives.jsx";
 import { Img } from "../ui/Img.jsx";
 import { EventAvailability } from "../events/EventAvailability.jsx";
 
-// The right rail: one header card and four sections, all fed by documents.
-//
-// The mock shows growth percentages on trending tags and attendee counts on
-// events. Orbit stores neither, so neither is drawn. What it does store --
-// post counts per topic, member counts, event dates and venues -- is all here,
-// which is enough for every card to be worth reading without inventing a
-// number to fill a gap.
 
 const compact = (n) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : `${n}`);
 const nameHead = (name = "") => name.split(" — ")[0];
 const slug = (s = "") => s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 
-/* ------------------------------------------------------------- header */
 
 export function PulseHeader() {
   return (
@@ -31,7 +23,6 @@ export function PulseHeader() {
   );
 }
 
-/* ---------------------------------------------------------------- card */
 
 function Card({ icon, iconTint, title, action, onAction, children }) {
   return (
@@ -52,7 +43,6 @@ function Card({ icon, iconTint, title, action, onAction, children }) {
   );
 }
 
-/* ------------------------------------------------------------ trending */
 
 export function Trending({ topics, onOpen }) {
   if (!topics.length) return null;
@@ -81,10 +71,7 @@ export function Trending({ topics, onOpen }) {
   );
 }
 
-/* -------------------------------------------------------------- events */
 
-// "Today" and "Tomorrow" read faster than a date you have to compare against
-// today's; anything further out gets a real date.
 function whenLabel(date) {
   if (!date) return "Date TBA";
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -141,7 +128,6 @@ export function UpcomingEvents({ events, registeredIds, onOpen, onAll }) {
   );
 }
 
-/* --------------------------------------------------------- communities */
 
 export function CommunitiesForYou({ communities, joinedIds, onOpen, onJoin, onAll }) {
   if (!communities.length) return null;
@@ -190,7 +176,6 @@ export function CommunitiesForYou({ communities, joinedIds, onOpen, onJoin, onAl
   );
 }
 
-/* ------------------------------------------------------------------ cta */
 
 export function StartCommunityCard({ onCreate }) {
   return (

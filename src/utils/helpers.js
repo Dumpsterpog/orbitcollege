@@ -1,5 +1,3 @@
-// Core id generator — kept in one place since both seed data and
-// runtime-created communities/posts/chats need a shared counter.
 let SEED_ID = 1;
 export const nextId = () => String(SEED_ID++);
 
@@ -20,9 +18,6 @@ export function communityTrendScore(c) {
   return c.members * 0.4 + baseSparks(c) * 2 - c.lastActive * 0.6;
 }
 
-// Shared relative-time formatter — was duplicated privately in Community.jsx
-// (post/message timestamps); the dashboard's "recent in your communities"
-// section needs the same formatting, so it now lives here once.
 export function timeAgo(iso) {
   const ms = Date.now() - new Date(iso).getTime();
   const min = Math.floor(ms / 60000);
@@ -33,9 +28,6 @@ export function timeAgo(iso) {
   return `${Math.floor(hr / 24)}d ago`;
 }
 
-// Turns a display name into a URL-safe slug — shared by handleFor() below
-// and by App.jsx when it needs to generate a @handle client-side before a
-// community row (and its DB-assigned id) exists yet.
 export function slugify(name) {
   return name
     .toLowerCase()
@@ -50,9 +42,6 @@ export function handleFor(name, id) {
   return `${slugify(name)}-${id}`;
 }
 
-// Stable numeric hash for a string id — Firestore documents use string ids,
-// so anything that used to do `id % N` (fine for the old numeric mock ids)
-// needs this instead, or it silently produces NaN.
 export function hashId(id) {
   const s = String(id);
   let h = 0;

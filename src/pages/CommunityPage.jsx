@@ -4,9 +4,6 @@ import { CommunityDetail } from "../components/Community.jsx";
 import { EmptyState } from "../components/EmptyState.jsx";
 import { Button } from "../components/ui/Primitives.jsx";
 
-// A community is a real URL now, so it survives a refresh and can be shared.
-// The id comes from the path rather than from a variable held in App, which is
-// what makes both of those true.
 export default function CommunityPage() {
   const { communityId } = useParams();
   const navigate = useNavigate();

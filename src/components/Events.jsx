@@ -8,21 +8,7 @@ import { isDemoOpen, isRegistrationClosed } from "./events/eventNotice.js";
 import { useImageSrc } from "./ui/Img.jsx";
 import { cheapestPass, isEarlyBird, rupees } from "../data/passes.js";
 
-// Campus events.
-//
-// The list is horizontal cards rather than a grid: an event is mostly words --
-// when, where, how many people -- and a grid of squares would crop the picture
-// to fit text that matters more than it does.
-//
-// Filters are chips over a dropdown because there are six of them and they are
-// the main thing anyone does on this page. A dropdown hides the options behind
-// a click and gives no sense of what is available.
 
-// Each key is a real category name, so a chip filters for what it says. The
-// old list mapped labels onto unrelated community categories -- "Workshops"
-// filtered for "Study" -- so a workshop matched nothing. Chips with no events
-// behind them are hidden further down, so this list can cover every kind
-// without cluttering a page that has one.
 const FILTERS = [
   { key: "all",               label: "All Events",    icon: "calendar_today" },
   { key: "Workshop",          label: "Workshops",     icon: "lightbulb" },
@@ -32,9 +18,6 @@ const FILTERS = [
   { key: "Sports",            label: "Sports",        icon: "local_fire_department" },
 ];
 
-// A native select inherits the operating system's menu: a grey Windows list
-// in the middle of a rounded, tokenised page, ignoring the theme entirely.
-// This is the same control drawn in the app's own language.
 function RangePicker({ value, options, onChange }) {
   const [open, setOpen] = useState(false);
   const boxRef = useRef(null);
@@ -108,14 +91,6 @@ const RANGES = [
 // The poster doubles as the page banner and as the fallback card cover.
 const EVENT_POSTER = "/techideate_51.jpg";
 
-// The banner rotates rather than picking one image: the event poster is what
-// matters this month, the campus artwork is what the page is for the rest of
-// the year, and neither has to win. Sources are JPEG, not the original PNGs --
-// 2.3MB of poster on a phone is a second of staring at nothing.
-// Each slide says how it wants to sit in the frame, because they are not the
-// same shape. The poster is 16:9 and fills it exactly. The campus artwork is
-// 3:1 and would lose its own title to a crop -- "CAMPUS EVENTS" became
-// "S EVENTS" -- so it is shown whole against a blurred copy of itself.
 const BANNER_SLIDES = [
   { src: "/techideate_51.jpg", alt: "TechIdeate 2026, Beyond Human", fit: "cover" },
   { src: "/mujsideview.png", alt: "Campus events at Manipal University Jaipur", fit: "cover" },
@@ -154,8 +129,6 @@ function BannerSlides({ slides, interval = 5000 }) {
           )}
           aria-hidden={i !== at}
         >
-          {/* The blurred layer only shows for a slide that does not fill the
-              frame; a 16:9 poster covers it completely. */}
           <img src={slide.src} alt="" aria-hidden="true"
                className="absolute inset-0 w-full h-full object-cover scale-110 blur-2xl opacity-60" />
           <img src={slide.src} alt={slide.alt} loading={i === 0 ? "eager" : "lazy"}
@@ -187,22 +160,10 @@ function BannerSlides({ slides, interval = 5000 }) {
   );
 }
 
-// A poster is portrait and a banner is wide, so cropping one into the other
-// cuts the title off. This shows the whole poster over a blurred, enlarged
-// copy of itself, which fills the band without inventing artwork or hiding
-// any of it.
-// The one thing a visitor needs to know the week registrations open.
-//
-// It takes the soonest event still ahead of us rather than naming one, so it
-// stops being true by itself once the day passes instead of having to be
-// taken down by hand. Someone already registered is told that instead, since
-// "register now" to a person holding a pass reads as a fault.
 function TicketsLive({ event, registered, onRegister, onOpenPass }) {
   if (!event) return null;
   const saving = cheapestPass.was - cheapestPass.amount;
   const closed = isRegistrationClosed(event);
-  // Nothing to offer and nothing of theirs to open: the strip is an invitation,
-  // and there is none left to make.
   if (closed && !registered) {
     return (
       <section className="w-full rounded-2xl p-4 sm:px-5 bg-bg-raised ring-1 ring-line">
@@ -307,12 +268,9 @@ const dayLabel = (d) => {
 const timeLabel = (d) =>
   d ? d.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" }) : null;
 
-// Hashtags come out of the description, the same way they do on posts, rather
-// than being a field nobody fills in.
 const tagsOf = (e) =>
   (String(e.desc || "").match(/#[a-zA-Z][\w-]{1,20}/g) || []).slice(0, 3);
 
-/* ------------------------------------------------------------- card */
 
 function EventCard({ e, registered, onRegister, onOpen }) {
   const closed = isRegistrationClosed(e);
@@ -326,9 +284,6 @@ function EventCard({ e, registered, onRegister, onOpen }) {
   return (
     <article className="w-full bg-bg-raised rounded-2xl border border-line p-4 flex flex-col sm:flex-row gap-4">
       <div className="relative w-full sm:w-[200px] h-[140px] shrink-0 rounded-xl overflow-hidden bg-bg-sunken">
-        {/* The event's own artwork if it has been uploaded, then the campus
-            poster, and only then a category glyph. A card with a picture on it
-            is the difference between a listing and an invitation. */}
         {e.imageUrl || EVENT_POSTER ? (
           <Poster src={e.imageUrl || EVENT_POSTER} className="w-full h-full" fit="cover" />
         ) : (
@@ -401,7 +356,6 @@ function EventCard({ e, registered, onRegister, onOpen }) {
   );
 }
 
-/* ------------------------------------------------------------ screen */
 
 export function EventsScreen({
   events, onRegister, registeredEventIds = [], onOpenEvent, passes = [], onOpenPass,
@@ -449,8 +403,6 @@ export function EventsScreen({
     return FILTERS.filter((f) => f.key === "all" || present.has(f.key));
   }, [events]);
 
-  // The next event that has not happened yet, which is what the strip above
-  // the artwork is about.
   const next = useMemo(
     () => sorted.find((e) => isDemoOpen(e) || !e.startsAt || e.startsAt.getTime() > Date.now() - 6 * 3600e3) || null,
     [sorted]
@@ -461,7 +413,6 @@ export function EventsScreen({
       <div className="w-full mx-auto px-4 sm:px-6 py-6 grid justify-center gap-6
         grid-cols-1 max-w-[1420px] lg:grid-cols-[minmax(0,760px)_360px]">
 
-        {/* -------------------------------------------------------- main */}
         <div className="min-w-0 flex flex-col gap-4">
           <TicketsLive
             event={next}
@@ -469,8 +420,6 @@ export function EventsScreen({
             onRegister={onRegister}
             onOpenPass={onRegister}
           />
-          {/* The artwork carries it. The copy that was here said what the page
-              title and the filters below already say. */}
           <BannerSlides slides={BANNER_SLIDES} />
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -525,11 +474,6 @@ export function EventsScreen({
           )}
         </div>
 
-        {/* -------------------------------------------------------- rail */}
-        {/* No items-start on the grid above, deliberately: the aside has to
-            stretch to the row height or the sticky child below has a box its
-            own height to travel in, which is no travel at all -- the rail
-            scrolled away and left a hole. */}
         <aside className="hidden lg:block h-full">
           <div className="sticky top-6 max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar pr-1 flex flex-col gap-4">
             {passes.length > 0 && (

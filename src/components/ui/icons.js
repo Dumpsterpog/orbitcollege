@@ -1,14 +1,3 @@
-// Material Symbol name -> Lucide component.
-//
-// The app was written against Material Symbols and calls Icon with names like
-// "local_fire_department" in about ninety places. The design uses Lucide, whose
-// line weight and rounded joins are what actually make it look like the mock --
-// Material's outline axis is squarer and reads heavier at nav size.
-//
-// Rather than rewrite every call site, the names stay and this maps them. New
-// code can use Lucide names directly: both are accepted, since the lookup falls
-// through to the Lucide export when a key is not found here.
-
 import {
   Activity, ArrowLeft, ArrowRight, AtSign, Ban, Bell, Bookmark, BookOpen, Briefcase,
   Bug, Calendar, CalendarDays, CalendarX, Camera, Check, CheckCircle2, ChevronDown,

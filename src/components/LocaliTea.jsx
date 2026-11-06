@@ -3,17 +3,6 @@ import { teaTimeLeft, isTeaExpired } from "../utils/helpers.js";
 import { Icon, IconButton, Button, Textarea, Input, cx } from "./ui/Primitives.jsx";
 import { Screen, Empty } from "./ui/Layout.jsx";
 
-// Locali-Tea. Two tabs split by t.category:
-//   "tea"        — gossip, keeps the true/cap vote (worth fact-checking)
-//   "confession" — personal, gets emoji reactions instead; voting on whether
-//                  someone's confession is "true" would be the wrong verb.
-// Everything is anonymous and expires 48h after posting.
-//
-// Laid out like Home: a feed column of cards and, on desktop, a sticky rail.
-// It used to be a bare 576px column in the middle of the screen, which left
-// most of a laptop display empty and made the page look unfinished next to
-// every other screen in the app.
-
 const REACTIONS = ["😂", "❤️", "😮", "😢", "🔥"];
 const SIX_HOURS = 6 * 60 * 60 * 1000;
 const LIFESPAN = 48 * 60 * 60 * 1000;
@@ -142,8 +131,6 @@ function TeaRow({ t, onOpen, onValidate, myVote, onReact, myReaction }) {
   );
 }
 
-/* ------------------------------------------------------------ rail */
-
 function RailCard({ icon, tint, title, children }) {
   return (
     <section className={cx(card, "p-4")}>
@@ -215,8 +202,6 @@ function TeaRail({ counts }) {
     </>
   );
 }
-
-/* ---------------------------------------------------------- detail */
 
 function TeaDetail({
   t, onBack, onValidate, myVote, onReact, myReaction, onComment, onReport,
@@ -327,8 +312,6 @@ function TeaDetail({
   );
 }
 
-/* ------------------------------------------------------------ list */
-
 export function LocaliTeaScreen({
   teaPosts, onClose, verified, onBlocked, onPost, onValidate, onComment, onReport,
   myVotes, onOpenPost, onReact, myReactions, myPostIds, myCommentIds, canModerate,
@@ -350,10 +333,6 @@ export function LocaliTeaScreen({
   }), [live]);
   const open = teaPosts.find((t) => t.id === openId);
 
-  // Deliberately not Realtime: postgres_changes broadcasts the full row —
-  // including the hidden author_id — to every subscriber regardless of column
-  // grants, which would break the anonymity the feature is built on. Polling
-  // a plain SELECT is as safe as any other read here.
   useEffect(() => {
     if (!openId) return;
     const id = setInterval(() => onOpenPost(openId), 4000);
@@ -390,7 +369,6 @@ export function LocaliTeaScreen({
       <div className="w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 grid justify-center gap-6
         grid-cols-1 max-w-[1420px] lg:grid-cols-[minmax(0,760px)_340px]">
 
-        {/* ---------------------------------------------------- feed */}
         <div className="min-w-0 flex flex-col gap-3 sm:gap-4">
           <header className={cx(card, "p-4 sm:p-5")}>
             <div className="flex items-center gap-2">
@@ -494,7 +472,6 @@ export function LocaliTeaScreen({
           )}
         </div>
 
-        {/* ---------------------------------------------------- rail */}
         <aside className="hidden lg:block h-full">
           <div className="sticky top-6 flex flex-col gap-4">
             <TeaRail counts={counts} />

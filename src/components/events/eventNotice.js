@@ -1,23 +1,3 @@
-// What an event needs to say right now, in one place.
-//
-// Plans change on the day: slots get merged, registration shuts early. Every
-// screen that mentions the event has to say the same thing about it, so the
-// wording lives here rather than in each of the five places that show it.
-//
-// Keyed by event id, so it disappears on its own for every other event.
-
-// ---------------------------------------------------------------- the switch
-//
-// An event reopened on purpose, shown as though it were still ahead of us.
-// This is for demonstrating the registration flow to someone after the day has
-// passed, and it is the only thing standing between a finished event and a
-// live payment link, so it is one line and it is at the top of the file.
-//
-// While an id is in here: the closed notice is withheld, the date is ignored
-// so the session never counts as finished, and the whole flow (slot, pass,
-// payment, pass code) works exactly as it did on the day.
-//
-// Set the value to false, or delete the line, to put it back to closed.
 export const DEMO_OPEN = {
   U8uiUHLfTMAGkzBdWsFo: true, // TECHIDEATE, reopened to demo the flow
 };

@@ -1,18 +1,6 @@
 import { useState } from "react";
 import { Icon, cx } from "../ui/Primitives.jsx";
 
-// A fenced code block, rendered as a macOS terminal window.
-//
-// The composer writes ``` fences into ordinary post text, so this is a parse
-// of what is already stored rather than a new field on the document. That
-// means an old post containing a fence starts rendering as code with no
-// migration, and a post that never had one is unaffected.
-//
-// No syntax highlighter. Colouring JavaScript convincingly means shipping a
-// tokeniser and a theme, and the thing that actually makes a snippet readable
-// in a feed is a monospace face, line numbers and the window chrome telling
-// you where it starts and stops.
-
 const FENCE = /```([a-zA-Z0-9+#.-]*)\n([\s\S]*?)```/g;
 
 /** Splits post text into plain-text and code segments, in order. */

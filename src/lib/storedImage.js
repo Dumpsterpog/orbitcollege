@@ -1,20 +1,5 @@
-// Where pictures live now.
-//
-// Firebase Storage is a Blaze-plan feature and this project is on the free
-// plan, so there is no bucket to put anything in. Firestore is free, takes a
-// mebibyte per document, and is already wired up: so a picture is a shrunken
-// JPEG in a document of its own, and what gets written onto a post, a profile
-// or a community is a reference to it rather than the picture itself.
-//
-// Keeping the bytes out of the referencing document is the whole point. A feed
-// of twenty posts should be twenty small documents; if the images were fields
-// on those documents, opening the home page would pull every picture in the
-// feed whether or not it ever reached the screen.
-//
-// A reference looks like "img:AbC123...". Anything that does not start with
-// "img:" is left exactly as it is, which is what keeps the pictures uploaded
-// to Storage before the plan ran out working.
-
+// Storage needs the Blaze plan and this project is on Spark, so a picture is
+// a shrunken JPEG in an images document and the referrer stores "img:<id>".
 import { collection, doc, addDoc, getDoc, serverTimestamp } from "firebase/firestore";
 import { db, firebaseReady } from "./firebase.js";
 

@@ -3,9 +3,6 @@ import { CATEGORIES } from "../data/constants.js";
 import { Icon, Button, Input, Textarea, Field, cx } from "./ui/Primitives.jsx";
 import { Screen, Column, Empty } from "./ui/Layout.jsx";
 
-// Create flow. Four steps on one centred column with a thin progress rule
-// rather than four bordered step chips — the rule shows how far along you
-// are without adding another component to the page.
 
 const STEPS = ["Topic", "Details", "Interests", "Rules", "Review"];
 
@@ -52,9 +49,6 @@ export function CreateCommunity({ onCreate, onClose, verified, onBlocked, onVeri
   const [tags, setTags] = useState([]);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
-  // Three blanks rather than an add-a-rule button. An empty list invites
-  // skipping the step; three prompts invite filling them, and blanks are
-  // dropped on save so nobody is forced to invent a third rule.
   const [rules, setRules] = useState([
     { title: "", body: "" }, { title: "", body: "" }, { title: "", body: "" },
   ]);

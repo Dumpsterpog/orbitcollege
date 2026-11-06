@@ -77,11 +77,6 @@ export function CommunitySettings({ c, onSave, onDelete, onClose }) {
       if (upErr) {
         setSavingAvatar(false);
         setAvatarError(upErr.message || "Image upload failed.");
-        // Stop here instead of calling onSave — the parent closes this sheet
-        // the moment onSave fires, which would hide this error before
-        // anyone could read it. Name/description changes aren't lost, just
-        // held until the image either uploads or is removed and Save is
-        // pressed again.
         return;
       }
       const pub = uploaded ? { publicUrl: uploaded.url } : null;
@@ -266,17 +261,9 @@ function Stat({ label, value }) {
   );
 }
 
-// `event` is the event this community belongs to, when it has one. An event
-// community is not joined by pressing Join: it is joined by registering and
-// paying. So the header sends people to the registration page, and the share
-// QR is hidden -- a code that lets someone skip the ticket is worse than no
-// code at all.
 export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, verified, onBlocked, sparked, onSpark, onUpdate, onDelete, trendRank, interests, authUserId, myName, event = null, registered = false, pass = null, onRegisterEvent }) {
   const cat = categoryOf(c.category);
 
-  // Registered is not the same as paid, and paid is not the same as confirmed.
-  // A boolean was showing "View your pass" to someone whose payment nobody had
-  // checked yet, which is how people arrive at a gate holding nothing.
   const passState = !event ? "none"
     : pass?.status === "verified" && pass?.passCode ? "ready"
     : pass?.status === "payment_claimed" ? "checking"
@@ -321,30 +308,8 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
   const [stickersLoaded, setStickersLoaded] = useState(false);
   const [uploadingSticker, setUploadingSticker] = useState(false);
 
-  // Live subscriptions, scoped to this one community. App.jsx remounts this
-  // component (key={selectedCommunity.id}) on every switch, so a mount-time
-  // effect is enough.
-  //
-  // This replaced about ninety lines. Most of what was here existed to work
-  // around Postgres-era problems that no longer exist:
-  //
-  //   A getSession() call before every read, plus a 400ms retry, because a
-  //   stale JWT made RLS silently scope the request as anon and return an
-  //   empty 200 that overwrote real posts. Firestore's SDK holds the auth
-  //   state itself and re-runs the listener when it changes.
-  //
-  //   A profiles!author_id join hint, because PostgREST returned HTTP 300
-  //   "more than one relationship was found". Author names are denormalised
-  //   onto the document now, so there is no join to disambiguate.
-  //
-  //   Three postgres_changes channels with manual insert/update/delete
-  //   reconciliation. onSnapshot delivers the whole current list.
   useEffect(() => {
     const stopPosts = db.watchCommunityPosts(c.id, setPosts);
-    // Chat is members-only by rule, so subscribing as a non-member is a query
-    // we already know will be refused. Issuing it anyway produced a
-    // permission-denied in the console on every community you had not joined,
-    // which buried the denials that actually meant something.
     const stopMessages = joined
       ? db.watchMessages(c.id, setChatMessages)
       : (setChatMessages([]), () => {});
@@ -365,9 +330,6 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
     const list = members.map((m) => ({ ...m, role: m.userId === c.creatorId ? "Creator" : m.dbRole === "admin" ? "Admin" : "Member" }));
     return q ? list.filter((m) => m.name.toLowerCase().includes(q)) : list;
   }, [memberQuery, members, c.creatorId]);
-  // Whether the signed-in user can post to the Posts tab: always true unless
-  // the creator has switched this community to admin-only posting, in which
-  // case only the creator and members promoted to "admin" can.
   const myMemberRole = members.find((m) => m.userId === authUserId)?.dbRole;
   const canPost = !c.postsAdminOnly || isAdmin || myMemberRole === "admin";
   const recentlyJoined = useMemo(
@@ -384,16 +346,11 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
   const faceStack = members.slice(0, 5);
   const extraCount = Math.max(0, total - faceStack.length);
   const orderedPosts = useMemo(() => {
-    // Pinned first, always. A pin is the creator saying "read this first", and
-    // no sort should be able to bury it.
     const pinned = posts.filter((p) => p.pinned);
     const rest = posts.filter((p) => !p.pinned);
 
     const byNew = (a, b) => (b.createdAt?.getTime() || 0) - (a.createdAt?.getTime() || 0);
     const byTop = (a, b) => (b.sparks || 0) - (a.sparks || 0) || byNew(a, b);
-    // Hot decays a post's sparks against its age, so a day-old post with five
-    // sparks outranks a month-old one with six. Without the decay "hot" and
-    // "top" would return the same list forever.
     const heat = (x) => {
       const hours = Math.max(1, (Date.now() - (x.createdAt?.getTime() || 0)) / 3600e3);
       return (x.sparks || 0) / Math.pow(hours + 2, 0.6);
@@ -404,11 +361,6 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
     return [...pinned.sort(byNew), ...rest.sort(cmp)];
   }, [posts, sort]);
 
-  // Posts now require a photo — text-only updates belong in Chat instead
-  // (see the composer UI below), so the feed reads as an actual photo feed
-  // rather than a mix of text posts and photo posts. Caption stays optional.
-  // Copies a link to the community. Deep links to a single post do not exist
-  // yet, so this does not pretend to be one.
   const sharePost = async () => {
     const url = window.location.origin + "/c/" + handle;
     try {
@@ -423,9 +375,6 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
   const handlePost = async () => {
     const t = draft.trim();
     const file = postImageFile;
-    // Text alone is a post. This used to require a photo, on the theory that
-    // text belonged in Chat -- but chat is members-only and ephemeral, so the
-    // rule quietly meant a community could not have a written announcement.
     if (!authUserId || (!t && !file)) return;
 
     // Same three-way decision as the home composer. This path used to have no
@@ -471,10 +420,6 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
     }
   };
 
-  // Author can always remove their own post/message; the community's
-  // creator can remove anything posted inside it (moderation) — matches
-  // the delete RLS policies in schema_media_and_moderation.sql. Optimistic
-  // + rollback, same pattern as the rest of this file.
   const deletePost = async (post) => {
     if (!(post.authorId === authUserId || isAdmin)) return;
     setPosts((ps) => ps.filter((p) => p.id !== post.id));
@@ -548,10 +493,6 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
     setChatMessages((ms) => ms.map((m) => (m.id === message.id ? { ...m, pinned: nextPinned } : currentlyPinned && m.id === currentlyPinned.id ? { ...m, pinned: false } : m)));
   };
 
-  // Was a dead button (no handler at all) — now a real delete, backed by the
-  // "community creator can remove a member" policy in
-  // schema_security_hardening.sql. Optimistic + rollback, same pattern as
-  // the rest of this file.
   const removeMember = async (member) => {
     if (!isAdmin) return;
     setMembers((ms) => ms.filter((m) => m.userId !== member.userId));
@@ -582,9 +523,6 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
     } catch { setChatDraft(t); }
   };
 
-  // An event's space is an announcement board: the organisers post, everyone
-  // else reads. No chat, no member list, no post feed -- those belong to a
-  // community people chose to join, not to everyone holding a ticket.
   const TABS = event
     ? [{ key: "posts", label: "Announcements", icon: "campaign" }]
     : [
@@ -606,8 +544,6 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
       />
 
       <div className="flex-1 min-h-0 overflow-y-auto">
-        {/* Banner. A community rarely has cover art, so the fallback is a wash
-            in its own category colour rather than a grey slab or a stock photo. */}
         <div className={cx(
           "relative overflow-hidden bg-gradient-to-br",
           event ? "h-40 sm:h-60" : "h-32 sm:h-40",
@@ -639,8 +575,6 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
         </div>
 
         <div className="max-w-6xl w-full mx-auto px-5 lg:px-8">
-          {/* Identity. The avatar straddles the banner edge, which is what stops
-              the header reading as two unrelated bands. */}
           <div className="flex items-end gap-4 -mt-11 sm:-mt-12">
             <div className="relative shrink-0">
               <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden ring-4 ring-bg bg-bg-sunken grid place-items-center">
@@ -708,8 +642,6 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
 
           {c.desc && <p className="text-md text-ink-2 leading-relaxed mt-3 max-w-2xl">{c.desc}</p>}
 
-          {/* Meta strip. Every figure on it is real; nothing is invented to
-              fill the row out. */}
           <div className="flex items-center gap-x-5 gap-y-2 mt-3.5 flex-wrap text-base text-ink-2">
             {!event && (
               <button onClick={() => setTab("members")} className="inline-flex items-center gap-2 hover:text-ink transition-colors">
@@ -779,8 +711,6 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
           </div>
         </div>
 
-        {/* Body: content beside a rail carrying everything about the community
-            that is not a post. The rail is what lets the header stay short. */}
         <div className="max-w-6xl w-full mx-auto lg:px-8 grid lg:grid-cols-[minmax(0,1fr)_310px] gap-x-8">
           <div className="min-w-0">
             {event && (
@@ -804,8 +734,6 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                       </p>
                       <div className="flex items-center gap-2 flex-wrap mt-1">
                         <h2 className="text-lg font-bold text-ink break-words">{event.title}</h2>
-                        {/* Registering puts you in the group. Saying so is how
-                            someone knows the thing they just did worked. */}
                         {joined && (
                           <span className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-c-green/15 text-c-green text-2xs font-bold">
                             <Icon name="check" size={12} />Joined
@@ -856,9 +784,6 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
                 </div>
               );
             })()}
-            {/* Messages as bubbles, yours on the right, runs from the same
-                person grouped under one name. It was a flat grey list where
-                every line looked the same and nothing said who was talking. */}
             <div className="flex-1 overflow-y-auto no-scrollbar px-4 sm:px-5 py-4 flex flex-col gap-2">
               {!joined && (
                 <div className="mx-auto max-w-sm text-center rounded-2xl bg-bg-sunken px-4 py-3 mb-2">
@@ -1049,8 +974,6 @@ export function CommunityDetail({ c, joined, onJoinToggle, onClose, onReport, ve
               </div>
             )}
 
-            {/* Sort. Pinned posts ignore it, because a pin is the creator
-                saying "read this first" and no ordering should bury it. */}
             {orderedPosts.length > 0 && (
               <div className="flex items-center gap-1 mb-4">
                 {[

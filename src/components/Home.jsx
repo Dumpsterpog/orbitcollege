@@ -8,11 +8,6 @@ import {
   PulseHeader, Trending, UpcomingEvents, CommunitiesForYou,
 } from "./home/Rail.jsx";
 
-// Home is the campus feed, with everything that is not a post in the rail.
-//
-// The rail is always there, so the page is the same shape on an empty campus
-// and a busy one. Earlier versions moved a community directory into the feed
-// column whenever it ran dry, which read as filler because it was.
 
 function PostSkeleton() {
   return (
@@ -92,9 +87,6 @@ export function HomeScreen({
     [events]
   );
 
-  // Topics, counted from the feed itself. The mock shows hashtags with counts;
-  // these are the real ones people have written, plus the categories of the
-  // communities posting, so the list reflects the campus rather than a guess.
   const trending = useMemo(() => {
     const counts = new Map();
     const bump = (name) => {
@@ -131,9 +123,6 @@ export function HomeScreen({
   };
   const shownAnnouncements = announcements.filter((a) => !dismissed.includes(a.id)).slice(0, 2);
 
-  // Targeting. An ad with no interests is for everyone; one with interests
-  // reaches only people who picked at least one of them. Guests have no
-  // interests, so an interest-targeted ad never reaches them either way.
   const myInterests = user?.interests || [];
   const eligibleAds = ads.filter((a) =>
     (user?.verified || a.showToGuests)
@@ -155,7 +144,6 @@ export function HomeScreen({
       <div className="w-full mx-auto px-3 sm:px-6 py-4 sm:py-6 grid justify-center gap-6
         grid-cols-1 max-w-[1420px] lg:grid-cols-[minmax(0,760px)_360px]">
 
-        {/* ------------------------------------------------------- feed */}
         <div className="min-w-0 flex flex-col gap-3 sm:gap-4">
           {shownAnnouncements.map((a) => (
             <div key={a.id} className="flex items-start gap-3 rounded-2xl border border-line bg-bg-raised px-4 py-3">
@@ -262,11 +250,6 @@ export function HomeScreen({
           )}
         </div>
 
-        {/* ------------------------------------------------------- rail */}
-        {/* No items-start on the grid above, deliberately: the aside has to
-            stretch to the row height or the sticky child below has a box its
-            own height to travel in, which is no travel at all -- the rail
-            scrolled away and left a hole. */}
         <aside className="hidden lg:block h-full">
           <div className="sticky top-6 max-h-[calc(100dvh-3rem)] overflow-y-auto no-scrollbar pr-1 flex flex-col gap-4">
             <PulseHeader />

@@ -1,17 +1,3 @@
-// Rate limits.
-//
-// These are enforced in two places and neither is optional.
-//
-// Here, in the client, so the UI can say "you have hit the limit" before a
-// write is attempted and can grey the control out rather than letting someone
-// type a post that will be refused. That is the whole value of the client-side
-// half: a better message, sooner. It stops nobody who opens a console.
-//
-// And in firestore.rules, which is the half that actually holds. The community
-// cap is enforceable there because it can count what already exists; the post
-// window is not, because rules cannot query a collection to count recent
-// documents. See the note on POST_WINDOW below for what that means.
-
 export const MAX_COMMUNITIES = 2;
 export const POST_LIMIT = 10;
 export const POST_WINDOW_MS = 15 * 60 * 1000;
@@ -37,10 +23,6 @@ function recentPosts() {
   return readTimes().filter((t) => t > cut).sort((a, b) => a - b);
 }
 
-/**
- * Whether another post is allowed right now.
- * Returns { ok } or { ok: false, retryAfterMs, message }.
- */
 export function checkPostLimit() {
   const times = recentPosts();
   if (times.length < POST_LIMIT) return { ok: true, remaining: POST_LIMIT - times.length };
@@ -63,10 +45,6 @@ export function notePost() {
   writeTimes(times);
 }
 
-/**
- * Whether this account may create another community.
- * `owned` is the number they already created.
- */
 export function checkCommunityLimit(owned) {
   if (owned < MAX_COMMUNITIES) return { ok: true, remaining: MAX_COMMUNITIES - owned };
   return {

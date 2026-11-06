@@ -6,39 +6,12 @@ import {
 import { db, firebaseReady } from "./firebase.js";
 import { saveImage } from "./storedImage.js";
 
-// Firestore data layer. Replaces lib/supabaseClient.js and every direct
-// Supabase call that used to live in App.jsx and Community.jsx.
-//
-// Everything Firestore-specific is contained here: collection paths, the
-// relational→document remodelling, counter maintenance, and the transactions
-// that keep counts honest. The screens keep receiving the exact shapes they
-// were written against ({ members, creator, lastActive, desc, ... }), so the
-// migration did not require touching their rendering at all.
-//
-// THREE THINGS POSTGRES DID FOR US THAT FIRESTORE DOES NOT
-//
-//   Joins. `profiles!author_id(name)` has no equivalent, so an author's name
-//   is denormalised onto the post at write time. A renamed user leaves stale
-//   names on old posts; that is the accepted cost, and it is cheaper on every
-//   read than a lookup per row would be.
-//
-//   Counters. member_count and spark_count were maintained by triggers. They
-//   are now increment() calls issued inside the same batch or transaction as
-//   the row they count, so the two cannot drift apart.
-//
-//   Atomicity across tables. register_for_event() was a plpgsql function that
-//   created-or-reused a community and joined the caller in one statement.
-//   It is a runTransaction here, with the same guarantee.
 
-/* ------------------------------------------------------------ helpers */
 
 const need = () => {
   if (!firebaseReady) throw new Error("Firebase is not configured. Fill VITE_FIREBASE_* in .env.");
 };
 
-// Firestore hands back a Timestamp, a pending null (serverTimestamp has not
-// resolved yet), or nothing at all on legacy rows. All three have to become a
-// Date without the caller thinking about it.
 const toDate = (v) => {
   if (!v) return null;
   if (v instanceof Timestamp) return v.toDate();
@@ -67,7 +40,6 @@ export const timeAgoFrom = (v) => {
 const slugify = (s = "") =>
   s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
 
-/* ----------------------------------------------------------- mappers */
 
 // Same shapes the components were built against, so nothing downstream had
 // to change when the database did.
@@ -96,16 +68,6 @@ export const mapPost = (d) => {
   const r = d.data();
   return {
     id: d.id,
-    // A collectionGroup query loses the parent path unless it is read back
-    // off the ref, which is how a feed post knows which community it is in.
-    // Taken from the document path, never from the stored field.
-    //
-    // The path cannot lie about where a document lives; a field duplicating it
-    // can. Reading the field first meant a root post could set communityId to
-    // any community and be rendered as though it belonged there, which is why
-    // the create rule had to police the field -- and policing it coupled the
-    // rules to the exact shape of one client write, so publishing new rules
-    // against an older deployed bundle refused every post.
     communityId: d.ref.parent.parent?.id || null,
     authorId: r.authorId,
     who: r.authorName || "Someone",
@@ -181,14 +143,7 @@ export const mapMember = (d) => {
   };
 };
 
-/* ------------------------------------------------------- communities */
 
-// A failed listener used to be indistinguishable from an empty collection:
-// every watcher swallowed the error and reported []. The two failures that
-// actually happen in this app both look exactly like "nothing here yet" --
-// a collectionGroup query with no index, and rules that have not been
-// published -- so the console message, which carries Firestore's
-// click-to-create index link, is the only way to tell them apart.
 function watchFailed(err) {
   console.error(
     `[orbit/db] listener failed (${err?.code || "unknown"}). ` +
@@ -221,21 +176,12 @@ export async function createCommunity({ name, category, desc, tags, rules = [], 
     official,
     handle: slugify(name),
     avatarUrl: null,
-    // House rules, set at creation and editable by the creator. Stored on the
-    // community rather than a subcollection: there are three of them, they are
-    // read on every page view, and a subcollection would cost a second query
-    // to display a paragraph of text.
     rules: Array.isArray(rules) ? rules.filter((r) => r?.title?.trim()) : [],
     postsAdminOnly: false,
     createdAt: serverTimestamp(),
     lastActiveAt: serverTimestamp(),
   });
 
-  // The quota the rules read. It has to be maintained here because rules
-  // cannot count a collection: they can only look at one document, so the
-  // number has to already be on the profile by the time the next create is
-  // checked. setDoc with merge so a profile that has never had the field, or
-  // does not exist yet, both work.
   if (creatorId) {
     try {
       await setDoc(
@@ -253,9 +199,6 @@ export async function createCommunity({ name, category, desc, tags, rules = [], 
   // The creator is a member from the moment it exists, and an admin of it.
   if (creatorId) {
     await setDoc(doc(db, "communities", ref.id, "members", creatorId), {
-      // uid is duplicated into the document even though it is also the doc id,
-      // because fetchMyJoins uses a collectionGroup query and those can only
-      // filter on fields, never on the document id.
       uid: creatorId,
       name: creatorLabel || "Someone",
       role: "admin",
@@ -295,18 +238,8 @@ export async function deleteCommunity(id) {
   await deleteDoc(doc(db, "communities", id));
 }
 
-/* ---------------------------------------------------------- members */
 
 
-// The three "what has this person done" lookups below are collectionGroup
-// queries filtered on uid, and each needs its own index. Without it Firestore
-// throws failed-precondition, which surfaced as an unhandled promise rejection
-// and left the app believing you had joined nothing.
-//
-// So: try the indexed query, and if the index is missing, walk the parents
-// instead. That is N+1 reads rather than one, which is the wrong shape at
-// scale and completely fine for one campus -- and it means a fresh project
-// works before anyone has opened the Firebase console.
 async function groupByUid(groupName, parentPath, uid, pick) {
   try {
     const snap = await getDocs(query(collectionGroup(db, groupName), where("uid", "==", uid)));
@@ -328,18 +261,6 @@ export async function fetchMyJoins(uid) {
   return rows.map((r) => (typeof r === "string" ? r : r.id));
 }
 
-// Membership and the count move together, so they cannot disagree.
-// Membership is the fact. memberCount is a cached display of that fact.
-//
-// These were one transaction so they could never disagree, and that is what
-// broke joining: the counter write needs permission on the community document
-// itself, and when it was refused the transaction rolled back the membership
-// too -- trading the entire feature for the accuracy of a number.
-//
-// They are separate now, in that order. A refused counter bump is logged and
-// swallowed, so the worst case is a count that reads low until the next join
-// corrects it. A refused membership write still fails loudly, because that one
-// actually means you did not join.
 export async function joinCommunity(communityId, uid, name) {
   need();
   const memberRef = doc(db, "communities", communityId, "members", uid);
@@ -390,27 +311,11 @@ export async function setMemberRole(communityId, uid, role) {
   await updateDoc(doc(db, "communities", communityId, "members", uid), { role });
 }
 
-/* ------------------------------------------------------------ posts */
 
 
 
-// The Home feed: newest posts across every community. collectionGroup is the
-// Firestore equivalent of "select from community_posts" with no parent filter,
-// and it needs a composite index on (posts, createdAt desc) — Firestore will
-// print a click-to-create link the first time this runs.
 export function watchFeed(cb, max = 40) {
   if (!firebaseReady) { cb([]); return () => {}; }
-  // Deliberately no orderBy.
-  //
-  // Sorting a collectionGroup on the server needs a COLLECTION_GROUP_DESC
-  // index, which does not exist on a fresh project and cannot be created from
-  // code -- and the failure renders as an empty feed rather than an error, so
-  // it reads as "nothing posted yet". Sorting here is one pass over at most a
-  // few hundred documents and removes that setup step entirely.
-  //
-  // The index is still the right answer once this outgrows a single campus;
-  // firestore.indexes.json documents it. Add it and this can go back to an
-  // ordered, server-limited query.
   return onSnapshot(
     query(collectionGroup(db, "posts")),
     (snap) => cb(
@@ -433,13 +338,6 @@ export function watchCommunityPosts(communityId, cb) {
 }
 
 
-// Where a post lives.
-//
-// A post made to a community is a document in that community's subcollection.
-// A campus post belongs to no community and goes in a root `posts` collection
-// instead. collectionGroup(db, "posts") matches a collection of that name at
-// ANY depth, root included, so the home feed picks both up through the query
-// it already runs -- no second read, no merging, no ordering to reconcile.
 const postsRef = (communityId) =>
   communityId ? collection(db, "communities", communityId, "posts") : collection(db, "posts");
 
@@ -460,26 +358,6 @@ export async function createPost({ communityId = null, authorId, authorName, tex
     createdAt: serverTimestamp(),
   };
 
-  // A campus post is written twice-shaped, on purpose.
-  //
-  // Three versions of the campus-post rule have been published to this project
-  // over its life, and they disagree about one field:
-  //
-  //   v1  request.resource.data.communityId == null      -- field must be null
-  //   v2  !('communityId' in request.resource.data)      -- field must be absent
-  //   v3  (no condition)                                 -- either is fine
-  //
-  // Which one is live is not readable from here: the Rules API needs
-  // credentials this app does not have, and the read rule is identical across
-  // all three so probing cannot tell them apart. A client that picks one shape
-  // is guessing, and guessing wrong is a flat permission-denied.
-  //
-  // So it does not guess. Absent first, because that satisfies v2 and v3; if
-  // the write is refused, null second, which satisfies v1 and v3. One of the
-  // two always lands.
-  //
-  // Delete the fallback once v3 is published everywhere -- the retry costs a
-  // round trip on projects still running v1, and nothing at all on v3.
   const shapes = communityId
     ? [{ ...base, communityId }]
     : [base, { ...base, communityId: null }];
@@ -512,7 +390,6 @@ export async function createPost({ communityId = null, authorId, authorName, tex
   return mapPost(await getDoc(ref));
 }
 
-/* ------------------------------------------------------ review queue */
 
 // A post the classifier held back. It waits in moderation_queue, readable only
 // by its author and admins, until the admin tool publishes or rejects it.
@@ -532,9 +409,6 @@ export async function submitForReview({ communityId = null, authorId, authorName
   return ref.id;
 }
 
-// The signed-in user's own posts still waiting. Filtered on authorId, which is
-// what the read rule requires; status is filtered here rather than in the
-// query so no composite index is needed.
 export function watchMyPendingPosts(uid, cb) {
   if (!firebaseReady || !uid) { cb([]); return () => {}; }
   return onSnapshot(
@@ -549,11 +423,7 @@ export function watchMyPendingPosts(uid, cb) {
   );
 }
 
-/* ---------------------------------------------------------- comments */
 
-// Comments hang off whichever post document they belong to, so the same code
-// serves a community post and a campus post -- postRef already knows the
-// difference.
 
 export const mapComment = (d) => {
   const r = d.data();
@@ -620,17 +490,8 @@ export async function setPostPinned(communityId, postId, pinned) {
   await updateDoc(doc(db, "communities", communityId, "posts", postId), { pinned });
 }
 
-// Which posts this person has sparked, read from their own profile.
-//
-// This used to be collectionGroup("sparks") filtered on uid, which needs a
-// single-field collection-group index that has to be created by hand. Without
-// it every sign-in logged a failed-precondition and every heart rendered
-// hollow. The list is kept on the profile by toggleSpark instead: one document
-// read, no index, and nothing to configure.
-//
-// Sparks given before this existed are not in the list, so those hearts read
-// as unsparked until they are tapped again. The counts on the posts are
-// unaffected -- they come from the spark documents, which are still written.
+// Read off the profile, not a collectionGroup query: that needs a
+// COLLECTION_GROUP_ASC index nobody created, and it fails closed.
 export async function fetchMySparks(uid) {
   if (!firebaseReady || !uid) return [];
   try {
@@ -662,9 +523,6 @@ export async function toggleSpark(communityId, postId, uid) {
     }
   });
 
-  // The same fact on the profile, which is what fetchMySparks reads. Best
-  // effort: a spark that fails to record here still counted, and the heart
-  // comes back hollow on the next reload rather than the post being wrong.
   setDoc(
     doc(db, "profiles", uid),
     { sparkedPosts: nowSparked ? arrayUnion(postId) : arrayRemove(postId) },
@@ -674,7 +532,6 @@ export async function toggleSpark(communityId, postId, uid) {
   return nowSparked;
 }
 
-/* --------------------------------------------------------- messages */
 
 export function watchMessages(communityId, cb) {
   if (!firebaseReady) { cb([]); return () => {}; }
@@ -720,7 +577,6 @@ export async function setMessagePinned(communityId, messageId, pinned) {
   await batch.commit();
 }
 
-/* ----------------------------------------------------------- events */
 
 export function watchEvents(cb) {
   if (!firebaseReady) { cb([]); return () => {}; }
@@ -731,11 +587,7 @@ export function watchEvents(cb) {
   );
 }
 
-/* ----------------------------------------------------- announcements */
 
-// Banners published from the admin tool. The newest few, with switched-off and
-// expired ones dropped here rather than in the query, so a single-field
-// orderBy is all it needs and no composite index has to exist.
 export function watchAnnouncements(cb) {
   if (!firebaseReady) { cb([]); return () => {}; }
   return onSnapshot(
@@ -755,12 +607,7 @@ export function watchAnnouncements(cb) {
   );
 }
 
-/* --------------------------------------------------------------- ads */
 
-// Live ads only: the rules refuse to hand anyone else a draft or a paused ad,
-// and this equality filter is what lets the query satisfy that rule. The
-// schedule is checked here, so an ad with a start date in the future can be
-// set live ahead of time and simply appears when the date comes.
 export function watchAds(cb) {
   if (!firebaseReady) { cb([]); return () => {}; }
   return onSnapshot(
@@ -808,18 +655,7 @@ export async function fetchMyRegistrations(uid) {
   return rows.map((r) => (typeof r === "string" ? r : r.id));
 }
 
-// The register_for_event() plpgsql function, as a transaction. Registering is
-// the access gate to the event's community: the first registration creates
-// that community, later ones reuse it, and either way the caller ends up a
-// member. All of it commits together or none of it does.
-/* ----------------------------------------------------- event signups */
 
-// Registration details: name, college, year, how they heard about it.
-//
-// Deliberately NOT in events/{id}/registrations, which is world-readable (it
-// is what the "N going" count is drawn from, and a collection-group rule opens
-// it further). Nobody's college and year belong in a public document, so the
-// details live here, where only the student and an admin can read them.
 export async function createSignup(eventId, uid, fields) {
   need();
   await setDoc(doc(db, "events", eventId, "signups", uid), {
@@ -839,9 +675,6 @@ export function watchMySignup(eventId, uid, cb) {
   );
 }
 
-// The student saying they have paid. It is a claim, not proof: CCAvenue
-// confirms nothing back to this app, so an admin verifies against the payment
-// report before any pass is issued.
 export async function markPaymentClaimed(eventId, uid, { paymentRef, proofStored } = {}) {
   need();
   await updateDoc(doc(db, "events", eventId, "signups", uid), {
@@ -852,14 +685,6 @@ export async function markPaymentClaimed(eventId, uid, { paymentRef, proofStored
   });
 }
 
-// The screenshot of the payment, which is the only evidence this app ever
-// sees: CCAvenue tells it nothing.
-//
-// It would belong in Storage, but Storage is a paid-plan feature and this
-// project is on the free plan, so it goes into Firestore as a shrunken JPEG
-// data URL. It gets a document of its own rather than a field on the signup,
-// because the admin tool lists every registration at once and a field would
-// make that list drag a few hundred images along with it.
 export async function savePaymentProof(eventId, uid, dataUrl) {
   need();
   if (!dataUrl) throw new Error("no-proof");
@@ -876,20 +701,8 @@ export async function fetchPaymentProof(eventId, uid) {
   return snap.exists() ? snap.data().dataUrl || null : null;
 }
 
-// Registering touches only documents that belong to the person registering:
-// their own registration marker and their own membership row. Nothing shared
-// is read or written on the critical path, so twenty people registering in the
-// same second never queue behind each other.
-//
-// This used to be one transaction over the event document, which serialised
-// every registration through a single hot document and, on a rush, would retry
-// and fail. It also tried to create the event's chat community, which the
-// rules refuse for a student: community creation requires creatorId to be the
-// caller and counts against their two-community cap. The admin tool creates
-// the community with the event instead.
-//
-// Counters are increments applied afterwards and allowed to fail. They are a
-// display number; the signups list is the record.
+// Per-user documents and best-effort counters, never a transaction: a
+// transaction here serialises every registration through the event document.
 export async function registerForEvent(event, uid, userName) {
   need();
 
@@ -937,11 +750,7 @@ export async function registerForEvent(event, uid, userName) {
   return communityId;
 }
 
-/* -------------------------------------------------------- Locali-Tea */
 
-// 48 hours, enforced on read as well as by the TTL policy, so an expired post
-// is invisible the moment it expires rather than whenever Firestore's sweeper
-// next runs.
 const TEA_TTL_MS = 48 * 3600 * 1000;
 
 export async function fetchTea() {
@@ -955,11 +764,6 @@ export async function fetchTea() {
 export async function postTea({ text, category, authorId }) {
   need();
   const now = Date.now();
-  // authorId is NOT written onto the post. Firestore cannot hide a field of a
-  // readable document, so storing it here would make every "anonymous" post
-  // attributable to anyone who opened the network tab. It goes into
-  // tea_authors instead, which the rules can consult with get() but no client
-  // can read. See firestore.rules.
   const ref = await addDoc(collection(db, "tea_posts"), {
     text,
     category: category || "tea",
@@ -1080,7 +884,6 @@ export async function deleteTeaComment(teaId, commentId) {
   await updateDoc(doc(db, "tea_posts", teaId), { commentCount: increment(-1) });
 }
 
-/* --------------------------------------------------------- stickers */
 
 export async function fetchStickers() {
   if (!firebaseReady) return [];
@@ -1096,7 +899,6 @@ export async function addSticker({ url, name, authorId }) {
   return { id: ref.id, url, name };
 }
 
-/* ---------------------------------------------------------- reports */
 
 export async function createReport({ reporterId, target, reason }) {
   need();
@@ -1110,18 +912,14 @@ export async function createReport({ reporterId, target, reason }) {
   });
 }
 
-/* ---------------------------------------------------------- storage */
 
-// Supabase buckets became Storage folders, and Storage became Firestore when
-// the free plan turned out not to include it. The folder name survives as the
-// thing that says how big the picture needs to be, and every caller still gets
-// back { url, path } as it always did.
 const KIND_FOR_FOLDER = {
   "community-avatars": "avatar",
   stickers: "sticker",
   "community-media": "photo",
 };
 
+// Signature kept from the Storage version so the six call sites did not move.
 export async function uploadImage(folder, file, uid, kind) {
   need();
   try {
@@ -1141,7 +939,6 @@ export async function deleteImage(path) {
   try { await deleteDoc(doc(db, "images", id)); } catch { /* already gone */ }
 }
 
-/* ------------------------------------------------------------ admin */
 
 export async function isOrbitAdmin(uid) {
   if (!firebaseReady || !uid) return false;

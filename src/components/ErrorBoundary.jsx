@@ -1,12 +1,5 @@
 import React from "react";
 
-// Nothing was catching render errors, so any exception anywhere blanked the
-// whole app to a white screen with no way back and nothing in the UI to say
-// what happened. This catches it, shows the message, and offers the two things
-// that actually recover: reload, or go home.
-//
-// Class component on purpose -- componentDidCatch has no hook equivalent.
-
 export default class ErrorBoundary extends React.Component {
   constructor(props) {
     super(props);
@@ -18,9 +11,6 @@ export default class ErrorBoundary extends React.Component {
   }
 
   componentDidCatch(error, info) {
-    // Kept in the console rather than sent anywhere: there is no error
-    // reporting service wired up, and pretending otherwise would be worse
-    // than a stack trace someone can actually read.
     console.error("[orbit] render error", error, info?.componentStack);
   }
 

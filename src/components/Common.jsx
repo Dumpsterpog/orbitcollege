@@ -5,10 +5,6 @@ import { Icon, Avatar, Button, cx } from "./ui/Primitives.jsx";
 
 export { Avatar };
 
-// Wordmark. One definition, used by the loading screen, onboarding, settings
-// and the maintenance page -- four places that had four hand-drawn copies of
-// an older mark, which is how the loading screen ended up still showing it
-// after the logo changed.
 export function Logo({ size = 24, showWordmark = true }) {
   return (
     <span className="inline-flex items-center gap-2">
@@ -30,15 +26,10 @@ export function Logo({ size = 24, showWordmark = true }) {
   );
 }
 
-// Beta marker, next to every wordmark. One component so the loading screen,
-// sidebar and phone header cannot end up with three slightly different pills.
 export function BetaTag({ className }) {
   return (
     <span
       className={cx(
-        // Teal rather than the accent: next to the wordmark the two indigos
-        // read as one blurred shape, and the tag is meant to be a separate
-        // remark about the app, not part of its name.
         "inline-flex items-center h-[18px] px-1.5 rounded-md bg-c-teal/15 text-c-teal ring-1 ring-c-teal/30",
         "text-[10px] font-bold uppercase tracking-[0.08em] leading-none shrink-0",
         className
@@ -49,9 +40,6 @@ export function BetaTag({ className }) {
   );
 }
 
-// Toast. Bottom centre, above the mobile tab bar — and high enough to clear
-// the guest pill, since the most likely toast a guest sees is the one telling
-// them to sign in, which would otherwise land on top of it.
 export function Toast({ message }) {
   if (!message) return null;
   return (
@@ -63,19 +51,10 @@ export function Toast({ message }) {
   );
 }
 
-// Theme notice.
-//
-// The app follows the OS on a first visit rather than picking a look for you.
-// That is the right default but an invisible one, so this says it happened
-// once, names which way it went, and points at where to override it. It never
-// appears again after being dismissed or after any manual theme choice, so it
-// cannot become the kind of banner people learn to swat away.
 export function ThemeNotice({ theme, onDismiss, onOpenSettings, raised }) {
   return (
     <div className={cx(
       "fixed inset-x-0 z-[75] flex justify-center px-4 pointer-events-none",
-      // Sits in the toast's lane normally, and one pill higher when the guest
-      // prompt is already occupying the lane below it.
       raised ? "bottom-52 lg:bottom-40" : "bottom-36 lg:bottom-24"
     )}>
       <div
@@ -114,17 +93,6 @@ export function ThemeNotice({ theme, onDismiss, onOpenSettings, raised }) {
   );
 }
 
-// Guest prompt.
-//
-// This was a full-width grey strip pinned under the header — the shape of a
-// browser permission bar, which is the one piece of UI everybody has learned
-// to ignore. It also pushed the whole page down by its own height on every
-// screen, permanently, for a message you only need to read once.
-//
-// It floats at the bottom now: a single dark pill, out of the content's way,
-// dismissible, and sitting above the mobile tab bar so it never covers the
-// nav. Dismissal is session-only — it comes back on reload rather than
-// hiding the one route back to an account forever.
 export function GuestBanner({ onVerify }) {
   const [dismissed, setDismissed] = useState(false);
   if (dismissed) return null;
@@ -167,19 +135,10 @@ export function GuestBanner({ onVerify }) {
   );
 }
 
-// Comment thread.
-//
-// Collapsed by default and only subscribed once opened: a feed of twenty posts
-// should not hold twenty live listeners for threads nobody has looked at.
-// Shared by the campus feed and a community's own posts, which is why it takes
-// communityId rather than assuming one.
 export function PostComments({
   communityId, postId, count = 0, authUserId, myName, canWrite, onBlocked,
   open: openProp, onToggle,
 }) {
-  // Controlled when the parent passes `open`, uncontrolled otherwise. The feed
-  // card opens the thread by clicking the post body, so it needs the handle;
-  // anywhere else the button can still own it.
   const [openSelf, setOpenSelf] = useState(false);
   const controlled = openProp !== undefined;
   const open = controlled ? openProp : openSelf;

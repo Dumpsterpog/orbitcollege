@@ -6,12 +6,6 @@ import { Screen, Column, Empty } from "./ui/Layout.jsx";
 import { Img } from "./ui/Img.jsx";
 import { CommunityPauseNotice } from "./CommunityPause.jsx";
 
-// Explore -- a directory.
-//
-// This was a dense tile mosaic copied from a reference whose tiles are all
-// photographs. Communities here rarely have cover art, so it degraded into a
-// screen of tinted squares each holding one category glyph: maximum space for
-// minimum information. It is a list of rows now. See the note on Row.
 
 const compact = (n) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : `${n}`);
 
@@ -28,17 +22,6 @@ const WASH = {
   "text-c-red": "from-c-red/15 to-c-red/5",
 };
 
-// A row, not a tile.
-//
-// This was a photo grid with a masonry "tall" variant, which assumed every
-// community has cover art worth looking at. Almost none do, so the grid was
-// mostly tinted squares holding a category glyph -- a lot of screen spent
-// saying very little -- and with only three results the row-span-2 variant had
-// no sibling to constrain it and grew to the height of the viewport.
-//
-// A row shows strictly more per community (name, blurb, category, count, and
-// a Join that does not need a hover to find) in a fraction of the height, and
-// it looks the same whether there are two communities or two hundred.
 function Row({ c, joined, onOpen, onJoin }) {
   const cat = CATEGORIES.find((x) => x.name === c.category);
   const wash = WASH[cat?.tint] || WASH["text-c-blue"];
@@ -147,9 +130,6 @@ export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, j
       <Column className="pt-8 pb-16">
         <CommunityPauseNotice className="mb-6" />
 
-        {/* Search is the primary control on a discovery page, so it leads —
-            large, centred, and the only element above the fold that has any
-            fill to it. */}
         <div className="max-w-xl mx-auto">
           <h1 className="text-3xl font-bold text-ink text-center">
             Find your{" "}
@@ -182,8 +162,6 @@ export function ExploreScreen({ subTab, setSubTab, clubs, communities, onOpen, j
 
         </div>
 
-        {/* Scope + category filters. Pills only — no segmented control with
-            a box around it. */}
         <div className="flex flex-wrap items-center gap-2 mt-8">
           {SCOPES.map((s) => (
             <button

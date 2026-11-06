@@ -3,16 +3,6 @@ import { Icon, Avatar, Button, cx } from "../ui/Primitives.jsx";
 import { trackAd } from "../../lib/db.js";
 import { Img } from "../ui/Img.jsx";
 
-// Promoted content, published only from the admin tool.
-//
-// Three formats, the same three a campus sponsor actually asks for:
-//   text    a post-shaped card: advertiser, copy, button
-//   image   the same card with a large image and a link preview under it
-//   banner  a wide image that is the whole ad
-//
-// Every ad says "Promoted" where a post would say when it was written. An ad
-// that can be mistaken for a student's post is the fastest way to make the
-// feed untrustworthy, so the label is never optional.
 
 // http and https only. Ads are admin-written, but a javascript: link in an
 // href is one paste away from running script on every student's screen.
@@ -29,9 +19,6 @@ const domainOf = (url) => {
   try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return ""; }
 };
 
-// One impression per ad per browser session, counted once half the ad has
-// actually been on screen -- not on render, or every ad below the fold would
-// count as seen by everyone who opened the page.
 function useImpression(adId) {
   const ref = useRef(null);
   useEffect(() => {

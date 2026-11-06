@@ -4,15 +4,6 @@ import { Icon, Avatar, cx } from "./ui/Primitives.jsx";
 import { Weather } from "./Weather.jsx";
 import { BetaTag } from "./Common.jsx";
 
-// Header at every width.
-//
-// Search leads, because on a page whose whole job is finding people, rooms and
-// events, that is the control the header exists for. Everything else on the
-// bar is one icon wide.
-//
-// Still a button rather than a live field: typing here and having the
-// keystrokes thrown away on navigation is worse than not looking like a field,
-// so it hands off to the real search surface on the first key.
 
 const THEMES = [
   { key: "light", label: "Light", icon: "light_mode" },
@@ -51,16 +42,8 @@ export function TopBar({
     return () => window.removeEventListener("keydown", onKey);
   }, [menuOpen]);
 
-  // Navigating closes the menu; switching theme does not, so the change can
-  // be seen before choosing another.
   const go = (fn) => { setMenuOpen(false); fn?.(); };
 
-  // No bottom rule on the header. It, the rail and every card were each
-  // drawing their own hairline, which stacked into a grid of lines competing
-  // with the content. The header sits on the same surface as the page, so it
-  // needs no edge: the search field's own shape is enough to locate it. The
-  // rail keeps its edge, because that one separates two different things
-  // rather than repeating a boundary you can already see.
   return (
     <header
       className="relative shrink-0 h-16 flex items-center gap-3 px-4 lg:px-6 bg-bg-raised"

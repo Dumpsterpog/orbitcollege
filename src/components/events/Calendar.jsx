@@ -2,12 +2,6 @@ import { useState, useMemo } from "react";
 import { Icon, cx } from "../ui/Primitives.jsx";
 import { Img } from "../ui/Img.jsx";
 
-// A month grid that marks the days something is actually on.
-//
-// It is not a date picker and does not pretend to be one: clicking a day
-// filters the list beside it, and a day with nothing on it is not clickable,
-// because a calendar that lets you select an empty Tuesday and then shows you
-// an empty list has wasted the click.
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const sameDay = (a, b) =>
@@ -31,9 +25,6 @@ export function CampusCalendar({ events, selected, onSelect, onOpenEvent, onView
     return map;
   }, [events, cursor]);
 
-  // What the panel under the grid is showing. A marked day is worth a tap
-  // even before it filters the list beside it: the question is "what is on
-  // then", and the answer was two screens away.
   const chosen = selected
     && selected.getFullYear() === cursor.getFullYear()
     && selected.getMonth() === cursor.getMonth()
@@ -116,8 +107,6 @@ export function CampusCalendar({ events, selected, onSelect, onOpenEvent, onView
               )}
             >
               {day}
-              {/* A dot per event, capped at three: the mark says "something is
-                  on", and counting past three on a 36px circle is decoration. */}
               {hasEvents && !isSelected && (
                 <span className="absolute bottom-1 flex items-center gap-[3px]">
                   {dayEvents.slice(0, 3).map((_, n) => (

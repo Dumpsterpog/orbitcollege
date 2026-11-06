@@ -2,13 +2,6 @@ import { Icon, cx } from "../ui/Primitives.jsx";
 import { useEventSchedule } from "./eventTiming.js";
 import { noticeFor } from "./eventNotice.js";
 
-// The organiser's current word on this event, wherever it is mentioned: the
-// event card, the home strip, the rail, the sign-in gate and the registration
-// page all render this, so none of them can be left saying something the
-// others have stopped saying.
-//
-// `compact` is for the narrow places, which have room for the headline and
-// the time but not the explanation.
 export function EventAvailability({ event, className, compact = false }) {
   const schedule = useEventSchedule(event);
   const notice = noticeFor(event);

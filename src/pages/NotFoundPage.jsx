@@ -1,7 +1,5 @@
 import { Link } from "react-router-dom";
 
-// A real 404, rather than silently redirecting home. A wrong URL that quietly
-// lands you somewhere else is indistinguishable from a broken link.
 export default function NotFoundPage() {
   return (
     <main className="min-h-dvh grid place-items-center px-6 py-12 bg-bg text-ink">

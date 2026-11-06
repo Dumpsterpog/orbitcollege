@@ -1,11 +1,3 @@
-// Firebase app singleton — replaces lib/supabaseClient.js.
-//
-// Config comes from .env (VITE_FIREBASE_*) rather than being committed, same
-// arrangement the Supabase client used. These values are not secrets in the
-// way a service key is — Firebase web config ships to the browser by design
-// and access is enforced by Firestore security rules, not by hiding the
-// apiKey — but keeping them in .env still lets dev/staging/prod differ without
-// a code change.
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
@@ -22,14 +14,6 @@ const firebaseConfig = {
 
 export const firebaseReady = Boolean(firebaseConfig.apiKey && firebaseConfig.projectId);
 
-// Everything below stays null until the .env values are filled in.
-//
-// This guard is load-bearing, not defensive padding: getAuth() throws
-// auth/invalid-api-key synchronously on an unconfigured app, and because this
-// module is imported at the top of App.jsx that throw happens during module
-// evaluation — which blanks the entire app, guest browsing included, before
-// React ever mounts. Failing at the point of *use* instead keeps the dashboard
-// and the guest flow working on a fresh clone with no Firebase project yet.
 let _app = null, _auth = null, _db = null, _storage = null, _googleProvider = null;
 
 if (firebaseReady) {
@@ -37,9 +21,6 @@ if (firebaseReady) {
   _auth = getAuth(_app);
   _db = getFirestore(_app);
   _storage = getStorage(_app);
-  // Google is the only configured provider — see AUTH decision: no email OTP,
-  // no phone SMS. Firebase has no email 6-digit-code flow, and phone OTP would
-  // require the Blaze plan, so sign-in and sign-up are the same single action.
   _googleProvider = new GoogleAuthProvider();
   _googleProvider.setCustomParameters({ prompt: "select_account" });
 } else {

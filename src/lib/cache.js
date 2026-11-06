@@ -1,23 +1,3 @@
-// A small read-through cache for the first paint.
-//
-// Every list in this app comes from an onSnapshot subscription, which is the
-// right shape for live data but means a reload shows empty skeletons for as
-// long as the round trip takes, every single time, even though the answer is
-// almost always what you were already looking at.
-//
-// So: the last snapshot of each list is kept in sessionStorage and used as the
-// initial state. The subscription still runs and still overwrites it the
-// moment real data lands -- this only changes what is on screen in between.
-// Nothing here is a source of truth, and nothing is read after the first
-// render, which is why a stale entry can never outlive one round trip.
-//
-// sessionStorage, not localStorage, on purpose: it dies with the tab, so a
-// shared machine cannot show one student the tail of another's session, and a
-// cache bug cannot outlive a browser restart.
-//
-// Entries are namespaced by uid. Signing in as someone else must not inherit
-// the previous account's feed while their subscription is still connecting.
-
 const PREFIX = "orbit_cache:";
 const TTL_MS = 10 * 60 * 1000;
 
@@ -62,15 +42,6 @@ export function clearCache() {
   } catch { /* ignore */ }
 }
 
-/**
- * Wraps a watcher so its first callback is served from cache and every
- * subsequent one is written back to it.
- *
- * Dates do not survive JSON, so `revive` is where a caller turns the parsed
- * shape back into what the UI expects. Without it a cached post would arrive
- * with createdAt as a string and every sort comparing it would silently
- * produce NaN.
- */
 export function cached(name, set, revive) {
   const seed = readCache(name, null);
   if (seed) {

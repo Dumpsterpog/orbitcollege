@@ -4,9 +4,6 @@ import { communityTrendScore } from "../utils/helpers.js";
 import { Icon, Avatar, Input, IconButton, cx } from "./ui/Primitives.jsx";
 import { Screen, Column, Empty } from "./ui/Layout.jsx";
 
-// Search. Arrow keys move the selection, Enter opens it, Escape closes —
-// a search surface that can only be driven by mouse isn't finished.
-
 // Category tint for the coverless marks, as whole class strings.
 const MARK = {
   "text-c-blue": "bg-c-blue/10", "text-c-violet": "bg-c-violet/10",
@@ -59,8 +56,6 @@ export function SearchOverlay({ communities, onOpen, onClose }) {
               {communities.length} communities and clubs across campus.
             </p>
           </div>
-          {/* Close, not "Done". Nothing is being confirmed here, and a text
-              Done is a modal affordance on a page that isn't a modal. */}
           <IconButton icon="close" label="Close search" size={22} onClick={onClose} className="shrink-0" />
         </div>
 
@@ -102,10 +97,6 @@ export function SearchOverlay({ communities, onOpen, onClose }) {
               </div>
             </div>
 
-            {/* The default surface. An empty search page that only offers
-                filters gives you nothing to look at; this is the equivalent
-                of a discovery grid — real communities, tappable, ranked by
-                activity. */}
             {trending.length > 0 && (
               <div>
                 <p className="text-2xs font-semibold text-ink-2 uppercase tracking-wider mb-3">Trending now</p>

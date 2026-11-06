@@ -1,52 +1,14 @@
-// Content filtering.
-//
-// Two rules shaped everything here.
-//
-// First: false positives are the expensive failure. A filter that blocks a
-// real post is felt immediately by someone who did nothing wrong, while a
-// filter that misses one is caught by the report queue. So every term matches
-// on word boundaries -- naive substring matching is how "class" and "Scunthorpe"
-// get blocked, and how a filter earns the reputation of being broken.
-//
-// Second: this is a campus app, and campuses have to be able to discuss sexual
-// health, consent, harassment and assault. Blanket-banning the word "sex"
-// silences exactly the posts a student platform must not silence -- a warning
-// about a predator, a link to a clinic, a question about consent. So the list
-// targets pornography and explicit solicitation, not the subject.
-//
-// This is also not a security control. It is client-side, so anyone who opens
-// a console can post around it. What it does is stop casual abuse and make the
-// rules obvious. The report queue and firestore.rules are the parts that hold.
-
-/* ------------------------------------------------------------ normalise */
-
-// Collapses the usual evasions before matching: leetspeak, repeated letters,
-// and separators wedged between characters. Without this, "p0rn", "p.o.r.n"
-// and "pooorn" all sail through a list that only knows the spelling.
 const LEET = { "0": "o", "1": "i", "3": "e", "4": "a", "5": "s", "7": "t", "@": "a", "$": "s", "!": "i" };
 
 function normalise(text) {
   return String(text || "")
     .toLowerCase()
     .replace(/[013457@$!]/g, (c) => LEET[c] || c)
-    // Spaced-out obfuscation only: "p.o.r.n", "p o r n", "p-o-r-n". Matched as
-    // a run of single letters each followed by a separator, which is a shape
-    // ordinary prose does not have.
-    //
-    // An earlier version collapsed any separator between word characters. That
-    // also ate the ordinary space in "send nudes", turning it into
-    // "sendnudes", so every multi-word term in the list silently stopped
-    // matching while the filter looked like it was working.
     .replace(/\b(?:[a-z][\s._\-*]){2,}[a-z]\b/g, (run) => run.replace(/[\s._\-*]/g, ""))
     // three or more of the same letter collapse to one
     .replace(/([a-z])\1{2,}/g, "$1");
 }
 
-/* -------------------------------------------------------------- lexicon */
-
-// Pornography and explicit solicitation. Deliberately not a general profanity
-// list: students swear, and a community app that blocks "shit" is one nobody
-// posts on. Harassment and slurs are handled separately below.
 const EXPLICIT = [
   "porn", "pornhub", "xvideos", "xnxx", "xhamster", "redtube", "youporn",
   "onlyfans", "camgirl", "camwhore", "escort service", "call girl", "callgirl",
@@ -63,13 +25,6 @@ const ABUSE = [
   "retard", "retarded", "rape you", "kill yourself", "kys",
 ];
 
-// Off-platform invite links. The point is not that these services are bad --
-// it is that a campus feed is a recruiting ground for scams and porn rings
-// that move people to an unmoderated channel as the first step.
-//
-// Always refused, never queued: firestore.rules refuses the same links on
-// every post write, including an admin's, so a queued one could never be
-// approved anyway.
 const LINK_PATTERNS = [
   { re: /\bt\.me\/\S+/i,                       label: "Telegram invite links" },
   { re: /\btelegram\.(me|dog)\/\S+/i,          label: "Telegram invite links" },
@@ -82,15 +37,6 @@ const LINK_PATTERNS = [
 // sent for review in posts, where a moderator can open them and look.
 const SHORTENER = /\b(bit\.ly|tinyurl\.com|cutt\.ly|rb\.gy|is\.gd|shorturl\.at)\/\S+/i;
 
-/* -------------------------------------------------------- review queue */
-
-// Posts about these go to a moderator instead of the feed.
-//
-// This is where the "campuses must be able to discuss sex" rule from the top
-// of the file meets the request to keep dating and sexual posts off the feed.
-// A refusal would silence the consent-workshop post along with the hookup
-// post; a review queue lets a person tell them apart. So the list can be
-// broad -- a false positive costs a short wait, not a lost post.
 const SEXUAL = [
   "sex", "sexy", "sexual", "sexually", "nsfw", "nude", "naked", "horny",
   "boobs", "tits", "dick", "pussy", "makeout", "make out", "kinky",
@@ -104,30 +50,13 @@ const DATING = [
 // Adult sites, as links rather than words.
 const NSFW_LINK = /\b(pornhub|xvideos|xnxx|xhamster|redtube|youporn|fansly|chaturbate|stripchat|erome|spankbang|rule34)\.[a-z.]{2,}|\breddit\.com\/r\/\w*nsfw/i;
 
-// A byte-for-byte mirror of noExplicit() in firestore.rules, run on the raw
-// text.
-//
-// The lists above match on normalised text, and the rule cannot normalise, so
-// the two can disagree: "porn5" normalises to "porns", which the list misses
-// and the rule catches. Without this mirror such a post would skip the queue,
-// hit the rule, and fail with a bare permission-denied. With it, anything the
-// rule would refuse is queued first -- the client is always at least as strict.
 const RULES_MIRROR = /(^|[^a-z])(porn|porno|pornhub|xvideos|xnxx|xhamster|nudes|sexting|hentai)([^a-z]|$)/i;
 
-/* --------------------------------------------------------------- match */
-
-// Word-boundary match on the normalised text. \b does not work for phrases
-// containing spaces after normalisation, so multi-word entries are matched
-// with explicit boundaries on each end.
 function hasTerm(text, term) {
   const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   return new RegExp(`(^|[^a-z])${escaped}([^a-z]|$)`, "i").test(text);
 }
 
-/**
- * Checks a piece of user text.
- * Returns { ok: true } or { ok: false, reason } with a message worth reading.
- */
 export function checkText(raw) {
   const text = String(raw || "");
   if (!text.trim()) return { ok: true };
@@ -166,16 +95,6 @@ export function checkText(raw) {
   return { ok: true };
 }
 
-/**
- * Decides what happens to a post: published, refused, or held for review.
- *
- *   { action: "allow" }
- *   { action: "block",  reason }                 slurs, invite links
- *   { action: "review", reason, labels, matched } sexual, dating, NSFW links
- *
- * Posts only. Comments and Locali-Tea have nowhere to wait -- Tea is anonymous,
- * so a queue entry would have to name its author -- and keep using checkText.
- */
 export function classifyPost(raw) {
   const text = String(raw || "");
   if (!text.trim()) return { action: "allow" };

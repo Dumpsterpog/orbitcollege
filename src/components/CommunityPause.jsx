@@ -1,10 +1,5 @@
 import { Icon } from "./ui/Primitives.jsx";
 
-// Making new communities is switched off for now, so the places that used to
-// offer it say why instead of simply disappearing. One copy of the wording,
-// used everywhere it is needed, so the answer is the same wherever someone
-// runs into it.
-
 export const PAUSE_TITLE = "New communities are paused";
 export const PAUSE_BODY =
   "You cannot create a community at the moment. The ones already here work as normal, so you can still join them, post and chat.";

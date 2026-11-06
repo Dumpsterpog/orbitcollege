@@ -1,13 +1,6 @@
 import { useEffect } from "react";
 import { Icon, IconButton, cx } from "./Primitives.jsx";
 
-// Layout scaffolding.
-//
-// `Screen` is a plain scroll container with no chrome of its own — the
-// previous version wrapped every page in a bordered panel, which is what
-// made the app read as boxes inside boxes. Any structure a page needs it
-// declares itself.
-
 export function Screen({ children, className }) {
   return <div className={cx("flex-1 min-h-0 overflow-y-auto bg-bg", className)}>{children}</div>;
 }
@@ -19,8 +12,6 @@ export function Column({ width = "wide", className, children }) {
   return <div className={cx("w-full mx-auto px-4 sm:px-6", w, className)}>{children}</div>;
 }
 
-// Page title block. Sticky so the title stays put while a long list scrolls,
-// with a hairline that only appears once content is under it.
 export function PageHeader({ title, subtitle, onBack, actions, sticky = true, className }) {
   return (
     <header
@@ -81,8 +72,6 @@ export function Modal({ title, onClose, children, footer, width = "max-w-sm" }) 
   );
 }
 
-// Full-bleed empty state. The glyph is filled and tinted — an outlined one
-// in a ringed circle read as a placeholder rather than as part of the app.
 export function Empty({ icon, tint = "text-c-violet", title, body, action, className }) {
   return (
     <div className={cx("flex flex-col items-center text-center py-16 px-6", className)}>

@@ -3,16 +3,6 @@ import { CATEGORIES } from "../data/constants.js";
 import { Icon, Avatar, Button, Switch, cx } from "./ui/Primitives.jsx";
 import { Screen } from "./ui/Layout.jsx";
 
-// Settings.
-//
-// The rail carries a description under each label and groups the eight
-// sections into three bands. A bare list of five words was too small to be
-// worth the column it sat in — with a line of explanation each, the rail
-// answers "which one do I want" without a click, which is the only job a
-// settings nav has.
-//
-// Sections switch rather than scroll: they're unrelated, and paging is
-// honest about that where one long scroll pretends they're a document.
 
 const GROUPS = [
   {

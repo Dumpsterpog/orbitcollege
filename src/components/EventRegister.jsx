@@ -9,25 +9,9 @@ import { EventAvailability } from "./events/EventAvailability.jsx";
 import { EVENT_SLOTS, useEventSchedule } from "./events/eventTiming.js";
 import { isRegistrationClosed, noticeFor } from "./events/eventNotice.js";
 
-// Event registration: details, then slot and pass, then payment, then the pass
-// itself.
-//
-// Payment happens on CCAvenue, which does not call this app back. So the flow
-// is deliberately honest about what it knows: the student enters details, pays
-// in a separate tab, and tells us they have. That marks the signup "claimed",
-// not "paid". An admin verifies it against the payment report, and only a
-// verified signup gets an entry pass.
-//
-// The chat opens as soon as they claim payment rather than after verification.
-// A student who has just paid should not sit outside the group waiting for a
-// human, and the cost of being wrong is that someone is briefly in a chat.
 
 const CLUB = "IEI Mechatronics";
 
-// A stag pass is one payment covering four people, and one pass code for all
-// of them: the person who registered carries it and brings the other three.
-// The prices themselves live in data/passes.js, because the home page quotes
-// them too.
 
 const YEARS = ["1st year", "2nd year", "3rd year", "4th year", "5th year", "Postgraduate", "PhD"];
 const REFERRALS = [
@@ -72,11 +56,6 @@ function Step({ n, label, state }) {
   );
 }
 
-// A choice that reads as a choice: the whole tile is the control, and the one
-// that is picked says so without relying on colour alone.
-// The old price beside the new one. Struck through and smaller, because the
-// number that matters is the one being paid; the other is only there to say
-// how much is being taken off.
 function Price({ pass }) {
   return (
     <span className="inline-flex items-baseline gap-1.5">
@@ -186,8 +165,6 @@ export function EventRegisterScreen({
     }
   }, [form.slot, schedule.slots]);
 
-  // Show the student the screenshot the club is actually looking at, whether
-  // they attached it a second ago or came back to this page a day later.
   useEffect(() => {
     let alive = true;
     if (!signup?.proofStored) { setStoredProof(null); return () => { alive = false; }; }
@@ -195,9 +172,8 @@ export function EventRegisterScreen({
       .then((d) => { if (alive) setStoredProof(d); })
       .catch(() => {});
     return () => { alive = false; };
-    // event?.id, not event.id: a dependency array is read on every render,
-    // including the one before the event has loaded, and reading .id off null
-    // there throws before the guard further down ever runs.
+    // event?.id: a dependency array is read on every render, including the
+    // one before the event has loaded.
   }, [signup?.proofStored, event?.id, authUserId]);
 
   const attachProof = async (file) => {
@@ -226,9 +202,6 @@ export function EventRegisterScreen({
   const chosenPass = passOf(form.passType);
   const chosenSlot = slotOf(form.slot);
 
-  // What the scanner reads. Versioned so a future change to the format can be
-  // told apart from this one, and carrying the ids the admin tool needs to find
-  // the signup without a lookup table.
   const passPayload = `orbit:v1:${event?.id || ""}:${authUserId || ""}:${signup?.passCode || ""}`;
 
   const submitDetails = () => {
@@ -304,12 +277,6 @@ export function EventRegisterScreen({
     window.open(payUrl, "_blank", "noopener,noreferrer");
   };
 
-  // Money has already left this person's account by the time they are on this
-  // step. Nothing here may refuse them: not a screenshot that will not shrink,
-  // not a laptop with no screenshot on it, not a flaky upload on campus wifi.
-  // The screenshot is how the club checks a payment quickly, so it is asked
-  // for firmly; a reference number is accepted instead, and if the picture
-  // fails to save the claim still goes through and can be completed later.
   const confirmPaid = async () => {
     const ref = paymentRef.trim();
     if (!proofData && ref.length < 4) {
@@ -393,10 +360,6 @@ export function EventRegisterScreen({
     );
   }
 
-  // Closed, with nothing of theirs to show. Anyone part-way through keeps
-  // their page: a registration already made can still be paid for, because
-  // closing the doors is about new sign-ups, not about stranding someone who
-  // started before they shut.
   if (registrationClosed && !signup) {
     const notice = noticeFor(event);
     return (

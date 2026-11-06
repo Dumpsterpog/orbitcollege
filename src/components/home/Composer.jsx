@@ -1,20 +1,6 @@
 import { useState, useRef, useEffect } from "react";
 import { Icon, Avatar, cx } from "../ui/Primitives.jsx";
 
-// The composer posts in place. No dialog.
-//
-// A modal was one extra click before the thing the app most wants you to do,
-// and it hid the feed behind a scrim to show you an empty box. This grows in
-// place instead: collapsed it is a prompt, focused it is a textarea, and Post
-// submits from where you already are.
-//
-// The type chips are the reason it is this tall. A blank box asks "what do you
-// want to say", which most people answer with nothing; five named starting
-// points answer it for them, and each one seeds real text rather than just
-// tinting a button.
-//
-// Poll is not here. The mock shows it, Orbit stores no poll, and a chip that
-// cannot produce one is worse than four chips that work.
 
 const TYPES = [
   { key: "discussion",   label: "Discussion",   icon: "forum",          tint: "text-c-blue",   seed: "" },
@@ -132,11 +118,7 @@ export function Composer({ user, communities = [], onSubmit, onBlocked, canPost 
         </div>
       </div>
 
-      {/* Type chips. Hidden once you are writing -- by then they have done
-          their job and would only be taking room from the text. */}
       {!open && (
-        // One swipeable row on a phone instead of three wrapped ones, which
-        // pushed the first post below the fold before anyone had scrolled.
         <div className="flex flex-nowrap sm:flex-wrap items-center gap-2 mt-3 sm:mt-4 overflow-x-auto no-scrollbar -mx-1 px-1">
           {TYPES.map((t) => (
             <button
@@ -203,8 +185,6 @@ export function Composer({ user, communities = [], onSubmit, onBlocked, canPost 
             <span className="text-[11.5px] text-ink-3 tabular-nums">{text.length}/2000</span>
           )}
 
-          {/* Audience. Everyone is the default, so posting never depends on
-              having joined anything first. */}
           <div className="relative">
             <button
               onClick={() => setPickerOpen((v) => !v)}
@@ -275,8 +255,6 @@ export function Composer({ user, communities = [], onSubmit, onBlocked, canPost 
   );
 }
 
-// Segmented tabs, in a sunken well so the selected one reads as lifted out of
-// it rather than as a button someone forgot to style.
 export function FeedTabs({ value, onChange, tabs }) {
   return (
     <div className="inline-flex items-center gap-1 bg-bg-sunken p-1 rounded-full max-w-full overflow-x-auto no-scrollbar self-start">

@@ -4,13 +4,6 @@ import { CATEGORIES } from "../data/constants.js";
 import { Icon, Avatar, Button, Input, Textarea, cx } from "./ui/Primitives.jsx";
 import { Screen, Empty } from "./ui/Layout.jsx";
 
-// Profile.
-//
-// The same card language as Home and Locali-Tea: an identity card with a cover
-// band and the counts, then tabbed content beside a rail of account details.
-// The earlier version was a flat grey band running the full width of the
-// screen with the numbers as bare text, which read as a settings page rather
-// than as a person.
 
 const compact = (n) => (n >= 1000 ? `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k` : `${n || 0}`);
 const card = "w-full bg-bg-raised rounded-2xl border border-line";
@@ -199,9 +192,6 @@ export function ProfileScreen({
   const toggleInterest = (name) =>
     setDraftInterests((xs) => (xs.includes(name) ? xs.filter((x) => x !== name) : [...xs, name]));
 
-  // Guests see the page blurred behind a gate rather than an empty profile.
-  // A profile with nothing in it doesn't explain why it's empty; showing the
-  // real shape behind glass does, and the only way past it is signing in.
   const gated = !user.verified;
 
   return (
@@ -227,7 +217,6 @@ export function ProfileScreen({
       <div className={cx(gated && "pointer-events-none select-none blur-[6px] opacity-60")} aria-hidden={gated}>
         <div className="w-full max-w-[1180px] mx-auto px-3 sm:px-6 py-4 sm:py-6 flex flex-col gap-4 sm:gap-6">
 
-          {/* ------------------------------------------------ identity */}
           <section className={cx(card, "overflow-hidden")}>
             <div className="relative h-32 sm:h-48 bg-gradient-to-br from-accent via-c-violet to-c-pink">
               {user.bannerUrl ? (
@@ -343,7 +332,6 @@ export function ProfileScreen({
           </section>
 
           <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px]">
-            {/* ---------------------------------------------- content */}
             <div className="min-w-0 flex flex-col gap-3 sm:gap-4">
               <div className="inline-flex items-center gap-1 bg-bg-sunken p-1 rounded-full max-w-full overflow-x-auto no-scrollbar self-start">
                 {TABS.map((t) => {
@@ -484,7 +472,6 @@ export function ProfileScreen({
               )}
             </div>
 
-            {/* ------------------------------------------------- rail */}
             <aside className="h-full">
               <div className="lg:sticky lg:top-6 flex flex-col gap-4">
                 {user.suspended && (
@@ -527,9 +514,6 @@ export function ProfileScreen({
 
                             {ready ? (
                               <>
-                                {/* White plate behind the code: a scanner
-                                    reading a phone in dark mode needs the
-                                    contrast and the quiet zone. */}
                                 <span className="self-center p-3 bg-white rounded-xl">
                                   <QRCodeSVG
                                     value={`orbit:v1:${p.eventId}:${authUserId}:${p.passCode}`}
@@ -609,7 +593,6 @@ export function ProfileScreen({
           </div>
         </div>
 
-        {/* ---------------------------------------------------- edit */}
         {editing && (
           <div className="fixed inset-0 z-[80] bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center sm:p-4 animate-fade-in"
                onClick={() => setEditing(false)}>

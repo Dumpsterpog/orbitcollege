@@ -1,13 +1,6 @@
 import { useEffect, useState } from "react";
 import { isDemoOpen } from "./eventNotice.js";
 
-// Event times are always interpreted in India Standard Time. Browser-local
-// timezones must not change when registration closes for an on-campus event.
-// The two slots were combined into one session on the day. `closesHour` is
-// when a slot stops being joinable: for a slot among several that is the
-// moment it starts, because you cannot join one already running while another
-// is still ahead of you. For a single combined session there is nothing else
-// to move to, so it stays open until the session itself ends.
 export const EVENT_SLOTS = [
   { key: "combined", label: "2:00 pm onwards", short: "One session", startHour: 14, endHour: 18, closesHour: 18 },
 ];
@@ -29,10 +22,6 @@ function istInstant(date, hour) {
 }
 
 export function getEventSchedule(event, now = Date.now()) {
-  // A reopened event ignores its own date. Everything here is a comparison
-  // against the day it was held, and that day has gone, so without this the
-  // session reads as finished and the page shows the thank-you screen instead
-  // of the form someone is trying to be shown.
   if (isDemoOpen(event)) {
     return { slots: EVENT_SLOTS.map((slot) => ({ ...slot, unavailable: false })), isComplete: false };
   }

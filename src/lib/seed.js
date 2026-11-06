@@ -4,23 +4,6 @@ import {
 import { db, firebaseReady } from "./firebase.js";
 import { slugify } from "../utils/helpers.js";
 
-// Demo content, written through the ordinary client SDK as the signed-in user.
-//
-// Not a fixture file and not an Admin-SDK script: it writes with your account
-// and is therefore subject to the same rules as the app. If a write here is
-// refused, the app would have refused it too -- which makes this a decent
-// smoke test of a fresh project as well as a way to get something on screen.
-//
-// Everything it creates is tagged `demo: true`, so `clearDemo()` can take it
-// all back out without touching anything real.
-//
-// Run it from the browser console while signed in:
-//
-//     await orbitSeed()      // create
-//     await orbitClearDemo() // remove
-//
-// Images come from /public/seed, downloaded from the design mock so they keep
-// working after the mock's own URLs expire.
 
 const DAY = 86400e3;
 const at = (days, h = 19, m = 0) => {
